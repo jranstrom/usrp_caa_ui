@@ -13,7 +13,8 @@ mainGUI::mainGUI(QWidget *parent)
     ui->setupUi(this);
 
     connect(uio, &uiobj::transmissionStatusChanged, this, &mainGUI::updateTransmitStatus);
-    connect(uio,&uiobj::rxSetupStatusChanged,this,&mainGUI::)
+    connect(uio,&uiobj::rxSetupStatusChanged,this,&mainGUI::updateRxSetupStatus);
+    connect(uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateTxSetupStatus);
 
     uio->setTransmissionInProgress(false);
 
