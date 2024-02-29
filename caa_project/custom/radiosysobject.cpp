@@ -30,7 +30,9 @@
 
 using namespace std::chrono_literals;
 
-RadioSysObject::RadioSysObject() {}
+RadioSysObject::RadioSysObject() {
+    std::cout<<"RadioSysObject created" << std::endl;
+}
 
 bool RadioSysObject::writeConfigFile(std::string configFilepath){
     bool success = false;
@@ -49,8 +51,8 @@ bool RadioSysObject::writeConfigFile(std::string configFilepath){
         std::string tmp_txIP = sysConf.GetCleanTX_IPaddress();
         std::string tmp_rxIP = sysConf.GetCleanRX_IPaddress();
         CFG::WriteFile(f_out, ln,
-                       tmp_txIP,
-                       tmp_rxIP,
+                       sysConf.tx.IP_Address,
+                       sysConf.rx.IP_Address,
                        sysConf.tx.CarrierFrequency,
                        sysConf.tx.SamplingRate,
                        sysConf.tx.Gain,
@@ -96,8 +98,8 @@ bool RadioSysObject::readConfigFile(std::string configFilepath)
     try{
         std::ifstream iconf_file(configFilepath);
         CFG::ReadFile(iconf_file,ln,
-                      tmp_tx_address,
-                      tmp_rx_address,
+                      sysConf.tx.IP_Address,
+                      sysConf.rx.IP_Address,
                       sysConf.tx.CarrierFrequency,
                       sysConf.tx.SamplingRate,
                       sysConf.tx.Gain,
@@ -157,7 +159,7 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
         sysConf.SetSynchTolerance(matHF::read_as_int(filepath,"sys.synchCorrTolerance"));
 
         //CircBuffer<std::complex<short>> tx_signal_buff = uhd_clib::cvec_conv_double2short(sysConf.txSignal);
-        txSignalBuffer = uhd_clib::cvec_conv_double2short(sysConf.txSignal);
+        txSignalBuffer.from_vector(uhd_clib::cvec_conv_double2short(sysConf.txSignal));
         //txSignalBuffer = &tx_signal_buff;
     }catch(...){
         success = false;
@@ -298,6 +300,97 @@ void RadioSysObject::setupTxUSRP()
 void RadioSysObject::setupRxUSRP()
 {
     rxUSRPSetup = false;
+
+    std::cout << sysConf.getRxIPAddress() << std::endl;
+
+    rx_usrp = uhd::usrp::multi_usrp::make(sysConf.GetrxUSRP_IPaddress());
+
+    rx_usrp->set_clock_source(sysConf.rx.REF_Source); // Clock (REF)
+    rx_usrp->set_time_source(sysConf.rx.PPS_Source);  // Timing (PPS)
+
+    std::vector<std::string> channel_strings;
+    std::vector<size_t> channel_nums;
+    boost::split(channel_strings,sysConf.rx.CH,boost::is_any_of("\"',"));
+    for (size_t ch=0; ch<channel_strings.size();ch++) {
+        size_t chan = std::stoi(channel_strings[ch]);
+
+        size_t chan_act;
+
+        chan_act = rx_usrp->get_rx_num_channels();
+
+        if(chan >= chan_act){
+            throw std::runtime_error("Invalid channel(s) specified.");
+        }else{
+            channel_nums.push_back(std::stoi(channel_strings[ch]));
+        }
+    }
+
+    double actual_SamplingRate;
+
+    rx_usrp->set_rx_rate(sysConf.rx.SamplingRate);
+    actual_SamplingRate = rx_usrp->get_rx_rate();
+
+    if(sysConf.tx.SamplingRate != actual_SamplingRate)
+        std::cout << boost::format("Actual Rate: %f Msps\n") % ((actual_SamplingRate)/1e6);
+
+    for (size_t ch=0; ch<channel_nums.size(); ch++){
+        size_t channel = channel_nums[ch];
+
+        if (channel_nums.size() > 1)
+            std::cout << "Configuring Channel" << channel << std::endl;
+
+        // Set carrier frequency
+        double actual_CarrierFrequency;
+        uhd::tune_request_t rx_tune_request(sysConf.rx.CarrierFrequency, sysConf.rx.RX_LO_Offset);
+        rx_usrp->set_rx_freq(rx_tune_request, channel);
+        actual_CarrierFrequency = rx_usrp->get_rx_freq(channel);
+
+        if(sysConf.rx.CarrierFrequency != actual_CarrierFrequency)
+            std::cout << boost::format("Actual Carrier freq: %.2f MHz\n") % (actual_CarrierFrequency / 1e6);
+
+        // Set gain
+        double actual_gain;
+        rx_usrp->set_rx_gain(sysConf.rx.Gain,channel);
+        actual_gain = rx_usrp->get_rx_gain(channel);
+
+        if(sysConf.rx.Gain != actual_gain)
+            std::cout << boost::format("Actual gain: %.2f dB\n") % actual_gain;
+
+        // Set antenna
+        rx_usrp->set_rx_antenna(sysConf.rx.ANT,channel);
+
+
+        // Set Frontend Filter Bandwidth
+        double actual_filt_bw;
+
+        rx_usrp->set_rx_bandwidth(sysConf.rx.FILT_BW, channel);
+        actual_filt_bw = rx_usrp->get_rx_bandwidth(channel);
+
+
+        if(sysConf.rx.FILT_BW != actual_filt_bw)
+            std::cout << boost::format("Actual RX analog frontend filter bandwidth %.2f MHz\n")
+                             % (actual_filt_bw / 1e6);
+
+        // Align times in the RX USRP
+        if (rx_usrp->get_num_mboards() > 1){
+            rx_usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
+            std::cout << ">> RX Time Alignment" << std::endl;
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        std::vector<std::string> sensor_names;
+
+        sensor_names = rx_usrp->get_rx_sensor_names(0);
+
+        if(std::find(sensor_names.begin(), sensor_names.end(),"lo_locked") != sensor_names.end()) {
+            uhd::sensor_value_t lo_locked = rx_usrp->get_rx_sensor("lo_locked",0);
+            std::cout << boost::format("Checking RX: %s ..." ) % lo_locked.to_pp_string() << std::endl;
+            UHD_ASSERT_THROW(lo_locked.to_bool());
+        }
+    }
+
+    rxUSRPSetup = true;
 
 }
 

@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include "custom/radiosysobject.h"
 #include "uiobj.h"
+#include <QDateTime>
+#include <QTableWidget>
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -20,15 +23,32 @@ public:
     ~mainGUI();
     void setRadioSysObject(RadioSysObject * RadObj);
 
+    void updateTxCarrierFrequency(bool status);
+    void updateRxCarrierFrequency(bool status);
+
+    void updateTxGain(bool status);
+    void updateRxGain(bool status);
+
+    void updateTxIPAddress(bool status);
+    void updateRxIPAddress(bool status);
+
+    void updateTxPPSSource(bool status);
+    void updateRxPPSSource(bool status);
+
+    void updateTxREFSource(bool status);
+    void updateRxREFSource(bool status);
+
     void updateTransmitStatus(bool status);
     void updateTxSetupStatus(bool status);
     void updateRxSetupStatus(bool status);
 
-    uiobj *uio = new uiobj(this);
+    uiobj uio = uiobj(this);
 
 private slots:
     void on_button_rx_test_connection_released();
     void on_button_tx_test_connection_released();
+
+    void updateTransmissionDuration();
 
     void on_buttonGroup_tx_pps_buttonClicked(int val);
     void on_buttonGroup_tx_ref_buttonClicked(int val);
@@ -58,6 +78,8 @@ private slots:
 
     void on_button_apply_config_released();
 
+    void processing_USRP_setup();
+
     void on_button_load_data_released();
 
     void on_button_tx_stop_released();
@@ -66,11 +88,21 @@ private slots:
 
     void on_button_save_cf_released();
 
+    void on_lineEdit_tx_ip_editingFinished();
+
+    void on_lineEdit_rx_ip_editingFinished();
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
 
+    QTimer processingTimer;
+
+    QDateTime transmissionStartTime;
+
     void SetWidgetColor(QWidget * widg, int colorc);
+
+    void addStatusUpdate(QString entry,QTableWidget *table);
 
     void applyTxConfig();
     void applyRxConfig();

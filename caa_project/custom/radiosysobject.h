@@ -26,6 +26,9 @@ public:
 
     RadioSysConfig sysConf = RadioSysConfig();
 
+    bool txUSRPSetup = false;
+    bool rxUSRPSetup = false;
+
 private:
     void runTransmissionThread();
     void runReceptionThread();
@@ -34,8 +37,7 @@ private:
     bool ReceptionInProgress = false;
     bool SynchronizationInProgress = false;
 
-    bool txUSRPSetup = false;
-    bool rxUSRPSetup = false;
+
 
     uhd::usrp::multi_usrp::sptr tx_usrp;
     uhd::usrp::multi_usrp::sptr rx_usrp;

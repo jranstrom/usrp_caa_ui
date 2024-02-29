@@ -5,14 +5,18 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/thread/thread.hpp>
+#include <typeinfo>
 
 template <class T>
 class CircBuffer {
 public:
 
-    explicit CircBuffer(size_t buffer_cap=0) : m_in(0), m_out(0), mk_in(0), mk_out(0) {
+    CircBuffer(size_t buffer_cap=100) : m_in(0), m_out(0), mk_in(0), mk_out(0) {
         capacity = buffer_cap;
-        buffer = new T[capacity];
+        if(buffer_cap >0){
+            buffer = new T[capacity];
+            allocatedMemory = true;
+        }
     }
 
     template <typename U = T>
@@ -20,6 +24,7 @@ public:
 
         capacity = rhs_cbuff.get_capacity();
         buffer = new T[capacity];
+        allocatedMemory = true;
 
         mk_in = rhs_cbuff.get_push_count();
         mk_out = rhs_cbuff.get_pop_count();
@@ -44,7 +49,13 @@ public:
         mk_out = 0;
 
         capacity = vec.size();
+
+        if(buffer != nullptr && allocatedMemory){
+            delete[]buffer;
+            allocatedMemory = false;
+        }
         buffer = new T[capacity];
+        allocatedMemory = true;
 
         for (size_t i=0;i<capacity;i++){
             buffer[i] = vec[i];
@@ -52,7 +63,9 @@ public:
     }
 
     ~CircBuffer(){
-        delete[]buffer;
+        if(buffer != nullptr && allocatedMemory){
+            delete[]buffer;
+        }
     }
 
     void push(T pItem){
@@ -160,15 +173,37 @@ public:
     }
 
     std::vector<T> to_vector(){
-        std::vector<T> ret_vec;
+        std::vector<T> out_vec;
 
         if(not this->check_filled()){
 
             for(int ii=0;ii<m_in;ii++){
-                ret_vec.push_back(buffer[ii]);
+                out_vec.push_back(buffer[ii]);
             }
         }
-        return ret_vec;
+        return out_vec;
+    }
+
+    template <typename U = T>
+    void from_vector(const std::vector<U> & in_vec){
+        m_in = in_vec.size()-1;
+        mk_in = in_vec.size();
+        m_out = 0;
+        mk_out = 0;
+
+        capacity = in_vec.size();
+
+        if(buffer != nullptr && allocatedMemory){
+            delete[]buffer;
+            allocatedMemory = false;
+        }
+
+        buffer = new T[capacity];
+        allocatedMemory = true;
+
+        for (size_t i=0;i<capacity;i++){
+            buffer[i] = in_vec[i];
+        }
     }
 
     size_t skip(size_t num_skip = 1){
@@ -215,6 +250,7 @@ private:
     T *buffer;
     bool overflow = false;
     bool underflow = true;
+    bool allocatedMemory = false;
     size_t m_in;    // holds circular 'in' index
     size_t m_out;   // holds circular 'out' index
 

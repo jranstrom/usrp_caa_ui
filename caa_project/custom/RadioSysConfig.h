@@ -27,10 +27,11 @@ namespace RSC{
     	std::string ANT;
     	std::string CH 					= "0";
     	std::string File;
-    	std::string REF_Source;    	
-    	std::string PPS_Source;
-    	double SamplingRate;
-    	double CarrierFrequency;
+        std::string REF_Source = "external";
+        std::string PPS_Source = "external";
+        std::string IP_Address = "192.168.0.1";
+        double SamplingRate = 10e3;
+        double CarrierFrequency = -1;
     	double Gain;
     	double FILT_BW;
     	double RX_LO_Offset;
@@ -102,8 +103,86 @@ class RadioSysConfig {
 		void SetrxUSRP_IPaddress(std::string ip_address);
 		void SettxUSRP_IPaddress(std::string ip_address);
 
-        std::string GetrxUSRP_IPaddress() { return rxUSRP_IPaddress;}
-        std::string GettxUSRP_IPaddress() { return txUSRP_IPaddress;}
+        double getTxCarrierFrequency() {return tx.CarrierFrequency;}
+        double getRxCarrierFrequency() {return rx.CarrierFrequency;}
+        void setTxCarrierFrequency(double value){
+            if(tx.CarrierFrequency != value){
+                tx.CarrierFrequency = value;
+            }
+        }
+        void setRxCarrierFrequency(double value){
+            if(rx.CarrierFrequency != value){
+                rx.CarrierFrequency = value;
+            }
+        }
+
+        double getTxGain() {return tx.Gain;}
+        double getRxGain() {return rx.Gain;}
+        void setTxGain(double value){
+            if(tx.Gain != value){
+                tx.Gain = value;
+            }
+        }
+        void setRxGain(double value){
+            if(rx.Gain != value){
+                rx.Gain = value;
+            }
+        }
+
+        double getTxSamplingRate() {return tx.SamplingRate;}
+        double getRxSamplingRate() {return rx.SamplingRate;}
+        void setTxSamplingRate(double value){
+            if(tx.SamplingRate != value){
+                tx.SamplingRate = value;
+            }
+        }
+        void setRxSamplingRate(double value){
+            if(rx.SamplingRate != value){
+                rx.SamplingRate = value;
+            }
+        }
+
+        std::string getTxIPAddress() {return tx.IP_Address;}
+        std::string getRxIPAddress() {return rx.IP_Address;}
+        void setTxIPAddress(std::string value){
+            if(tx.IP_Address != value){
+                tx.IP_Address = value;
+            }
+        }
+        void setRxIPAddress(std::string value){
+            if(rx.IP_Address != value){
+                rx.IP_Address = value;
+            }
+        }
+
+        std::string getTxREFSource() {return tx.REF_Source;}
+        std::string getRxREFSource() {return rx.REF_Source;}
+        void setTxREFSource(std::string value){
+            if(tx.REF_Source != value){
+                tx.REF_Source = value;
+            }
+        }
+        void setRxREFSource(std::string value){
+            if(rx.REF_Source != value){
+                rx.REF_Source = value;
+            }
+        }
+
+        std::string getTxPPSSource() {return tx.PPS_Source;}
+        std::string getRxPPSSource() {return rx.PPS_Source;}
+        void setTxPPSSource(std::string value){
+            if(tx.PPS_Source != value){
+                tx.PPS_Source = value;
+            }
+        }
+        void setRxPPSSource(std::string value){
+            if(rx.PPS_Source != value){
+                rx.PPS_Source = value;
+            }
+        }
+
+        std::string GetrxUSRP_IPaddress() { return "addr=" + getRxIPAddress();}
+        std::string GettxUSRP_IPaddress() { return "addr=" + getTxIPAddress();}
 
         std::string GetCleanRX_IPaddress() {return rxUSRP_IPaddress.substr(5);}
         std::string GetCleanTX_IPaddress() {return txUSRP_IPaddress.substr(5);}

@@ -2,6 +2,8 @@
 #define UIOBJ_H
 
 #include <QObject>
+#include "custom/radiosysobject.h"
+#include "custom/RadioSysConfig.h"
 
 class uiobj : public QObject
 {
@@ -12,16 +14,72 @@ public:
     bool txSetupStatus() const {return tx_setup_complete;}
     bool rxSetupStatus() const {return rx_setup_complete;}
 
+    // Snippet Generated "uio_property"
+
+    double getTxCarrierFrequency(){return radObj->sysConf.getTxCarrierFrequency();}
+    double getRxCarrierFrequency(){return radObj->sysConf.getRxCarrierFrequency();}
+
+    void setTxCarrierFrequency(double value);
+    void setRxCarrierFrequency(double value);
+
+    double getTxGain(){return radObj->sysConf.getTxGain();}
+    double getRxGain(){return radObj->sysConf.getRxGain();}
+
+    void setTxGain(double value);
+    void setRxGain(double value);
+
+    std::string getTxIPAddress(){return radObj->sysConf.getTxIPAddress();}
+    std::string getRxIPAddress(){return radObj->sysConf.getRxIPAddress();}
+
+    void setTxIPAddress(std::string value);
+    void setRxIPAddress(std::string value);
+
+    std::string getTxREFSource(){return radObj->sysConf.getTxREFSource();}
+    std::string getRxREFSource(){return radObj->sysConf.getRxREFSource();}
+
+    void setTxREFSource(std::string value);
+    void setRxREFSource(std::string value);
+
+    std::string getTxPPSSource(){return radObj->sysConf.getTxPPSSource();}
+    std::string getRxPPSSource(){return radObj->sysConf.getRxPPSSource();}
+
+    void setTxPPSSource(std::string value);
+    void setRxPPSSource(std::string value);
+
+    //
+
+
     void setTransmissionInProgress(bool value);
     void setTxSetupStatus(bool value);
     void setRxSetupStatus(bool value);
 
+    void setRadioSysObject(RadioSysObject *RadObj);
+
+    void ForceUpdateAll();
+
 signals:
+    void txCarrierFrequencyChanged(bool status);
+    void rxCarrierFrequencyChanged(bool status);
+    void txGainChanged(bool status);
+    void rxGainChanged(bool status);
+    void txIPAddressChanged(bool status);
+    void rxIPAddressChanged(bool status);
+    void txREFSourceChanged(bool status);
+    void rxREFSourceChanged(bool status);
+    void txPPSSourceChanged(bool status);
+    void rxPPSSourceChanged(bool status);
+
     void transmissionStatusChanged(bool in_progress);
     void txSetupStatusChanged(bool isComplete);
     void rxSetupStatusChanged(bool isComplete);
 
 private:
+
+    RadioSysObject * radObj;
+
+    double tx_carrier_frequency = -1;
+    double rx_carrier_frequency = -1;
+
     bool transmission_in_progress = false;
     bool tx_setup_complete = false;
     bool rx_setup_complete = false;
