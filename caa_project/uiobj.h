@@ -48,8 +48,12 @@ public:
 
     //
 
+    void txUSRPConfigurationChanged(bool val);
+    void rxUSRPConfigurationChanged(bool val);
 
     void setTransmissionInProgress(bool value);
+    void setReceptionInProgress(bool value);
+
     void setTxSetupStatus(bool value);
     void setRxSetupStatus(bool value);
 
@@ -69,7 +73,10 @@ signals:
     void txPPSSourceChanged(bool status);
     void rxPPSSourceChanged(bool status);
 
+    void USRPConfigurationChanged(bool status);
+
     void transmissionStatusChanged(bool in_progress);
+    void receptionStatusChanged(bool in_progress);
     void txSetupStatusChanged(bool isComplete);
     void rxSetupStatusChanged(bool isComplete);
 
@@ -81,6 +88,7 @@ private:
     double rx_carrier_frequency = -1;
 
     bool transmission_in_progress = false;
+    bool reception_in_progress = false;
     bool tx_setup_complete = false;
     bool rx_setup_complete = false;
 };

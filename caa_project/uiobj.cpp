@@ -18,7 +18,7 @@ void uiobj::setTxCarrierFrequency(double value)
     if(force_update || value != radObj->sysConf.getTxCarrierFrequency()){
         radObj->sysConf.setTxCarrierFrequency(value);
 
-        this->setTxSetupStatus(false);
+        txUSRPConfigurationChanged(true);
         emit txCarrierFrequencyChanged(value);
     }
 }
@@ -37,7 +37,7 @@ void uiobj::setRxCarrierFrequency(double value)
     if(force_update || value != radObj->sysConf.getRxCarrierFrequency()){
         radObj->sysConf.setRxCarrierFrequency(value);
 
-        this->setRxSetupStatus(false);
+        rxUSRPConfigurationChanged(true);
         emit rxCarrierFrequencyChanged(value);
     }
 }
@@ -55,7 +55,7 @@ void uiobj::setTxGain(double value)
 
     if(force_update || value != radObj->sysConf.getTxGain()){
         radObj->sysConf.setTxGain(value);
-        this->setTxSetupStatus(false);
+        txUSRPConfigurationChanged(true);
         emit txGainChanged(true);
     }
 }
@@ -73,7 +73,7 @@ void uiobj::setRxGain(double value)
 
     if(force_update || value != radObj->sysConf.getRxGain()){
         radObj->sysConf.setRxGain(value);
-        this->setRxSetupStatus(false);
+        rxUSRPConfigurationChanged(true);
         emit rxGainChanged(true);
     }
 }
@@ -82,7 +82,7 @@ void uiobj::setTxIPAddress(std::string value)
 {
     if(radObj->sysConf.getTxIPAddress() != value){
         radObj->sysConf.setTxIPAddress(value);
-        this->setTxSetupStatus(false);
+        txUSRPConfigurationChanged(true);
         emit txIPAddressChanged(true);
     }
 }
@@ -91,7 +91,7 @@ void uiobj::setRxIPAddress(std::string value)
 {
     if(radObj->sysConf.getRxIPAddress() != value){
         radObj->sysConf.setRxIPAddress(value);
-        this->setRxSetupStatus(false);
+        rxUSRPConfigurationChanged(true);
         emit rxIPAddressChanged(true);
     }
 }
@@ -100,7 +100,7 @@ void uiobj::setTxREFSource(std::string value)
 {
     if(radObj->sysConf.getTxREFSource() != value){
         radObj->sysConf.setTxREFSource(value);
-        this->setTxSetupStatus(false);
+        txUSRPConfigurationChanged(true);
         emit txREFSourceChanged(true);
     }
 }
@@ -109,7 +109,7 @@ void uiobj::setRxREFSource(std::string value)
 {
     if(radObj->sysConf.getRxREFSource() != value){
         radObj->sysConf.setRxREFSource(value);
-        this->setRxSetupStatus(false);
+        rxUSRPConfigurationChanged(true);
         emit rxREFSourceChanged(true);
     }
 }
@@ -118,7 +118,7 @@ void uiobj::setTxPPSSource(std::string value)
 {
     if(radObj->sysConf.getTxPPSSource() != value){
         radObj->sysConf.setTxPPSSource(value);
-        this->setTxSetupStatus(false);
+        txUSRPConfigurationChanged(true);
         emit txPPSSourceChanged(true);
     }
 }
@@ -132,6 +132,18 @@ void uiobj::setRxPPSSource(std::string value)
     }
 }
 
+void uiobj::txUSRPConfigurationChanged(bool val)
+{
+    radObj->setTxUSRPConfigured(false);
+    emit USRPConfigurationChanged(true);
+}
+
+void uiobj::rxUSRPConfigurationChanged(bool val)
+{
+    radObj->setRxUSRPConfigured(false);
+    emit USRPConfigurationChanged(true);
+}
+
 void uiobj::setTransmissionInProgress(bool value)
 {
     if(value != transmission_in_progress){
@@ -140,20 +152,28 @@ void uiobj::setTransmissionInProgress(bool value)
     }
 }
 
+void uiobj::setReceptionInProgress(bool value)
+{
+    if(value != reception_in_progress){
+        reception_in_progress = value;
+        emit receptionStatusChanged(value);
+    }
+}
+
 void uiobj::setTxSetupStatus(bool value)
 {
-    //if(value != radObj->txUSRPSetup){
-        radObj->txUSRPSetup = value;
-        emit txSetupStatusChanged(value);
-    //}
+    radObj->txUSRPSetup = value;
+    emit txSetupStatusChanged(value);
+    radObj->setTxUSRPConfigured(false);
+    txUSRPConfigurationChanged(true);
 }
 
 void uiobj::setRxSetupStatus(bool value)
 {
-    if(value != radObj->rxUSRPSetup){
-        radObj->rxUSRPSetup = value;
-        emit rxSetupStatusChanged(value);
-    }
+    radObj->rxUSRPSetup = value;
+    emit rxSetupStatusChanged(value);
+    radObj->setRxUSRPConfigured(false);
+    rxUSRPConfigurationChanged(true);
 }
 
 void uiobj::setRadioSysObject(RadioSysObject *RadObj)
@@ -174,4 +194,6 @@ void uiobj::ForceUpdateAll()
     emit rxIPAddressChanged(true);
     emit rxREFSourceChanged(true);
     emit rxPPSSourceChanged(true);
+
+    rxUSRPConfigurationChanged(true);
 }

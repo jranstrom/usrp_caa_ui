@@ -19,10 +19,31 @@ public:
     bool startTransmission();
     bool startReception();
 
-    bool isTransmitting();
+    bool stopTransmission();
+    bool stopReception();
 
-    void setupTxUSRP();
-    void setupRxUSRP();
+    bool isTransmitting();
+    bool isReceiving();
+
+    bool isProcessingTxSetup() {return txSetupInProgress;}
+    bool isProcessingRxSetup() {return rxSetupInProgress;}
+
+    bool isTxUSRPConfigured() {return txUSRPConfigured;}
+    void setTxUSRPConfigured(bool value){
+        if(value != txUSRPConfigured){
+            txUSRPConfigured = value;
+        }
+    }
+
+    bool isRxUSRPConfigured() {return rxUSRPConfigured;}
+    void setRxUSRPConfigured(bool value){
+        if(value != rxUSRPConfigured){
+            rxUSRPConfigured = value;
+        }
+    }
+
+    void requestTxUSRPSetup();
+    void requestRxUSRPSetup();
 
     RadioSysConfig sysConf = RadioSysConfig();
 
@@ -30,8 +51,19 @@ public:
     bool rxUSRPSetup = false;
 
 private:
+    std::mutex recv_mutex;
+
     void runTransmissionThread();
     void runReceptionThread();
+
+    void setupTxUSRP();
+    void setupRxUSRP();
+
+    bool txSetupInProgress = false;
+    bool rxSetupInProgress = false;
+
+    bool txUSRPConfigured = false;
+    bool rxUSRPConfigured = false;
 
     bool TransmissionInProgress = false;
     bool ReceptionInProgress = false;
@@ -44,10 +76,13 @@ private:
 
     //CircBuffer<std::complex<short>> * txSignalBuffer;
     CircBuffer<std::complex<short>> txSignalBuffer;
+    CircBuffer<std::complex<short>> rxSignalBuffer;
 
     double timeOffset = 0.0;
 
     bool stop_signal_called = false;
+    bool stop_transmit_signal_called = false;
+    bool stop_reception_signal_called = false;
 
 };
 

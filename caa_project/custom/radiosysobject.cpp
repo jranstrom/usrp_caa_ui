@@ -170,12 +170,14 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
 
 void RadioSysObject::StopAll()
 {
-    std::cout << "Transmission in progress: " << TransmissionInProgress << std::endl;
-    stop_signal_called = true;
+    //std::cout << "Transmission in progress: " << TransmissionInProgress << std::endl;
+    stop_transmit_signal_called = true;
+    stop_reception_signal_called = true;
     std::this_thread::sleep_for(1s);
-    stop_signal_called = false;
+    stop_transmit_signal_called = false;
+    stop_reception_signal_called = false;
     std::cout << "Terminated All" <<std::endl;
-    std::cout << "Transmission in progress: " << TransmissionInProgress << std::endl;
+    //std::cout << "Transmission in progress: " << TransmissionInProgress << std::endl;
 }
 
 bool RadioSysObject::startTransmission()
@@ -198,7 +200,35 @@ bool RadioSysObject::startTransmission()
 
 bool RadioSysObject::startReception()
 {
+    if(ReceptionInProgress || !rxUSRPSetup){
+        return false;
+    }
+
+    std::cout << "Starting reception..." << std::endl;
+
+    rxSignalBuffer.reset_buffer();
+
+    std::thread rxThread(&RadioSysObject::runReceptionThread,this);
+
+    rxThread.detach();
+
     return true;
+}
+
+bool RadioSysObject::stopTransmission()
+{
+    stop_transmit_signal_called = true;
+    std::this_thread::sleep_for(1s);
+    stop_transmit_signal_called = false;
+    std::cout << "Transmission in progress: " << isTransmitting() << std::endl;
+}
+
+bool RadioSysObject::stopReception()
+{
+    stop_reception_signal_called = true;
+    std::this_thread::sleep_for(1s);
+    stop_reception_signal_called = false;
+    std::cout << "Reception in progress: " << isReceiving() << std::endl;
 }
 
 bool RadioSysObject::isTransmitting()
@@ -206,10 +236,41 @@ bool RadioSysObject::isTransmitting()
     return TransmissionInProgress;
 }
 
+bool RadioSysObject::isReceiving()
+{
+    return ReceptionInProgress;
+}
+
+void RadioSysObject::requestTxUSRPSetup()
+{
+    txSetupInProgress = true;
+    rxUSRPConfigured = false;
+    if(!isTransmitting()){
+        std::thread txSetupThread(&RadioSysObject::setupTxUSRP,this);
+
+        txSetupThread.detach();
+    }else{
+        txSetupInProgress = false;
+    }
+}
+
+void RadioSysObject::requestRxUSRPSetup()
+{
+    rxSetupInProgress = true;
+    rxUSRPConfigured = false;
+    if(!isReceiving()){
+        std::thread rxSetupThread(&RadioSysObject::setupRxUSRP,this);
+
+        rxSetupThread.detach();
+    }else{
+        rxSetupInProgress = false;
+    }
+}
+
+
+
 void RadioSysObject::setupTxUSRP()
 {
-    txUSRPSetup = false;
-
     std::cout << sysConf.GettxUSRP_IPaddress() << std::endl;
 
     tx_usrp = uhd::usrp::multi_usrp::make(sysConf.GettxUSRP_IPaddress());
@@ -294,13 +355,12 @@ void RadioSysObject::setupTxUSRP()
         }
     }
 
-    txUSRPSetup = true;
+    txUSRPConfigured = true;
+    txSetupInProgress = false;
 }
 
 void RadioSysObject::setupRxUSRP()
 {
-    rxUSRPSetup = false;
-
     std::cout << sysConf.getRxIPAddress() << std::endl;
 
     rx_usrp = uhd::usrp::multi_usrp::make(sysConf.GetrxUSRP_IPaddress());
@@ -390,7 +450,8 @@ void RadioSysObject::setupRxUSRP()
         }
     }
 
-    rxUSRPSetup = true;
+    rxUSRPConfigured = true;
+    rxSetupInProgress = false;
 
 }
 
@@ -410,7 +471,7 @@ void RadioSysObject::runTransmissionThread()
 
     std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
     std::chrono::milliseconds delay(100);
-    std::chrono::system_clock::time_point targetTime = currentTime + delay;
+    //std::chrono::system_clock::time_point targetTime = currentTime + delay;
 
     bool continous_stream   = true;
 
@@ -424,7 +485,7 @@ void RadioSysObject::runTransmissionThread()
         time_offset = -1*time_offset;
     }
 
-    uhd::time_spec_t c_time = tx_usrp->get_time_now(0);
+    //uhd::time_spec_t c_time = tx_usrp->get_time_now(0);
     md.time_spec      = uhd::time_spec_t(3+time_offset);
     md.has_time_spec  = false;
     using samp_type = std::complex<short>;
@@ -434,7 +495,7 @@ void RadioSysObject::runTransmissionThread()
     if (channel_nums.size() == 1) {
         std::vector<std::complex<short>> buff(samps_per_buff);
         bool file_read = false;
-        while(not stop_signal_called and (continous_stream or not file_read)){
+        while(not stop_transmit_signal_called and (continous_stream or not file_read)){
 
             for(int ik=0;ik<samps_per_buff;ik++){
                 txSignalBuffer.circ_pop(&c_smpl);
@@ -459,4 +520,122 @@ void RadioSysObject::runTransmissionThread()
     }
     std::cout << "Transmission thread terminated..." << std::endl;
     TransmissionInProgress = false;
+}
+
+void RadioSysObject::runReceptionThread()
+{
+    ReceptionInProgress = true;
+
+    int max_num_smpls = 0;
+
+    double time_offset = timeOffset;
+
+    uhd::stream_args_t stream_args(sysConf.confFile.cpu_format,sysConf.confFile.wirefmt);
+    uhd::rx_streamer::sptr rx_stream = rx_usrp->get_rx_stream(stream_args);
+
+    uhd::rx_metadata_t md;
+    md.has_time_spec = false;
+    //uhd::time_spec_t c_time = rx_usrp->get_time_now(0);
+    md.time_spec = uhd::time_spec_t(3+time_offset);
+
+    using samp_type = std::complex<short>;
+
+    size_t samps_per_buff = sysConf.rx.BufferSize;
+
+    samp_type* buff;
+    bool buff_Allocated = false;
+    try{
+        buff = new samp_type[samps_per_buff];
+        buff_Allocated = true;
+    }catch(std::bad_alloc& exc){
+        UHD_LOGGER_ERROR("UHD")
+            << "Bad memory allocation. "
+               "Try a smaller samples per buffer setting or free up additional memory";
+        ReceptionInProgress = false;
+        std::exit(EXIT_FAILURE);
+    }
+
+    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
+    stream_cmd.num_samps = size_t(0);
+    stream_cmd.stream_now = 1;
+    //usrp->set_time_now(uhd::time_spec_t(0.0),0);
+    stream_cmd.time_spec = uhd::time_spec_t(3+time_offset);
+    rx_stream->issue_stream_cmd(stream_cmd);
+
+    size_t tot_num_smpls = 0;
+
+    std::vector<double> ic_time_stamp;;
+    double last_time_stamp = 0.0;
+
+    size_t k = 0;
+    while(not stop_reception_signal_called and (tot_num_smpls < max_num_smpls or max_num_smpls == 0)){
+        //const auto now = std::chrono::steady_clock::now();
+        size_t num_rx_samps =
+            rx_stream->recv(buff,samps_per_buff,md,5.1,false);
+
+        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
+            std::cout << std::endl
+                      << "Timeout while streaming" << std::endl;
+            if(buff_Allocated){
+                delete[] buff;
+                buff_Allocated = false;
+                ReceptionInProgress = false;
+            }
+            break;
+        }
+
+        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_OVERFLOW) {
+            const std::lock_guard<std::mutex> lock(recv_mutex);
+                std::cerr
+                    << boost::format(
+                           "Got an overflow indication. Please consider the following:\n"
+                           "  Your write medium must sustain a rate of %0.3fMB/s.\n"
+                           "  Dropped samples will not be written to the file.\n"
+                           "  Please modify this example for your purposes.\n"
+                           "  This message will not appear again.\n")
+                           % (sysConf.rx.SamplingRate*sizeof(samp_type) / 1e6);
+            continue;
+        }
+
+        bool continue_on_bad_packet = true;
+        if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE) {
+            const std::lock_guard<std::mutex> lock(recv_mutex);
+            std::string error = "Receiver error: " + md.strerror();
+            if (continue_on_bad_packet) {
+                std::cerr << error << std::endl;
+                continue;
+            } else
+                if(buff_Allocated){
+                    delete[] buff;
+                    buff_Allocated = false;
+                    ReceptionInProgress = false;
+                }
+                throw std::runtime_error(error);
+        }
+
+        // double c_time_stamp = time_spec2double(md.time_spec);
+        // if(k > 0){
+        //     double time_diff = std::round(sample_rate*(c_time_stamp-last_time_stamp));
+        //     if (abs(abs(time_diff)-samps_per_buff) > 0){
+        //         ic_time_stamp.push_back(time_diff);
+        //     }
+        // }
+
+        // last_time_stamp = c_time_stamp;
+
+        ++k;
+
+        for(size_t smpl_i = 0;smpl_i<samps_per_buff;smpl_i++){
+            rxSignalBuffer.push(buff[smpl_i]);
+        }
+
+        tot_num_smpls += num_rx_samps;
+    }
+
+    if(buff_Allocated){
+        delete[] buff;
+        buff_Allocated = false;
+        ReceptionInProgress = false;
+    }
+
 }

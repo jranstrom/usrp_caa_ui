@@ -13,6 +13,8 @@ mainGUI::mainGUI(QWidget *parent)
     ui->setupUi(this);    
 
     connect(&uio, &uiobj::transmissionStatusChanged, this, &mainGUI::updateTransmitStatus);
+    connect(&uio, &uiobj::receptionStatusChanged,this,&mainGUI::updateReceiveStatus);
+
     connect(&uio,&uiobj::rxSetupStatusChanged,this,&mainGUI::updateRxSetupStatus);
     connect(&uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateTxSetupStatus);
 
@@ -31,6 +33,11 @@ mainGUI::mainGUI(QWidget *parent)
     connect(&uio,&uiobj::txREFSourceChanged,this,&mainGUI::updateTxREFSource);
     connect(&uio,&uiobj::rxREFSourceChanged,this,&mainGUI::updateRxREFSource);
 
+    connect(&uio,&uiobj::USRPConfigurationChanged,this,&mainGUI::onUSRPConfigurationChanged);
+    //connect(&uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateUSRPSetupChanged);
+
+    connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_USRP_setup);
+
     processingTimer.setInterval(500);
     processingTimer.setSingleShot(false);
     processingTimer.start();
@@ -43,12 +50,28 @@ mainGUI::mainGUI(QWidget *parent)
 
 void mainGUI::updateTransmitStatus(bool status){
     if(status){
+        addStatusUpdate("Transmission Initialized",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_tx_in_progress,9433252);
         transmissionStartTime = QDateTime::currentDateTime();
-        connect(&processingTimer, &QTimer::timeout, this, &mainGUI::updateTransmissionDuration);
+        connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackTransmissionProcess);
     }else{
+        addStatusUpdate("Transmission terminated",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_tx_in_progress,16146769);
-        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::updateTransmissionDuration);
+        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackTransmissionProcess);
+    }
+}
+
+void mainGUI::updateReceiveStatus(bool status)
+{
+    if(status){
+        addStatusUpdate("Reception Initialized",ui->tableWidget_status);
+        SetWidgetColor(ui->indicator_rx_in_progress,9433252);
+        receptionStartTime = QDateTime::currentDateTime();
+        connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackReceptionProcess);
+    }else{
+        addStatusUpdate("Reception terminated",ui->tableWidget_status);
+        SetWidgetColor(ui->indicator_rx_in_progress,16146769);
+        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackReceptionProcess);
     }
 }
 
@@ -203,7 +226,7 @@ void mainGUI::on_button_tx_test_connection_released()
     SetWidgetColor(ui->indicator_tx_connection,9433252);
 }
 
-void mainGUI::updateTransmissionDuration()
+void mainGUI::trackTransmissionProcess()
 {
     QDateTime currentDateTime = QDateTime::currentDateTime();
     int diff_seconds = transmissionStartTime.secsTo(currentDateTime);
@@ -217,6 +240,54 @@ void mainGUI::updateTransmissionDuration()
     QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
 
     ui->label_tx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
+}
+
+void mainGUI::trackReceptionProcess()
+{
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    int diff_seconds = receptionStartTime.secsTo(currentDateTime);
+
+    int hours = diff_seconds / 3600;
+    int minutes = (diff_seconds % 3600) / 60;
+    int seconds = diff_seconds % 60;
+
+    QString hours_ = QString("%1").arg(hours, 2, 10, QChar('0'));
+    QString minutes_ = QString("%1").arg(minutes, 2, 10, QChar('0'));
+    QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
+
+    ui->label_rx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
+}
+
+void mainGUI::updateUSRPSetupChanged(bool val)
+{
+    // Configuration is complete
+    if(val && radObj->isRxUSRPConfigured() && radObj->isTxUSRPConfigured()){
+        std::cout << "configuation complete" << std::endl;
+    }else{
+        std::cout << "configuation incomplete" << std::endl;
+    }
+}
+
+void mainGUI::onUSRPConfigurationChanged(bool val)
+{
+    if(radObj->isProcessingTxSetup() || radObj->isProcessingRxSetup()){
+        usrpSetupInterrupted = true;
+    }
+    // if(val){
+    //     radObj->setRxUSRPConfigured(false);
+    //     radObj->setTxUSRPConfigured(false);
+    //     SetWidgetColor(ui->indicator_configuration_set,16146769);
+    // }
+}
+
+void mainGUI::updateTxUSRPSetupStatus(bool val)
+{
+
+}
+
+void mainGUI::updateRxUSRPSetupStatus(bool val)
+{
+
 }
 
 void mainGUI::on_buttonGroup_tx_pps_buttonClicked(int val)
@@ -255,11 +326,9 @@ void mainGUI::on_buttonGroup_rx_ref_buttonClicked(int val)
     }
 }
 
-
-
 void mainGUI::on_button_load_cfg_released()
 {
-    if(radObj->readConfigFile()){
+    if(radObj->readConfigFile((ui->lineEdit_cfg_file->text()).toStdString())){
         //SetWidgetColor(ui->button_load_cfg,9433252);
 
 
@@ -293,12 +362,10 @@ void mainGUI::on_button_load_cfg_released()
     }
 }
 
-
 void mainGUI::on_vslider_tx_gain_valueChanged(int value)
 {
     uio.setTxGain(value);
 }
-
 
 void mainGUI::on_lineEdit_tx_gain_textEdited(const QString &arg1)
 {
@@ -306,19 +373,16 @@ void mainGUI::on_lineEdit_tx_gain_textEdited(const QString &arg1)
     uio.setTxGain(tx_gain);
 }
 
-
 void mainGUI::on_vslider_rx_gain_valueChanged(int value)
 {
     uio.setRxGain(value);
 }
-
 
 void mainGUI::on_lineEdit_rx_gain_textEdited(const QString &arg1)
 {
     double rx_gain = arg1.toDouble();
     uio.setRxGain(rx_gain);
 }
-
 
 void mainGUI::on_hslider_tx_fc_valueChanged(int value)
 {
@@ -333,7 +397,6 @@ void mainGUI::on_lineEdit_tx_fc_editingFinished()
     uio.setTxCarrierFrequency(tx_fc*1e9);
 }
 
-
 void mainGUI::on_lineEdit_rx_fc_editingFinished()
 {
     QString arg1 = ui->lineEdit_rx_fc->text();
@@ -342,12 +405,10 @@ void mainGUI::on_lineEdit_rx_fc_editingFinished()
     uio.setRxCarrierFrequency(rx_fc*1e9);
 }
 
-
 void mainGUI::on_hslider_rx_fc_valueChanged(int value)
 {
     uio.setRxCarrierFrequency(value*1e6);
 }
-
 
 void mainGUI::applyTxConfig()
 {
@@ -364,25 +425,51 @@ void mainGUI::applyRxConfig()
 void mainGUI::on_button_apply_config_released()
 {
     addStatusUpdate("Initalized USRP Configuration",ui->tableWidget_status);
-    ui->button_apply_config->setEnabled(false);
+    usrpSetupInterrupted = false;
+    pendingConfigurationRequest = true;
 
-    connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_USRP_setup);
-
-    radObj->setupTxUSRP();
-    radObj->setupRxUSRP();
-
-    uio.setTxSetupStatus(true);
-    uio.setRxSetupStatus(true);
-
+    radObj->requestTxUSRPSetup();
+    radObj->requestRxUSRPSetup();
 }
 
 void mainGUI::processing_USRP_setup()
 {
-    std::cout << "Triggered!" << std::endl;
-    if(radObj->rxUSRPSetup && radObj->txUSRPSetup){
-        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_USRP_setup);
-        addStatusUpdate("Finished USRP Configuration",ui->tableWidget_status);
+    bool allSetup = true;
+    if(not radObj->isProcessingTxSetup() && not radObj->isProcessingRxSetup()){
+        if(radObj->isTxUSRPConfigured() && not usrpSetupInterrupted){
+
+        }else{
+            allSetup = false;
+        }
+
+        if(radObj->isRxUSRPConfigured() && not usrpSetupInterrupted){
+
+        }else{
+            allSetup = false;
+        }
+
+        if(allSetup){
+            SetWidgetColor(ui->indicator_configuration_set,9433252); // Green indicator
+            ui->button_receive->setEnabled(true);
+            ui->button_transmit->setEnabled(true);
+            if(pendingConfigurationRequest){
+                addStatusUpdate("Success configurating USRPs",ui->tableWidget_status);
+                pendingConfigurationRequest = false;
+            }
+        }else{
+            SetWidgetColor(ui->indicator_configuration_set,16146769); // Red indicator
+            ui->button_receive->setEnabled(false);
+            ui->button_transmit->setEnabled(false);
+            if(pendingConfigurationRequest){
+                addStatusUpdate("Failed configurating USRPs",ui->tableWidget_status);
+                pendingConfigurationRequest = false;
+            }
+        }
+
         ui->button_apply_config->setEnabled(true);
+    }else{
+       SetWidgetColor(ui->indicator_configuration_set,16380011); // Yellow indicator
+        ui->button_apply_config->setEnabled(false);
     }
 }
 
@@ -391,8 +478,6 @@ void mainGUI::on_button_transmit_released()
 {
     radObj->startTransmission();
     uio.setTransmissionInProgress(true);
-    addStatusUpdate("Transmission Initialized",ui->tableWidget_status);
-
 }
 
 
@@ -409,10 +494,8 @@ void mainGUI::on_button_load_data_released()
 
 void mainGUI::on_button_tx_stop_released()
 {
-    radObj->StopAll();
+    radObj->stopTransmission();
     uio.setTransmissionInProgress(false);
-    addStatusUpdate("Transmission terminated",ui->tableWidget_status);
-
 }
 
 
@@ -424,8 +507,12 @@ void mainGUI::on_button_apply_config_clicked()
 
 void mainGUI::on_button_save_cf_released()
 {
-    radObj->writeConfigFile();
-    addStatusUpdate("Configuration saved",ui->tableWidget_status);
+    if(radObj->writeConfigFile((ui->lineEdit_cfg_file->text()).toStdString())){
+        addStatusUpdate("Success saving configuration",ui->tableWidget_status);
+    }else{
+        addStatusUpdate("Error saving configuration",ui->tableWidget_status);
+    }
+
 
 }
 
@@ -439,5 +526,21 @@ void mainGUI::on_lineEdit_tx_ip_editingFinished()
 void mainGUI::on_lineEdit_rx_ip_editingFinished()
 {
     uio.setRxIPAddress((ui->lineEdit_rx_ip->text()).toStdString());
+}
+
+
+void mainGUI::on_button_receive_released()
+{
+    radObj->startReception();
+    uio.setReceptionInProgress(true);
+
+}
+
+
+void mainGUI::on_button_rx_stop_released()
+{
+    radObj->stopReception();
+    uio.setReceptionInProgress(false);
+
 }
 

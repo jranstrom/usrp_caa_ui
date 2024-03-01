@@ -11,7 +11,7 @@ template <class T>
 class CircBuffer {
 public:
 
-    CircBuffer(size_t buffer_cap=100) : m_in(0), m_out(0), mk_in(0), mk_out(0) {
+    CircBuffer(size_t buffer_cap=1e8) : m_in(0), m_out(0), mk_in(0), mk_out(0) {
         capacity = buffer_cap;
         if(buffer_cap >0){
             buffer = new T[capacity];

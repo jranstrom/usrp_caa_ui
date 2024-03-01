@@ -39,6 +39,7 @@ public:
     void updateRxREFSource(bool status);
 
     void updateTransmitStatus(bool status);
+    void updateReceiveStatus(bool status);
     void updateTxSetupStatus(bool status);
     void updateRxSetupStatus(bool status);
 
@@ -48,7 +49,14 @@ private slots:
     void on_button_rx_test_connection_released();
     void on_button_tx_test_connection_released();
 
-    void updateTransmissionDuration();
+    void trackTransmissionProcess();
+    void trackReceptionProcess();
+
+    void updateUSRPSetupChanged(bool val);
+    void onUSRPConfigurationChanged(bool val);
+
+    void updateTxUSRPSetupStatus(bool val);
+    void updateRxUSRPSetupStatus(bool val);
 
     void on_buttonGroup_tx_pps_buttonClicked(int val);
     void on_buttonGroup_tx_ref_buttonClicked(int val);
@@ -92,13 +100,21 @@ private slots:
 
     void on_lineEdit_rx_ip_editingFinished();
 
+    void on_button_receive_released();
+
+    void on_button_rx_stop_released();
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
 
     QTimer processingTimer;
 
+    bool usrpSetupInterrupted;
+    bool pendingConfigurationRequest = false;
+
     QDateTime transmissionStartTime;
+    QDateTime receptionStartTime;
 
     void SetWidgetColor(QWidget * widg, int colorc);
 
