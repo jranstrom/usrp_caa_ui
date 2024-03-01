@@ -38,11 +38,11 @@ mainGUI::mainGUI(QWidget *parent)
 
     connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_USRP_setup);
 
+    SetWidgetColor(ui->indicator_captured_buffer,16146769);
+
     processingTimer.setInterval(500);
     processingTimer.setSingleShot(false);
     processingTimer.start();
-
-    uio.setTransmissionInProgress(false);
 
     //uio.ForceUpdateAll();
 
@@ -66,6 +66,7 @@ void mainGUI::updateReceiveStatus(bool status)
     if(status){
         addStatusUpdate("Reception Initialized",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_rx_in_progress,9433252);
+        SetWidgetColor(ui->indicator_captured_buffer,16146769); // last capture does not correspond to current
         receptionStartTime = QDateTime::currentDateTime();
         connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackReceptionProcess);
     }else{
@@ -228,6 +229,7 @@ void mainGUI::on_button_tx_test_connection_released()
 
 void mainGUI::trackTransmissionProcess()
 {
+    if(radObj->isTransmitting()){
     QDateTime currentDateTime = QDateTime::currentDateTime();
     int diff_seconds = transmissionStartTime.secsTo(currentDateTime);
 
@@ -240,10 +242,14 @@ void mainGUI::trackTransmissionProcess()
     QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
 
     ui->label_tx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
+    }else{
+        uio.setTransmissionInProgress(false);
+    }
 }
 
 void mainGUI::trackReceptionProcess()
 {
+    if(radObj->isReceiving()){
     QDateTime currentDateTime = QDateTime::currentDateTime();
     int diff_seconds = receptionStartTime.secsTo(currentDateTime);
 
@@ -256,6 +262,21 @@ void mainGUI::trackReceptionProcess()
     QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
 
     ui->label_rx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
+
+    ui->lineEdit_rx_sample_count->setText(QString("%L1").arg(radObj->getRxSampleCount()));
+    }else{
+        uio.setReceptionInProgress(false);
+    }
+}
+
+void mainGUI::trackCaptureBufferProcess()
+{
+    if(not radObj->isWritingBufferToFile()){
+        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
+        addStatusUpdate("Success writing buffer to file",ui->tableWidget_status);
+        ui->button_write_buffer_to_file->setEnabled(true);
+        SetWidgetColor(ui->indicator_captured_buffer,9433252);
+    }
 }
 
 void mainGUI::updateUSRPSetupChanged(bool val)
@@ -542,5 +563,16 @@ void mainGUI::on_button_rx_stop_released()
     radObj->stopReception();
     uio.setReceptionInProgress(false);
 
+}
+
+
+void mainGUI::on_button_write_buffer_to_file_released()
+{
+    ui->button_write_buffer_to_file->setEnabled(false);
+    SetWidgetColor(ui->indicator_captured_buffer,16380011);
+    connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
+    radObj->stopReception();
+    radObj->requestWriteBufferToFile((ui->lineEdit_buffer_file_capture_path->text()).toStdString(),
+                                     ui->spinBox_capture_samples->value()*1e3);
 }
 

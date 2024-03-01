@@ -9,6 +9,9 @@ class RadioSysObject
 {
 public:
     RadioSysObject();
+    ~RadioSysObject(){
+        StopAll();
+    }
     bool readConfigFile(std::string configFilepath ="usrp.cfg");
     bool readConfigSignalFile(std::string filepath ="sys_last_params.mat");
 
@@ -45,6 +48,11 @@ public:
     void requestTxUSRPSetup();
     void requestRxUSRPSetup();
 
+    void requestWriteBufferToFile(std::string completeFilepath,int count=-1);
+    bool isWritingBufferToFile() {return writingBufferInProgress;}
+
+    size_t getRxSampleCount() { return rxSampleCount; }
+
     RadioSysConfig sysConf = RadioSysConfig();
 
     bool txUSRPSetup = false;
@@ -56,11 +64,19 @@ private:
     void runTransmissionThread();
     void runReceptionThread();
 
+    void writeBufferToFile(int count);
+
     void setupTxUSRP();
     void setupRxUSRP();
 
     bool txSetupInProgress = false;
     bool rxSetupInProgress = false;
+
+    std::string rxCaptureFilepath = "rx_capture_buffer.dat";
+
+    bool writingBufferInProgress = false;
+
+    size_t rxSampleCount = 0;
 
     bool txUSRPConfigured = false;
     bool rxUSRPConfigured = false;

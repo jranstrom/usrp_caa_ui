@@ -182,11 +182,11 @@ void RadioSysObject::StopAll()
 
 bool RadioSysObject::startTransmission()
 {
-    if(TransmissionInProgress || !txUSRPSetup){
+    if(TransmissionInProgress){
         return false;
     }
 
-    std::cout << "Starting transmission..." << std::endl;
+    TransmissionInProgress = true;
 
     txSignalBuffer.reset_buffer();
 
@@ -200,11 +200,11 @@ bool RadioSysObject::startTransmission()
 
 bool RadioSysObject::startReception()
 {
-    if(ReceptionInProgress || !rxUSRPSetup){
+    if(ReceptionInProgress){
         return false;
     }
 
-    std::cout << "Starting reception..." << std::endl;
+    ReceptionInProgress = true;
 
     rxSignalBuffer.reset_buffer();
 
@@ -267,7 +267,17 @@ void RadioSysObject::requestRxUSRPSetup()
     }
 }
 
-
+void RadioSysObject::requestWriteBufferToFile(std::string completeFilepath,int count)
+{
+    if(stopReception() && not writingBufferInProgress){
+        writingBufferInProgress = true;
+        rxCaptureFilepath = completeFilepath;
+        std::thread writeBufferThread(&RadioSysObject::writeBufferToFile,this, count);
+        writeBufferThread.detach();
+    }else{
+        return;
+    }
+}
 
 void RadioSysObject::setupTxUSRP()
 {
@@ -527,6 +537,7 @@ void RadioSysObject::runReceptionThread()
     ReceptionInProgress = true;
 
     int max_num_smpls = 0;
+    rxSampleCount = 0;
 
     double time_offset = timeOffset;
 
@@ -626,6 +637,7 @@ void RadioSysObject::runReceptionThread()
         ++k;
 
         for(size_t smpl_i = 0;smpl_i<samps_per_buff;smpl_i++){
+            ++rxSampleCount;
             rxSignalBuffer.push(buff[smpl_i]);
         }
 
@@ -638,4 +650,47 @@ void RadioSysObject::runReceptionThread()
         ReceptionInProgress = false;
     }
 
+}
+
+void RadioSysObject::writeBufferToFile(int count)
+{
+    size_t L = rxSignalBuffer.get_capacity();
+    std::ofstream outfile;
+    outfile.open(rxCaptureFilepath.c_str(),std::ofstream::binary);
+
+    using samp_type = std::complex<short>;
+
+    samp_type* buff;
+    try{
+        buff = new samp_type[L];
+    }catch(std::bad_alloc& exc){
+
+    }
+
+    samp_type c_smpl;
+
+    int pop_count = 0;
+    while(rxSignalBuffer.pop(&c_smpl) != 0 && (count == -1 || pop_count < count)){
+        buff[pop_count++] = c_smpl;
+    }
+
+    samp_type* buff_s;
+    try{
+        buff_s = new samp_type[pop_count];
+    }catch(std::bad_alloc& exc){
+
+    }
+
+    for(size_t i=0;i<pop_count;i++){
+        buff_s[i] = buff[i];
+    }
+
+    if (outfile.is_open()){
+        outfile.write((const char *) buff_s,pop_count*sizeof(samp_type));
+    }
+
+    delete[] buff_s;
+    delete[] buff;
+
+    writingBufferInProgress = false;
 }

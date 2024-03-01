@@ -52,6 +52,8 @@ private slots:
     void trackTransmissionProcess();
     void trackReceptionProcess();
 
+    void trackCaptureBufferProcess();
+
     void updateUSRPSetupChanged(bool val);
     void onUSRPConfigurationChanged(bool val);
 
@@ -103,6 +105,8 @@ private slots:
     void on_button_receive_released();
 
     void on_button_rx_stop_released();
+
+    void on_button_write_buffer_to_file_released();
 
 private:
     Ui::mainGUI *ui;

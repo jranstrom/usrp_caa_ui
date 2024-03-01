@@ -146,7 +146,16 @@ void uiobj::rxUSRPConfigurationChanged(bool val)
 
 void uiobj::setTransmissionInProgress(bool value)
 {
-    if(value != transmission_in_progress){
+    bool radObjTxStatus = radObj->isTransmitting();
+    if(radObjTxStatus == value){
+        // Set to same as USRP status
+        if(value != transmission_in_progress){
+            transmission_in_progress = value;
+            emit transmissionStatusChanged(value);
+        }
+    }else if(radObjTxStatus != value){
+        // This may be seen as a request to change USRP status
+        radObj->stopTransmission();
         transmission_in_progress = value;
         emit transmissionStatusChanged(value);
     }
@@ -154,7 +163,16 @@ void uiobj::setTransmissionInProgress(bool value)
 
 void uiobj::setReceptionInProgress(bool value)
 {
-    if(value != reception_in_progress){
+    bool radObjRxStatus = radObj->isReceiving();
+    if(radObjRxStatus == value){
+        // Set to same as USRP status
+        if(value != reception_in_progress){
+            reception_in_progress = value;
+            emit receptionStatusChanged(value);
+        }
+    }else if(radObjRxStatus != value){
+        // This may be seen as a request to change USRP status
+        radObj->stopReception();
         reception_in_progress = value;
         emit receptionStatusChanged(value);
     }

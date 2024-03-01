@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
 
     w.setRadioSysObject(&radObj);
 
-    std::cout << "Is this running?" << std::endl;
 
 
 
