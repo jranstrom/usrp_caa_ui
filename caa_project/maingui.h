@@ -35,6 +35,9 @@ public:
     void updateTxPPSSource(bool status);
     void updateRxPPSSource(bool status);
 
+    void updateTxSamplingRate(bool status);
+    void updateRxSamplingRate(bool status);
+
     void updateTxREFSource(bool status);
     void updateRxREFSource(bool status);
 
@@ -42,6 +45,9 @@ public:
     void updateReceiveStatus(bool status);
     void updateTxSetupStatus(bool status);
     void updateRxSetupStatus(bool status);
+
+
+    void updateRxLO_Offset(bool status);
 
     uiobj uio = uiobj(this);
 
@@ -107,6 +113,18 @@ private slots:
     void on_button_rx_stop_released();
 
     void on_button_write_buffer_to_file_released();
+
+    void on_lineEdit_lo_offset_textEdited(const QString &arg1);
+
+    void on_vslider_lo_offset_valueChanged(int value);
+
+    void on_lineEdit_rx_rs_textEdited(const QString &arg1);
+
+    void on_lineEdit_tx_rs_textEdited(const QString &arg1);
+
+    void on_hslider_rx_rs_valueChanged(int value);
+
+    void on_hslider_tx_rs_valueChanged(int value);
 
 private:
     Ui::mainGUI *ui;

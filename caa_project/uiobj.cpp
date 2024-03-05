@@ -96,6 +96,61 @@ void uiobj::setRxIPAddress(std::string value)
     }
 }
 
+void uiobj::setRxLO_Offset(double value)
+{
+    bool force_update = true;
+    if(value > 20e6){
+        value = 20e6;
+    }else if(value <-20e6){
+        value = 20e6;
+    }else{
+        force_update = false;
+    }
+    if(force_update || value != radObj->sysConf.getRxLO_offset()){
+            radObj->sysConf.setRxLO_offset(value);
+            rxUSRPConfigurationChanged(true);
+            emit rxLO_OffsetChanged(value);
+    }
+}
+
+void uiobj::setTxSamplingRate(double value)
+{
+    bool force_update = true;
+    if(value > 20e6){
+        value = 20e6;
+    }else if(value < 10e3){
+        value = 10e3;
+    }else{
+        force_update = false;
+    }
+
+    if(force_update || value != radObj->sysConf.getTxSamplingRate()){
+        radObj->sysConf.setTxSamplingRate(value);
+
+        txUSRPConfigurationChanged(true);
+        emit txSamplingRateChanged(value);
+    }
+}
+
+void uiobj::setRxSamplingRate(double value)
+{
+    bool force_update = true;
+    if(value > 20e6){
+        value = 20e6;
+    }else if(value < 10e3){
+        value = 10e3;
+    }else{
+        force_update = false;
+    }
+
+    if(force_update || value != radObj->sysConf.getRxSamplingRate()){
+        radObj->sysConf.setRxSamplingRate(value);
+
+        rxUSRPConfigurationChanged(true);
+        emit rxSamplingRateChanged(value);
+    }
+}
+
 void uiobj::setTxREFSource(std::string value)
 {
     if(radObj->sysConf.getTxREFSource() != value){
@@ -206,12 +261,16 @@ void uiobj::ForceUpdateAll()
     emit txIPAddressChanged(true);
     emit txREFSourceChanged(true);
     emit txPPSSourceChanged(true);
+    emit txSamplingRateChanged(true);
 
     emit rxCarrierFrequencyChanged(true);
     emit rxGainChanged(true);
     emit rxIPAddressChanged(true);
     emit rxREFSourceChanged(true);
     emit rxPPSSourceChanged(true);
+    emit rxSamplingRateChanged(true);
+
+    emit rxLO_OffsetChanged(true);
 
     rxUSRPConfigurationChanged(true);
 }

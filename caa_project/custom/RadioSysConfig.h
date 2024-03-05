@@ -116,6 +116,13 @@ class RadioSysConfig {
             }
         }
 
+        double getRxLO_offset() {return rx.RX_LO_Offset;}
+        void setRxLO_offset(double value){
+            if(rx.RX_LO_Offset != value){
+                rx.RX_LO_Offset = value;
+            }
+        }
+
         double getTxGain() {return tx.Gain;}
         double getRxGain() {return rx.Gain;}
         void setTxGain(double value){

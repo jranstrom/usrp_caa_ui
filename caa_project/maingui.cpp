@@ -33,6 +33,12 @@ mainGUI::mainGUI(QWidget *parent)
     connect(&uio,&uiobj::txREFSourceChanged,this,&mainGUI::updateTxREFSource);
     connect(&uio,&uiobj::rxREFSourceChanged,this,&mainGUI::updateRxREFSource);
 
+    connect(&uio,&uiobj::rxLO_OffsetChanged,this,&mainGUI::updateRxLO_Offset);
+
+    connect(&uio,&uiobj::txSamplingRateChanged,this,&mainGUI::updateTxSamplingRate);
+    connect(&uio,&uiobj::rxSamplingRateChanged,this,&mainGUI::updateRxSamplingRate);
+
+
     connect(&uio,&uiobj::USRPConfigurationChanged,this,&mainGUI::onUSRPConfigurationChanged);
     //connect(&uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateUSRPSetupChanged);
 
@@ -87,6 +93,15 @@ void mainGUI::updateTxSetupStatus(bool status)
 void mainGUI::updateRxSetupStatus(bool status)
 {
 
+}
+
+void mainGUI::updateRxLO_Offset(bool status)
+{
+    if(status){
+        double value = radObj->sysConf.getRxLO_offset();
+        ui->lineEdit_lo_offset->setText(QString::number(value / 1e6));
+        ui->vslider_lo_offset->setValue(value / 1e5);
+    }
 }
 
 mainGUI::~mainGUI()
@@ -168,6 +183,24 @@ void mainGUI::updateRxPPSSource(bool status)
     }
 }
 
+void mainGUI::updateTxSamplingRate(bool status)
+{
+    if(status){
+        double value = radObj->sysConf.getTxSamplingRate() / 1e6 * 1e3;
+        ui->lineEdit_tx_rs->setText(QString::number(value));
+        ui->hslider_tx_rs->setValue(value);
+    }
+}
+
+void mainGUI::updateRxSamplingRate(bool status)
+{
+    if(status){
+        double value = radObj->sysConf.getRxSamplingRate() / 1e6 * 1e3;
+        ui->lineEdit_rx_rs->setText(QString::number(value));
+        ui->hslider_rx_rs->setValue(value);
+    }
+}
+
 void mainGUI::updateTxREFSource(bool status)
 {
     if(uio.getTxREFSource() == "external"){
@@ -213,6 +246,8 @@ void mainGUI::addStatusUpdate(QString entry, QTableWidget *table)
     // Add items to the table widget
     table->setItem(0, 0, item1); // Row 0, Column 0
     table->setItem(0, 1, item2); // Row 0, Column 1
+
+    table->selectRow(0);
 
 }
 
@@ -574,5 +609,46 @@ void mainGUI::on_button_write_buffer_to_file_released()
     radObj->stopReception();
     radObj->requestWriteBufferToFile((ui->lineEdit_buffer_file_capture_path->text()).toStdString(),
                                      ui->spinBox_capture_samples->value()*1e3);
+}
+
+
+void mainGUI::on_lineEdit_lo_offset_textEdited(const QString &arg1)
+{
+    //QString arg1 = ui->lineEdit_lo_offset->text();
+
+    double offset = arg1.toDouble();
+    uio.setRxLO_Offset(offset*1e6);
+}
+
+
+void mainGUI::on_vslider_lo_offset_valueChanged(int value)
+{
+    uio.setRxLO_Offset(value*1e5);
+}
+
+
+void mainGUI::on_lineEdit_rx_rs_textEdited(const QString &arg1)
+{
+    double rx_rs = arg1.toDouble() * 1e6 / 1e3;
+    uio.setRxSamplingRate(rx_rs);
+}
+
+
+void mainGUI::on_lineEdit_tx_rs_textEdited(const QString &arg1)
+{
+    double tx_rs = arg1.toDouble() * 1e6 / 1e3;
+    uio.setTxSamplingRate(tx_rs);
+}
+
+
+void mainGUI::on_hslider_rx_rs_valueChanged(int value)
+{
+    uio.setRxSamplingRate(value * 1e6 / 1e3);
+}
+
+
+void mainGUI::on_hslider_tx_rs_valueChanged(int value)
+{
+    uio.setTxSamplingRate(value * 1e6 / 1e3);
 }
 

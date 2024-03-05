@@ -37,6 +37,15 @@ public:
     std::string getTxREFSource(){return radObj->sysConf.getTxREFSource();}
     std::string getRxREFSource(){return radObj->sysConf.getRxREFSource();}
 
+    double getRxLO_Offset(){return radObj->sysConf.getRxLO_offset();}
+    void setRxLO_Offset(double value);
+
+    double getTxSamplingRate(){return radObj->sysConf.getTxSamplingRate();}
+    double getRxSamplingRate(){return radObj->sysConf.getRxSamplingRate();}
+
+    void setTxSamplingRate(double value);
+    void setRxSamplingRate(double value);
+
     void setTxREFSource(std::string value);
     void setRxREFSource(std::string value);
 
@@ -72,6 +81,11 @@ signals:
     void rxREFSourceChanged(bool status);
     void txPPSSourceChanged(bool status);
     void rxPPSSourceChanged(bool status);
+
+    void txSamplingRateChanged(bool status);
+    void rxSamplingRateChanged(bool status);
+
+    void rxLO_OffsetChanged(bool status);
 
     void USRPConfigurationChanged(bool status);
 
