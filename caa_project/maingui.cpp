@@ -10,7 +10,7 @@ mainGUI::mainGUI(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::mainGUI)
 {
-    ui->setupUi(this);    
+    ui->setupUi(this);
 
     connect(&uio, &uiobj::transmissionStatusChanged, this, &mainGUI::updateTransmitStatus);
     connect(&uio, &uiobj::receptionStatusChanged,this,&mainGUI::updateReceiveStatus);
@@ -113,6 +113,8 @@ void mainGUI::setRadioSysObject(RadioSysObject *RadObj)
 {
     radObj = RadObj;
     uio.setRadioSysObject(radObj);
+
+    uio.ForceUpdateAll();
 }
 
 void mainGUI::updateTxCarrierFrequency(bool status)

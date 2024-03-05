@@ -24,50 +24,21 @@ namespace RSC{
 
 		// RX object
 		//std::string rxUSRP_IPaddress;
-    	std::string ANT;
+        std::string ANT                 = "TX/RX";
     	std::string CH 					= "0";
-    	std::string File;
-        std::string REF_Source = "external";
-        std::string PPS_Source = "external";
-        std::string IP_Address = "192.168.0.1";
-        double SamplingRate = 10e3;
-        double CarrierFrequency = -1;
-    	double Gain;
-    	double FILT_BW;
-    	double RX_LO_Offset;
+        std::string File                = "usrp_rx_samples.dat";
+        std::string REF_Source          = "external";
+        std::string PPS_Source          = "external";
+        std::string IP_Address          = "192.168.0.1";
+        double SamplingRate             = 10e6;
+        double CarrierFrequency         = 2.5e9;
+        double Gain                     = 0;
+        double FILT_BW                  = 10e6;
+        double RX_LO_Offset             = 12e6;
 
-    	size_t BufferSize;
-
-		// RX object
-		//std::string rxUSRP_IPaddress;
-    	std::string rxUSRP_ANT;
-    	std::string rxUSRP_CH 			= "0";
-    	std::string rxFile;
-    	std::string rxUSRP_REF_Source;    	
-    	std::string rxUSRP_PPS_Source;
-    	double rxUSRP_SamplingRate;
-    	double rxUSRP_CarrierFrequency;
-    	double rxUSRP_Gain;
-    	double rxUSRP_FILT_BW;
-    	double rxUSRP_LO_Offset;
-
-    	// TX object
-    	//std::string txUSRP_IPaddress;
-    	std::string txUSRP_ANT;
-    	std::string txUSRP_CH 			= "0";
-    	std::string txFile;
-    	std::string txUSRP_REF_Source;
-    	std::string txUSRP_PPS_Source;
-    	double txUSRP_SamplingRate;
-    	double txUSRP_CarrierFrequency;
-    	double txUSRP_Gain;
-    	double txUSRP_FILT_BW;
-
-    	size_t samplesPerBuffer = 1151;
-    	size_t txBufferSize;
-    	size_t rxBufferSize;   	
+        size_t BufferSize               = 1472;
     	
-    	double txRELrxTimeOffset;
+        double txRELrxTimeOffset        =0;
 	};
 
 } // namespace radio system configuration (rsc)

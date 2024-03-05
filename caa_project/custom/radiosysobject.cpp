@@ -221,6 +221,8 @@ bool RadioSysObject::stopTransmission()
     std::this_thread::sleep_for(1s);
     stop_transmit_signal_called = false;
     std::cout << "Transmission in progress: " << isTransmitting() << std::endl;
+
+    return true;
 }
 
 bool RadioSysObject::stopReception()
@@ -229,6 +231,8 @@ bool RadioSysObject::stopReception()
     std::this_thread::sleep_for(1s);
     stop_reception_signal_called = false;
     std::cout << "Reception in progress: " << isReceiving() << std::endl;
+
+    return true;
 }
 
 bool RadioSysObject::isTransmitting()
