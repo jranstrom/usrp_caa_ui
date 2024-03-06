@@ -477,7 +477,7 @@ void RadioSysObject::runTransmissionThread()
     const size_t total_num_channels = 1;
     size_t samps_per_buff = sysConf.tx.BufferSize;
 
-    uhd::stream_args_t stream_args(sysConf.confFile.cpu_format,sysConf.confFile.wirefmt);
+    uhd::stream_args_t stream_args(sysConf.tx.cpu_format,sysConf.tx.wirefmt);
     stream_args.channels = channel_nums;
     uhd::tx_streamer::sptr tx_stream = tx_usrp->get_tx_stream(stream_args);
 
@@ -490,7 +490,7 @@ void RadioSysObject::runTransmissionThread()
     bool continous_stream   = true;
 
     uhd::tx_metadata_t md;
-    md.start_of_burst = false;
+    md.start_of_burst = true;
     md.end_of_burst = false;
     md.has_time_spec  = true;
     if (time_offset > 0){
