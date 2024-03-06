@@ -74,10 +74,13 @@ void mainGUI::updateReceiveStatus(bool status)
         SetWidgetColor(ui->indicator_rx_in_progress,9433252);
         SetWidgetColor(ui->indicator_captured_buffer,16146769); // last capture does not correspond to current
         receptionStartTime = QDateTime::currentDateTime();
+        ui->button_write_buffer_to_file->setEnabled(true);
         connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackReceptionProcess);
+
     }else{
         addStatusUpdate("Reception terminated",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_rx_in_progress,16146769);
+        ui->button_write_buffer_to_file->setEnabled(false);
         disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackReceptionProcess);
     }
 }
@@ -311,7 +314,7 @@ void mainGUI::trackCaptureBufferProcess()
     if(not radObj->isWritingBufferToFile()){
         disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
         addStatusUpdate("Success writing buffer to file",ui->tableWidget_status);
-        ui->button_write_buffer_to_file->setEnabled(true);
+        ui->button_receive->setEnabled(true);
         SetWidgetColor(ui->indicator_captured_buffer,9433252);
 
         std::vector<std::complex<short>> vc_data = radObj->getCapturedData();
@@ -329,7 +332,6 @@ void mainGUI::trackCaptureBufferProcess()
             }
         }
 
-
         ui->captured_sig_plot->addGraph();
         ui->captured_sig_plot->graph(0)->setData(x, y);
         ui->captured_sig_plot->xAxis->setLabel("Sample");
@@ -337,7 +339,6 @@ void mainGUI::trackCaptureBufferProcess()
         ui->captured_sig_plot->xAxis->setRange(0, vc_data.size());
         ui->captured_sig_plot->yAxis->setRange(0, max_element);
         ui->captured_sig_plot->replot();
-
 
     }
 }
@@ -632,6 +633,7 @@ void mainGUI::on_button_rx_stop_released()
 void mainGUI::on_button_write_buffer_to_file_released()
 {
     ui->button_write_buffer_to_file->setEnabled(false);
+    ui->button_receive->setEnabled(false);
     SetWidgetColor(ui->indicator_captured_buffer,16380011);
     connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
     radObj->stopReception();
