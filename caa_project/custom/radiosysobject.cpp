@@ -658,8 +658,30 @@ void RadioSysObject::runReceptionThread()
 
 void RadioSysObject::writeBufferToFile(int count)
 {
+
+    size_t L;
+
+    if(count < 0){
+        if(rxSignalBuffer.check_filled()){
+            L = rxSignalBuffer.get_capacity();
+        }
+    }else{
+        if(count > rxSignalBuffer.get_push_count()){
+            L = rxSignalBuffer.get_push_count();
+        }else{
+            L = static_cast<size_t>(count);
+        }
+    }
+
+
+    if (count <= static_cast<size_t>(std::numeric_limits<int>::max())) {
+        count = static_cast<int>(L);
+    } else {
+        std::cerr << "Cannot convert size_t value to int due to potential overflow." << std::endl;
+    }
+
+
     captured_data.clear();
-    size_t L = rxSignalBuffer.get_capacity();
     std::ofstream outfile;
     outfile.open(rxCaptureFilepath.c_str(),std::ofstream::binary);
 
@@ -674,28 +696,15 @@ void RadioSysObject::writeBufferToFile(int count)
 
     samp_type c_smpl;
 
-    int pop_count = 0;
-    while(rxSignalBuffer.pop(&c_smpl) != 0 && (count == -1 || pop_count < count)){
-        buff[pop_count++] = c_smpl;
-    }
 
-    samp_type* buff_s;
-    try{
-        buff_s = new samp_type[pop_count];
-    }catch(std::bad_alloc& exc){
-
-    }
-
-    for(size_t i=0;i<pop_count;i++){
-        buff_s[i] = buff[i];
-        captured_data.push_back(buff[i]);
+    while(rxSignalBuffer.back(&c_smpl,count) && count > -1){
+        buff[count--] = c_smpl;
+        captured_data.push_back(c_smpl);
     }
 
     if (outfile.is_open()){
-        outfile.write((const char *) buff_s,pop_count*sizeof(samp_type));
+        outfile.write((const char *) buff,L*sizeof(samp_type));
     }
-
-    delete[] buff_s;
     delete[] buff;
 
     writingBufferInProgress = false;

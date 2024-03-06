@@ -330,13 +330,10 @@ void mainGUI::trackCaptureBufferProcess()
         }
 
 
-        // create graph and assign data to it:
         ui->captured_sig_plot->addGraph();
         ui->captured_sig_plot->graph(0)->setData(x, y);
-        // give the axes some labels:
-        ui->captured_sig_plot->xAxis->setLabel("x");
-        ui->captured_sig_plot->yAxis->setLabel("y");
-        // set axes ranges, so we see all data:
+        ui->captured_sig_plot->xAxis->setLabel("Sample");
+        ui->captured_sig_plot->yAxis->setLabel("Power (dB)");
         ui->captured_sig_plot->xAxis->setRange(0, vc_data.size());
         ui->captured_sig_plot->yAxis->setRange(0, max_element);
         ui->captured_sig_plot->replot();
