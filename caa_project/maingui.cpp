@@ -313,6 +313,35 @@ void mainGUI::trackCaptureBufferProcess()
         addStatusUpdate("Success writing buffer to file",ui->tableWidget_status);
         ui->button_write_buffer_to_file->setEnabled(true);
         SetWidgetColor(ui->indicator_captured_buffer,9433252);
+
+        std::vector<std::complex<short>> vc_data = radObj->getCapturedData();
+
+        QVector<double> x(vc_data.size()), y(vc_data.size()); // initialize with entries 0..100
+        double max_element = 0;
+
+        for (int i=0; i<vc_data.size(); ++i)
+        {
+            x[i] = i;
+            y[i] = 10 * std::log10(std::norm(vc_data[i]));
+
+            if(y[i] > max_element){
+                max_element = y[i];
+            }
+        }
+
+
+        // create graph and assign data to it:
+        ui->captured_sig_plot->addGraph();
+        ui->captured_sig_plot->graph(0)->setData(x, y);
+        // give the axes some labels:
+        ui->captured_sig_plot->xAxis->setLabel("x");
+        ui->captured_sig_plot->yAxis->setLabel("y");
+        // set axes ranges, so we see all data:
+        ui->captured_sig_plot->xAxis->setRange(0, vc_data.size());
+        ui->captured_sig_plot->yAxis->setRange(0, max_element);
+        ui->captured_sig_plot->replot();
+
+
     }
 }
 

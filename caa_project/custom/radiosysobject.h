@@ -4,6 +4,7 @@
 #include "RadioSysConfig.h"
 #include "../circbuffer.h"
 #include <uhd/usrp/multi_usrp.hpp>
+#include <vector>
 
 class RadioSysObject
 {
@@ -58,6 +59,8 @@ public:
     bool txUSRPSetup = false;
     bool rxUSRPSetup = false;
 
+    std::vector<std::complex<short>> getCapturedData(){ return captured_data;}
+
 private:
     std::mutex recv_mutex;
 
@@ -84,6 +87,8 @@ private:
     bool TransmissionInProgress = false;
     bool ReceptionInProgress = false;
     bool SynchronizationInProgress = false;
+
+    std::vector<std::complex<short>> captured_data;
 
 
 

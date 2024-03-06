@@ -31,6 +31,7 @@ set(PROJECT_SOURCES
 )
 
 include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${Boost_INCLUDE_DIRS}
     ${UHD_INCLUDE_DIRS}
     ${ARMADILLO_INCLUDE_DIRS}
@@ -56,7 +57,7 @@ else()
     else()
         add_executable(caa_project
             ${PROJECT_SOURCES}
-            third-party/qcustomplot.h third-party/qcustomplot.cpp
+            qcustomplot.h qcustomplot.cpp
             custom/RadioSysConfig.h custom/RadioSysConfig.cpp
             custom/matHF.h
             custom/radiosysobject.h custom/radiosysobject.cpp
@@ -64,7 +65,6 @@ else()
             circbuffer.h
             custom/uhd_clib.h custom/uhd_clib.cpp
             uiobj.h uiobj.cpp
-
         )
     endif()
 endif()

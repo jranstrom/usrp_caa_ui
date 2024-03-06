@@ -658,6 +658,7 @@ void RadioSysObject::runReceptionThread()
 
 void RadioSysObject::writeBufferToFile(int count)
 {
+    captured_data.clear();
     size_t L = rxSignalBuffer.get_capacity();
     std::ofstream outfile;
     outfile.open(rxCaptureFilepath.c_str(),std::ofstream::binary);
@@ -687,6 +688,7 @@ void RadioSysObject::writeBufferToFile(int count)
 
     for(size_t i=0;i<pop_count;i++){
         buff_s[i] = buff[i];
+        captured_data.push_back(buff[i]);
     }
 
     if (outfile.is_open()){
