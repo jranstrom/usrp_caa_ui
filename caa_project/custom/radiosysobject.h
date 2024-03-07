@@ -81,6 +81,9 @@ private:
 
     size_t rxSampleCount = 0;
 
+    size_t txTimeoutCount = 0;
+    size_t txTimeoutMax = 100;
+
     bool txUSRPConfigured = false;
     bool rxUSRPConfigured = false;
 

@@ -36,7 +36,16 @@ include_directories(
     ${UHD_INCLUDE_DIRS}
     ${ARMADILLO_INCLUDE_DIRS}
     "/usr/local/include"
+    "third-party"
+    "custom"
 )
+
+set(serial_SRCS third-party/serial.cc third-party/serial/serial.h
+    third-party/serial/v8stdint.h third-party/impl/list_ports/list_ports_linux.cc)
+
+list(APPEND serial_SRCS third-party/impl/unix.cc)
+
+add_library(serial ${serial_SRCS})
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(caa_project
@@ -65,13 +74,15 @@ else()
             circbuffer.h
             custom/uhd_clib.h custom/uhd_clib.cpp
             uiobj.h uiobj.cpp
+            custom/TeensyCOM.h custom/TeensyCOM.cpp
+            tcom_ui.h tcom_ui.cpp
         )
     endif()
 endif()
 
 set(QT_LIB Qt5::PrintSupport)
 
-target_link_libraries(caa_project PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${QT_LIB} "/usr/local/lib/libmatio.so" ${UHD_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(caa_project PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${QT_LIB} "/usr/local/lib/libmatio.so" ${UHD_LIBRARIES} ${Boost_LIBRARIES} "serial")
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

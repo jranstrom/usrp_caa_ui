@@ -471,6 +471,8 @@ void RadioSysObject::setupRxUSRP()
 
 void RadioSysObject::runTransmissionThread()
 {
+
+    txTimeoutCount = 0;
     TransmissionInProgress = true;
 
     const std::vector<size_t>channel_nums = {0};
@@ -519,7 +521,7 @@ void RadioSysObject::runTransmissionThread()
 
             const size_t samples_sent = tx_stream->send(&buff.front(),num_tx_samps,md,5.3);
 
-            if(samples_sent != num_tx_samps){
+            if(samples_sent != num_tx_samps && ++txTimeoutCount > txTimeoutMax){
                 UHD_LOG_ERROR("TX-STREAM",
                               "The tx_stream timed out sending " << num_tx_samps << " samples ("
                                                                  << samples_sent << " sent)");

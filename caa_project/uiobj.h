@@ -4,6 +4,7 @@
 #include <QObject>
 #include "custom/radiosysobject.h"
 #include "custom/RadioSysConfig.h"
+#include "custom/TeensyCOM.h"
 
 class uiobj : public QObject
 {
@@ -97,6 +98,8 @@ signals:
 private:
 
     RadioSysObject * radObj;
+
+    TeensyCOM tcom = TeensyCOM();
 
     double tx_carrier_frequency = -1;
     double rx_carrier_frequency = -1;

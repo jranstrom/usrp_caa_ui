@@ -44,6 +44,9 @@ mainGUI::mainGUI(QWidget *parent)
 
     connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_USRP_setup);
 
+    connect(&tcom,&Tcom_ui::availableDevicesChanged,this,&mainGUI::updateAvailableDevices);
+    connect(&tcom,&Tcom_ui::connectionChanged,this,&mainGUI::updateConnection);
+
     SetWidgetColor(ui->indicator_captured_buffer,16146769);
 
     processingTimer.setInterval(500);
@@ -680,5 +683,37 @@ void mainGUI::on_hslider_rx_rs_valueChanged(int value)
 void mainGUI::on_hslider_tx_rs_valueChanged(int value)
 {
     uio.setTxSamplingRate(value * 1e6 / 1e3);
+}
+
+
+void mainGUI::on_pushButton_released()
+{
+    tcom.requestAvailableDevices();
+}
+
+void mainGUI::updateAvailableDevices(std::vector<std::string> & value)
+{
+    ui->listWidget_available_devices->clear();
+    std::cout << tcom.getDeviceList().size() << std::endl;
+    for(int i=0;i<value.size();i++){
+        ui->listWidget_available_devices->addItem(QString::fromStdString(value[i]));
+    }
+}
+
+void mainGUI::updateConnection(std::string value)
+{
+    if(value != ""){
+        std::cout << "Connected to " << value << std::endl;
+    }
+}
+
+
+void mainGUI::on_listWidget_available_devices_itemSelectionChanged()
+{
+    QListWidgetItem *selectedItem = ui->listWidget_available_devices->currentItem();
+
+    if(selectedItem != nullptr){
+        tcom.requestToConnect((selectedItem->text()).toStdString());
+    }
 }
 

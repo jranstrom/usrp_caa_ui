@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "custom/radiosysobject.h"
 #include "uiobj.h"
+#include "tcom_ui.h"
 #include <QDateTime>
 #include <QTableWidget>
 #include <QTimer>
@@ -50,6 +51,7 @@ public:
     void updateRxLO_Offset(bool status);
 
     uiobj uio = uiobj(this);
+    Tcom_ui tcom = Tcom_ui(this);
 
 private slots:
     void on_button_rx_test_connection_released();
@@ -125,6 +127,13 @@ private slots:
     void on_hslider_rx_rs_valueChanged(int value);
 
     void on_hslider_tx_rs_valueChanged(int value);
+
+    void on_pushButton_released();
+
+    void updateAvailableDevices(std::vector<std::string> & value);
+    void updateConnection(std::string value);
+
+    void on_listWidget_available_devices_itemSelectionChanged();
 
 private:
     Ui::mainGUI *ui;
