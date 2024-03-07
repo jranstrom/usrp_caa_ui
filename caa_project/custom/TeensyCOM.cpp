@@ -106,13 +106,14 @@ bool TeensyCOM::Connect(std::string device_port,int timeout_duration){
 		try{
 			CurrentCOM.open();
 			if(CurrentCOM.isOpen()){			
-				Connected = true;
 				connection_success = true;
 			}
 		}catch(...){
 			std::cerr << "Error not able to connect, check if device " << device_port << " is busy..." << std::endl;
 		}
 	}
+
+    Connected = connection_success;
 
 	return connection_success;
 }
