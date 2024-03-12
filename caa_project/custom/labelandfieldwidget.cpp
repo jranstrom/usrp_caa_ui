@@ -1,6 +1,9 @@
 #include "labelandfieldwidget.h"
 
-LabelandFieldWidget::LabelandFieldWidget(QWidget *parent,std::string labelText,std::string fieldText)
+LabelandFieldWidget::LabelandFieldWidget(QWidget *parent,
+                                         std::string labelText,
+                                         std::string fieldText,
+                                         bool editable)
     : QWidget{parent}
 {
 
@@ -17,7 +20,9 @@ LabelandFieldWidget::LabelandFieldWidget(QWidget *parent,std::string labelText,s
 
     main_layout->addWidget(lineEdit);
 
-    connect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextChanged);
+    if(!editable){
+        connect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextChanged);
+    }
 }
 
 void LabelandFieldWidget::setLabelText(std::string value)
@@ -30,6 +35,18 @@ void LabelandFieldWidget::setFieldText(std::string value)
     if(value != fieldText){
         fieldText = value;
         lineEdit->setText(QString::fromStdString(value));
+    }
+}
+
+void LabelandFieldWidget::setEditable(bool is_editable)
+{
+    if(isEditable != is_editable){
+        isEditable = is_editable;
+        if(!isEditable){
+            connect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextChanged);
+        }else{
+            disconnect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextChanged);
+        }
     }
 }
 

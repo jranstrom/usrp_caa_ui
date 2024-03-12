@@ -2021,9 +2021,9 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_rx_pps"/>
   <buttongroup name="buttonGroup_tx_ref"/>
-  <buttongroup name="buttonGroup_rx_ref"/>
   <buttongroup name="buttonGroup_tx_pps"/>
+  <buttongroup name="buttonGroup_rx_ref"/>
+  <buttongroup name="buttonGroup_rx_pps"/>
  </buttongroups>
 </ui>

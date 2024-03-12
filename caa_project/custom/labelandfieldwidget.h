@@ -10,10 +10,13 @@ class LabelandFieldWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit LabelandFieldWidget(QWidget *parent = nullptr,std::string labelText="Label:", std::string fieldText="");
+    explicit LabelandFieldWidget(QWidget *parent = nullptr,
+                                 std::string labelText="Label:",
+                                 std::string fieldText="", bool editable=false);
 
     void setLabelText(std::string value);
     void setFieldText(std::string value);
+    void setEditable(bool is_editable);
 
 signals:
 
@@ -26,6 +29,8 @@ private :
     QLineEdit * lineEdit;
 
     std::string fieldText = "";
+
+    bool isEditable = false;
 };
 
 #endif // LABELANDFIELDWIDGET_H
