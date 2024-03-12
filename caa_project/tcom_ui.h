@@ -11,21 +11,20 @@ public:
     explicit Tcom_ui(QObject *parent = nullptr);
 
     void requestAvailableDevices();
-    void requestToConnect(std::string port);
+    void requestToConnect(std::string port,bool silent=false);
     void requestStatus();
     void requestInfo();
+    std::string getInfo(std::string port);
     void requestDebugToggle();
     void requestAutoToggle();
     void requestMCId();
+    std::string getMCId(std::string port);
     void requestUESelect(int value);
+    void requestELSelect(int value);
+    void requestELToggle(int value);
+    void requestCommand(std::string value,bool awaitRepsonse=true);
 
-    std::string getMCType() {
-        std::string resp = "";
-        if(mcCurrentType > 0){
-            resp = mcTypes[mcCurrentType];
-        }
-        return resp;
-    }
+    std::string getMCType(std::string port="");
 
     void setMCType(int value){
         if(value != mcCurrentType){

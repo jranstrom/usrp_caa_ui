@@ -19,12 +19,14 @@ class TeensyCOM {
 		void Flush();
 		std::string ReadLine();
         std::vector<std::string> GetDeviceList();
+        std::string GetCurrentPort();
 
 	private:
 		std::vector<std::string> DeviceList;
 		int BaudRate;
 		bool Connected = false;
-		serial::Serial CurrentCOM = serial::Serial("");		
+        serial::Serial CurrentCOM = serial::Serial("");
+        std::string CurrentPort = "";
 };
 
 #endif

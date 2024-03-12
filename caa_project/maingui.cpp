@@ -298,6 +298,29 @@ void mainGUI::on_button_rx_test_connection_released()
 void mainGUI::on_button_tx_test_connection_released()
 {
     SetWidgetColor(ui->indicator_tx_connection,9433252);
+
+    QProcess process;
+
+    // Set the command to be executed
+    QString command = "uhd_find_devices"; // Example command, replace with your desired command
+
+    // Set the arguments if needed
+    QStringList arguments; // You can add command line arguments here if your command requires
+    // arguments << "arg1" << "arg2";
+
+    // Start the process
+    process.start(command, arguments);
+
+    // Wait for the process to finish
+    if (process.waitForFinished()) {
+        // Read the output from the process
+        QByteArray output = process.readAllStandardOutput();
+        qDebug() << "Output:" << output;
+    } else {
+        // Error occurred
+        qDebug() << "Error:" << process.errorString();
+    }
+
 }
 
 void mainGUI::trackTransmissionProcess()
@@ -538,6 +561,16 @@ void mainGUI::applyRxConfig()
 {
     radObj->sysConf.rx.CarrierFrequency = (ui->lineEdit_rx_fc->text()).toDouble()*1e9;
     radObj->sysConf.rx.Gain = (ui->lineEdit_rx_gain->text()).toDouble();
+}
+
+void mainGUI::removeAllMCControlWidgets()
+{
+    for (MCControlWidget* customWidget : mcControlWidgets) {
+        ui->verticalLayout_mc_controls->removeWidget(customWidget);
+        delete customWidget;
+    }
+
+    mcControlWidgets.clear();
 }
 
 void mainGUI::on_button_apply_config_released()
@@ -842,5 +875,73 @@ void mainGUI::on_button_mc_auto_mode_released()
 void mainGUI::on_button_mc_select_ue_released()
 {
     tcom.requestUESelect(ui->spinBox_mc_ue_select->value());
+}
+
+void mainGUI::on_button_cmc_element_1_released()
+{
+    tcom.requestELToggle(1);
+}
+
+void mainGUI::on_button_cmc_element_2_released()
+{
+    tcom.requestELToggle(2);
+}
+
+void mainGUI::on_button_cmc_element_3_released()
+{
+    tcom.requestELToggle(3);
+}
+
+void mainGUI::on_button_cmc_element_4_released()
+{
+    tcom.requestELToggle(4);
+}
+
+
+void mainGUI::on_button_cmc_custom_command_released()
+{
+    tcom.requestCommand((ui->lineEdit_cmc_custom_command->text()).toStdString(),true);
+}
+
+
+void mainGUI::on_button_generate_mc_controls_released()
+{
+    removeAllMCControlWidgets();
+
+    int  L = ui->listWidget_available_devices->count();
+
+    for(int i=0;i<L;i++){
+        auto item = ui->listWidget_available_devices->item(i);
+        std::string port = (item->text()).toStdString();
+
+        std::string MCType = tcom.getMCType(port);
+
+        if(MCType != ""){
+
+            std::string MCMAC = tcom.getMCId(port);
+
+            MCControlWidget *customWidget = new MCControlWidget(this,currentMCControlIdentifier++,MCType);
+
+            customWidget->setPort(port);
+            customWidget->setMAC(MCMAC);
+            customWidget->setTCOM(&tcom);
+
+            ui->verticalLayout_mc_controls->addWidget(customWidget);
+
+            mcControlWidgets.push_back(customWidget);
+            //ui->verticalLayout_30->addWidget(customWidget);
+            customWidget->show();
+        }
+    }
+
+
+}
+
+
+void mainGUI::on_button_disconnect_released()
+{
+    if(mcControlWidgets.size() > 0){
+        removeAllMCControlWidgets();
+    }
 }
 

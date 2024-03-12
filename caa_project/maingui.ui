@@ -1291,7 +1291,7 @@
           <item>
            <widget class="QLineEdit" name="lineEdit_sig_config">
             <property name="text">
-             <string>/home/jr/workspace/uhd/usrp_caa/build/sys_last_params.mat</string>
+             <string>/home/jr/workspace/caa_project/build-caa_project-Desktop_Qt_5_15_2_GCC_64bit-Debug/sys_last_params.mat</string>
             </property>
            </widget>
           </item>
@@ -1682,9 +1682,16 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton_2">
+                 <widget class="QPushButton" name="button_generate_mc_controls">
                   <property name="text">
-                   <string>PushButton</string>
+                   <string>Connect All</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="button_disconnect">
+                  <property name="text">
+                   <string>Disconnect</string>
                   </property>
                  </widget>
                 </item>
@@ -1763,7 +1770,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="3" column="0" colspan="2">
+               <item row="4" column="0" colspan="2">
                 <widget class="QGroupBox" name="groupBox_cmc_elements">
                  <property name="enabled">
                   <bool>false</bool>
@@ -1868,16 +1875,6 @@
                  </item>
                 </layout>
                </item>
-               <item row="2" column="0">
-                <widget class="QPushButton" name="button_mc_auto_mode">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="text">
-                  <string>Auto Mode</string>
-                 </property>
-                </widget>
-               </item>
                <item row="0" column="0" colspan="3">
                 <layout class="QHBoxLayout" name="horizontalLayout_40">
                  <item>
@@ -1891,6 +1888,35 @@
                   <widget class="QLineEdit" name="lineEdit_tcom_response"/>
                  </item>
                 </layout>
+               </item>
+               <item row="2" column="0">
+                <widget class="QPushButton" name="button_mc_auto_mode">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>Auto Mode</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0" colspan="3">
+                <widget class="QGroupBox" name="groupBox_20">
+                 <property name="title">
+                  <string>Custom Command</string>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_45">
+                  <item>
+                   <widget class="QLineEdit" name="lineEdit_cmc_custom_command"/>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="button_cmc_custom_command">
+                    <property name="text">
+                     <string>Send</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -1911,342 +1937,19 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_32">
+           <layout class="QVBoxLayout" name="verticalLayout_mc_controls">
             <item>
-             <widget class="QGroupBox" name="groupBox_12">
-              <property name="title">
-               <string>GroupBox</string>
+             <spacer name="verticalSpacer_7">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_32">
-               <item>
-                <widget class="QGroupBox" name="groupBox_15">
-                 <property name="title">
-                  <string>Elements</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_36">
-                  <item>
-                   <widget class="QPushButton" name="pushButton_14">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_11">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_13">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_12">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_3">
-                 <property name="text">
-                  <string>Activate</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_7">
-                 <property name="text">
-                  <string>Control</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="groupBox_11">
-              <property name="title">
-               <string>GroupBox</string>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_35">
-               <item>
-                <widget class="QGroupBox" name="groupBox_16">
-                 <property name="title">
-                  <string>Elements</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_37">
-                  <item>
-                   <widget class="QPushButton" name="pushButton_17">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_18">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_15">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_16">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_4">
-                 <property name="text">
-                  <string>Activate</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_8">
-                 <property name="text">
-                  <string>Control</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="groupBox_13">
-              <property name="title">
-               <string>GroupBox</string>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_34">
-               <item>
-                <widget class="QGroupBox" name="groupBox_17">
-                 <property name="title">
-                  <string>Elements</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_38">
-                  <item>
-                   <widget class="QPushButton" name="pushButton_22">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_21">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_19">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_20">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_5">
-                 <property name="text">
-                  <string>Activate</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_9">
-                 <property name="text">
-                  <string>Control</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="groupBox_14">
-              <property name="title">
-               <string>GroupBox</string>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_33">
-               <item>
-                <widget class="QGroupBox" name="groupBox_18">
-                 <property name="title">
-                  <string>Elements</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_39">
-                  <item>
-                   <widget class="QPushButton" name="pushButton_26">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_25">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_24">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_23">
-                    <property name="maximumSize">
-                     <size>
-                      <width>25</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_6">
-                 <property name="text">
-                  <string>Activate</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_10">
-                 <property name="text">
-                  <string>Control</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
+             </spacer>
             </item>
            </layout>
           </item>
@@ -2318,9 +2021,9 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_tx_pps"/>
   <buttongroup name="buttonGroup_rx_pps"/>
-  <buttongroup name="buttonGroup_rx_ref"/>
   <buttongroup name="buttonGroup_tx_ref"/>
+  <buttongroup name="buttonGroup_rx_ref"/>
+  <buttongroup name="buttonGroup_tx_pps"/>
  </buttongroups>
 </ui>

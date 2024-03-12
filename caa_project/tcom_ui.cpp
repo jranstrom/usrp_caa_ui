@@ -26,10 +26,12 @@ void Tcom_ui::requestAvailableDevices()
     }
 }
 
-void Tcom_ui::requestToConnect(std::string port)
+void Tcom_ui::requestToConnect(std::string port,bool silent)
 {
     if(tcom.Connect(port)){
-        emit connectionChanged(port);
+        if(!silent){
+            emit connectionChanged(port);
+        }
     }else{
         setMCType(-1);
         emit mcIdChanged("");
@@ -54,6 +56,24 @@ void Tcom_ui::requestInfo()
     }else{
         emit responseChanged("Failed to request status");
     }
+}
+
+std::string Tcom_ui::getInfo(std::string port)
+{
+    std::string currentPort = tcom.GetCurrentPort();
+    tcom.Connect(port);
+
+    std::string info_string = "";
+
+    if(tcom.WriteCommand("i")){
+        info_string = tcom.ReadLine();
+    }
+
+    if(currentPort != ""){
+        tcom.Connect(currentPort);
+    }
+
+    return info_string;
 }
 
 void Tcom_ui::requestDebugToggle()
@@ -97,6 +117,29 @@ void Tcom_ui::requestMCId()
     }
 }
 
+std::string Tcom_ui::getMCId(std::string port)
+{
+    std::string currentPort = tcom.GetCurrentPort();
+    tcom.Connect(port);
+
+    std::string id_string = "";
+
+    if(tcom.WriteCommand("i")){
+        id_string = tcom.ReadLine();
+
+        if(id_string.size() > 12){
+            id_string = id_string.substr(0, 12);
+        }
+    }
+
+    if(currentPort != ""){
+        tcom.Connect(currentPort);
+    }
+
+    return id_string;
+
+}
+
 void Tcom_ui::requestUESelect(int value)
 {
     if(tcom.WriteCommand("c" + std::to_string(value))){
@@ -113,4 +156,54 @@ void Tcom_ui::requestELSelect(int value)
     }else{
         emit responseChanged("Failed to request status");
     }
+}
+
+void Tcom_ui::requestELToggle(int value)
+{
+    if(tcom.WriteCommand("t" + std::to_string(value))){
+        emit responseChanged(tcom.ReadLine());
+    }else{
+        emit responseChanged("Failed to request status");
+    }
+}
+
+void Tcom_ui::requestCommand(std::string value, bool awaitRepsonse)
+{
+    if(tcom.WriteCommand(value)){
+        if(awaitRepsonse){
+            emit responseChanged(tcom.ReadLine());
+        }else{
+            tcom.Flush();
+            emit responseChanged("");
+        }
+    }
+}
+
+std::string Tcom_ui::getMCType(std::string port)
+{
+    std::string resp = "";
+
+    if(port == ""){
+        if(mcCurrentType > 0){
+            resp = mcTypes[mcCurrentType];
+        }
+    }else{
+        std::string info_string = getInfo(port);
+
+        if(info_string != ""){
+            int found = -1;
+            for(int t=0;t<mcTypes_code.size();t++){
+                if(info_string.find(mcTypes_code[t]) != std::string::npos){
+                    found = t;
+                }
+            }
+
+            if(found != -1){
+                resp = mcTypes[found];
+            }
+        }
+
+    }
+
+    return resp;
 }

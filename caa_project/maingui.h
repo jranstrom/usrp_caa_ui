@@ -8,6 +8,7 @@
 #include <QDateTime>
 #include <QTableWidget>
 #include <QTimer>
+#include "mccontrolwidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -156,9 +157,18 @@ private slots:
 
     void on_button_cmc_element_4_released();
 
+    void on_button_cmc_custom_command_released();
+
+    void on_button_generate_mc_controls_released();
+
+    void on_button_disconnect_released();
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
+
+    int currentMCControlIdentifier = 0;
+    std::vector<MCControlWidget*> mcControlWidgets;
 
     QTimer processingTimer;
 
@@ -177,5 +187,7 @@ private:
 
     void applyTxConfig();
     void applyRxConfig();
+
+    void removeAllMCControlWidgets();
 };
 #endif // MAINGUI_H

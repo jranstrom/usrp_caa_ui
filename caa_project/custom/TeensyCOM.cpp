@@ -71,6 +71,14 @@ std::vector<std::string> TeensyCOM::GetDeviceList(){
     return DeviceList;
 }
 
+std::string TeensyCOM::GetCurrentPort()
+{
+    if(Connected){
+        return CurrentCOM.getPort();
+    }
+    return "";
+}
+
 bool TeensyCOM::Connect(std::string device_port,int timeout_duration){
 
 	bool connection_success = false;

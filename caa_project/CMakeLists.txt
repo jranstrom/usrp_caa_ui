@@ -9,9 +9,10 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Used :: UHD_4.4.0.0-124-g8a670958
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets PrintSupport)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
-find_package(UHD 4.1.0 REQUIRED)
+find_package(UHD 4.4.0 REQUIRED)
 
 set(UHD_BOOST_REQUIRED_COMPONENTS
     program_options
@@ -76,6 +77,8 @@ else()
             uiobj.h uiobj.cpp
             custom/TeensyCOM.h custom/TeensyCOM.cpp
             tcom_ui.h tcom_ui.cpp
+            mccontrolwidget.h mccontrolwidget.cpp
+            custom/labelandfieldwidget.h custom/labelandfieldwidget.cpp
         )
     endif()
 endif()
