@@ -79,6 +79,9 @@ else()
             tcom_ui.h tcom_ui.cpp
             mccontrolwidget.h mccontrolwidget.cpp
             custom/labelandfieldwidget.h custom/labelandfieldwidget.cpp
+            custom/indicatorbuttonwidget.h custom/indicatorbuttonwidget.cpp
+            custom/indicatorgroupwidget.h custom/indicatorgroupwidget.cpp
+
         )
     endif()
 endif()

@@ -11,7 +11,7 @@ public:
     explicit Tcom_ui(QObject *parent = nullptr);
 
     void requestAvailableDevices();
-    void requestToConnect(std::string port,bool silent=false);
+    void requestToConnect(std::string port,bool silent=false,int timeout=1000);
     void requestStatus();
     void requestInfo();
     std::string getInfo(std::string port);
@@ -19,10 +19,20 @@ public:
     void requestAutoToggle();
     void requestMCId();
     std::string getMCId(std::string port);
+
     void requestUESelect(int value);
+    void requestAllUEsOFF();
     void requestELSelect(int value);
     void requestELToggle(int value);
     void requestCommand(std::string value,bool awaitRepsonse=true);
+    void requestCycle();
+    bool requestRead();
+    void requestReset();
+
+    void flush();
+
+    std::string requestConfiguration(bool silent=false);
+    void requestConfiguation();
 
     std::string getMCType(std::string port="");
 

@@ -26,9 +26,9 @@ void Tcom_ui::requestAvailableDevices()
     }
 }
 
-void Tcom_ui::requestToConnect(std::string port,bool silent)
+void Tcom_ui::requestToConnect(std::string port,bool silent,int timeout)
 {
-    if(tcom.Connect(port)){
+    if(tcom.Connect(port,timeout)){
         if(!silent){
             emit connectionChanged(port);
         }
@@ -149,6 +149,15 @@ void Tcom_ui::requestUESelect(int value)
     }
 }
 
+void Tcom_ui::requestAllUEsOFF()
+{
+    if(tcom.WriteCommand("o")){
+        emit responseChanged(tcom.ReadLine());
+    }else{
+        emit responseChanged("Failed to request status");
+    }
+}
+
 void Tcom_ui::requestELSelect(int value)
 {
     if(tcom.WriteCommand("p" + std::to_string(value))){
@@ -177,6 +186,61 @@ void Tcom_ui::requestCommand(std::string value, bool awaitRepsonse)
             emit responseChanged("");
         }
     }
+}
+
+void Tcom_ui::requestCycle()
+{
+    if(tcom.WriteCommand("d")){
+        emit responseChanged(tcom.ReadLine());
+    }else{
+        tcom.Flush();
+        emit responseChanged("");
+    }
+}
+
+bool Tcom_ui::requestRead()
+{
+    std::string comMessage = tcom.ReadLine();
+
+    if(comMessage != ""){
+        emit responseChanged(comMessage);
+        return true;
+    }else{
+        return false;
+    }
+}
+
+void Tcom_ui::requestReset()
+{
+    if(tcom.WriteCommand("r")){
+        emit responseChanged(tcom.ReadLine());
+    }else{
+        emit responseChanged("Failed to request status");
+    }
+}
+
+void Tcom_ui::flush()
+{
+    tcom.Flush();
+}
+
+std::string Tcom_ui::requestConfiguration(bool silent)
+{
+    std::string response = "";
+    if(tcom.WriteCommand("g")){
+        response = tcom.ReadLine();
+    }
+
+    if(!silent){
+        emit responseChanged(response);
+    }
+
+    return response;
+}
+
+void Tcom_ui::requestConfiguation()
+{
+    std::string resp = requestConfiguration(false);
 }
 
 std::string Tcom_ui::getMCType(std::string port)

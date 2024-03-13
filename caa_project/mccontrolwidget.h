@@ -9,13 +9,17 @@
 #include <QLabel>
 #include "tcom_ui.h"
 #include "custom/labelandfieldwidget.h"
+#include "custom/indicatorbuttonwidget.h"
+#include "custom/indicatorgroupwidget.h"
 
 class MCControlWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit MCControlWidget(QWidget *parent = nullptr,int id=0,std::string mcType="unknown");
+    explicit MCControlWidget(std::string mcPort="",Tcom_ui * tcom_ptr=nullptr,int id=0,std::string mcType="unknown",QWidget *parent=nullptr);
 
+    void InitializeMCControlWidget(int id,std::string mcType,
+                                   std::string mcPort,Tcom_ui * tcom_ptr,QWidget * parent);
     int getIdentifier() {return identifier;}
     std::string getPort() {return port;}
     void setPort(std::string value){
@@ -27,10 +31,11 @@ public:
 
     void setMAC(std::string value){
         if(value != MAC){
-            MAC = value;
+            MAC = value;            
             mac_w->setFieldText(value);
 
-            mctype_label->setText(QString::fromStdString(MCType + " " + value));
+            mainGroupBox->setTitle(QString::fromStdString(MCType + " " + value));
+            //mctype_label->setText(QString::fromStdString(MCType + " " + value));
         }
     }
 
@@ -38,24 +43,37 @@ public:
         tcom = tcom_ptr;
     }
 
+    void requestRead();
+
 signals:
+    void cycleButtonReleased(int id);
 
 private slots:
    void onStatusButtonReleased();
    void onInfoButtonReleased();
    void onAutoButtonReleased();
+   void onDebugButtonReleased();
+   void onCycleButtonReleased();
+   void onResetButtonReleased();
 
    void responseChanged(std::string value);
 
+   void onElementButtonReleased(int id);
+   void onUEButtonReleased(int id);
+
 private :
-    QGroupBox *main_group;
+    QGroupBox *mainGroupBox;
     QPushButton *status_button;
     QPushButton *info_button;
+    QPushButton *debug_button;
     QPushButton *auto_button;
+    QPushButton *cycle_button;
+    QPushButton *reset_button;
 
-    QVBoxLayout *main_group_layout;
-    QHBoxLayout *info_layout;
-    QGridLayout  *control_layout;
+    QHBoxLayout *outerContainerLayout;
+    QVBoxLayout *mainGroupBoxLayout;
+    QHBoxLayout *infoLayout;
+    QGridLayout  *controlLayout;
 
     QLabel * mctype_label;
 
@@ -63,12 +81,20 @@ private :
     LabelandFieldWidget * mac_w;
     LabelandFieldWidget * response_w;
 
+    IndicatorGroupWidget * element_group_w;
+    IndicatorGroupWidget * ue_group_w;
+
     Tcom_ui * tcom;
 
     int identifier;
     std::string port;
     std::string MAC;
     std::string MCType;
+
+    void configureMCfromResponse(std::string value);
+    int getNumberAfterMatch(std::string originalString,std::string substring);
+
+
 };
 
 #endif // MCCONTROLWIDGET_H

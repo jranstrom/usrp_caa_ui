@@ -163,6 +163,10 @@ private slots:
 
     void on_button_disconnect_released();
 
+    void on_button_flush_released();
+
+    void updateMCSCycle(int id);
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;

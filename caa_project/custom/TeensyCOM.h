@@ -11,8 +11,8 @@ class TeensyCOM {
 		TeensyCOM(int baudrate=9600); // constructor
 		~TeensyCOM(); 	// Destructor
         void ListAvailablePorts();
-		bool CheckConnection(std::string device_port="",int timeout_duration=3000);
-		bool Connect(std::string device_port="",int timeout_duration=3000);
+        bool CheckConnection(std::string device_port="",int timeout_duration=1000);
+        bool Connect(std::string device_port="",int timeout_duration=1000);
 		bool WriteCommand(std::string command);
 		void FlushInput();
 		void FlushOutput();

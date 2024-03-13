@@ -566,6 +566,7 @@ void mainGUI::applyRxConfig()
 void mainGUI::removeAllMCControlWidgets()
 {
     for (MCControlWidget* customWidget : mcControlWidgets) {
+        disconnect(customWidget,&MCControlWidget::cycleButtonReleased,this,&mainGUI::updateMCSCycle);
         ui->verticalLayout_mc_controls->removeWidget(customWidget);
         delete customWidget;
     }
@@ -920,11 +921,11 @@ void mainGUI::on_button_generate_mc_controls_released()
 
             std::string MCMAC = tcom.getMCId(port);
 
-            MCControlWidget *customWidget = new MCControlWidget(this,currentMCControlIdentifier++,MCType);
+            MCControlWidget *customWidget = new MCControlWidget(port,&tcom,currentMCControlIdentifier++,MCType,this);
 
-            customWidget->setPort(port);
             customWidget->setMAC(MCMAC);
-            customWidget->setTCOM(&tcom);
+
+            connect(customWidget,&MCControlWidget::cycleButtonReleased,this,&mainGUI::updateMCSCycle);
 
             ui->verticalLayout_mc_controls->addWidget(customWidget);
 
@@ -942,6 +943,21 @@ void mainGUI::on_button_disconnect_released()
 {
     if(mcControlWidgets.size() > 0){
         removeAllMCControlWidgets();
+    }
+}
+
+
+void mainGUI::on_button_flush_released()
+{
+    tcom.flush();
+}
+
+void mainGUI::updateMCSCycle(int id)
+{
+    for(int i=0;i<mcControlWidgets.size();i++){
+        if(mcControlWidgets[i]->getIdentifier() != id){
+            mcControlWidgets[i]->requestRead();
+        }
     }
 }
 
