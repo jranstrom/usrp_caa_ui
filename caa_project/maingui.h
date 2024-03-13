@@ -9,6 +9,7 @@
 #include <QTableWidget>
 #include <QTimer>
 #include "mccontrolwidget.h"
+#include "custom/sliderandlineedit.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -25,8 +26,8 @@ public:
     ~mainGUI();
     void setRadioSysObject(RadioSysObject * RadObj);
 
-    void updateTxCarrierFrequency(bool status);
-    void updateRxCarrierFrequency(bool status);
+    //void updateTxCarrierFrequency(bool status);
+    //void updateRxCarrierFrequency(bool status);
 
     void updateTxGain(bool status);
     void updateRxGain(bool status);
@@ -37,8 +38,8 @@ public:
     void updateTxPPSSource(bool status);
     void updateRxPPSSource(bool status);
 
-    void updateTxSamplingRate(bool status);
-    void updateRxSamplingRate(bool status);
+    //void updateTxSamplingRate(bool status);
+    //void updateRxSamplingRate(bool status);
 
     void updateTxREFSource(bool status);
     void updateRxREFSource(bool status);
@@ -85,14 +86,6 @@ private slots:
 
     void on_lineEdit_rx_gain_textEdited(const QString &arg1);
 
-    void on_hslider_tx_fc_valueChanged(int value);
-
-    void on_lineEdit_tx_fc_editingFinished();
-
-    void on_lineEdit_rx_fc_editingFinished();
-
-    void on_hslider_rx_fc_valueChanged(int value);
-
     void on_button_transmit_released();
 
     void on_button_apply_config_released();
@@ -121,14 +114,6 @@ private slots:
 
     void on_vslider_lo_offset_valueChanged(int value);
 
-    void on_lineEdit_rx_rs_textEdited(const QString &arg1);
-
-    void on_lineEdit_tx_rs_textEdited(const QString &arg1);
-
-    void on_hslider_rx_rs_valueChanged(int value);
-
-    void on_hslider_tx_rs_valueChanged(int value);
-
     void on_pushButton_released();
 
     void updateAvailableDevices(std::vector<std::string> & value);
@@ -145,6 +130,14 @@ private slots:
 
     void updateMCSCycle(int id);
 
+    void userChangedTxCarrierFrequency(double value);
+    void userChangedRxCarrierFrequency(double value);
+    void userChangedTxSamplingRate(double value);
+    void userChangedRxSamplingRate(double value);
+    void userChangedTxGain(double value);
+    void userChangedRxGain(double value);
+    void userChangedLOOffset(double value);
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
@@ -159,6 +152,17 @@ private:
 
     QDateTime transmissionStartTime;
     QDateTime receptionStartTime;
+
+    SliderAndLineEdit * txCarrierSlider;
+    SliderAndLineEdit * rxCarrierSlider;
+
+    SliderAndLineEdit * txSamplingRateSlider;
+    SliderAndLineEdit * rxSamplingRateSlider;
+
+    SliderAndLineEdit * txGainSlider;
+    SliderAndLineEdit * rxGainSlider;
+
+    SliderAndLineEdit * rxLOOffsetSlider;
 
     void SetWidgetColor(QWidget * widg, int colorc);
 

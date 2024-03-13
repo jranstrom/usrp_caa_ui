@@ -18,11 +18,34 @@ mainGUI::mainGUI(QWidget *parent)
     connect(&uio,&uiobj::rxSetupStatusChanged,this,&mainGUI::updateRxSetupStatus);
     connect(&uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateTxSetupStatus);
 
-    connect(&uio,&uiobj::txCarrierFrequencyChanged,this,&mainGUI::updateTxCarrierFrequency);
-    connect(&uio,&uiobj::rxCarrierFrequencyChanged,this,&mainGUI::updateRxCarrierFrequency);
+    txCarrierSlider = new SliderAndLineEdit("Tx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e6,true,this);
+    ui->verticalLayout_12->addWidget(txCarrierSlider);
+    connect(txCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxCarrierFrequency);
 
-    connect(&uio,&uiobj::txGainChanged,this,&mainGUI::updateTxGain);
-    connect(&uio,&uiobj::rxGainChanged,this,&mainGUI::updateRxGain);
+    rxCarrierSlider = new SliderAndLineEdit("Rx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e6,true,this);
+    ui->verticalLayout_10->addWidget(rxCarrierSlider);
+    connect(rxCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxCarrierFrequency);
+
+    txSamplingRateSlider = new SliderAndLineEdit("Tx Sampling Rate",20e6,10e3,"MHz",1e6,1e3,true,this);
+    ui->verticalLayout_10->addWidget(txSamplingRateSlider);
+    connect(txSamplingRateSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxSamplingRate);
+
+    rxSamplingRateSlider = new SliderAndLineEdit("Rx Sampling Rate",20e6,10e3,"MHz",1e6,1e3,true,this);
+    ui->verticalLayout_10->addWidget(rxSamplingRateSlider);
+    connect(rxSamplingRateSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxSamplingRate);
+
+    rxLOOffsetSlider = new SliderAndLineEdit("LO Offset",25e6,-25e6,"MHz",1e6,5e5,true,this);
+    ui->verticalLayout_12->addWidget(rxLOOffsetSlider);
+    connect(rxLOOffsetSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedLOOffset);
+
+    txGainSlider = new SliderAndLineEdit("Tx Gain",15,-15,"dB",1,1,true,this);
+    ui->verticalLayout_12->addWidget(txGainSlider);
+    connect(txGainSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxGain);
+
+    rxGainSlider = new SliderAndLineEdit("Rx Gain",15,-15,"dB",1,1,true,this);
+    ui->verticalLayout_12->addWidget(rxGainSlider);
+    connect(rxGainSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxGain);
+
 
     connect(&uio,&uiobj::txIPAddressChanged,this,&mainGUI::updateTxIPAddress);
     connect(&uio,&uiobj::rxIPAddressChanged,this,&mainGUI::updateRxIPAddress);
@@ -32,12 +55,6 @@ mainGUI::mainGUI(QWidget *parent)
 
     connect(&uio,&uiobj::txREFSourceChanged,this,&mainGUI::updateTxREFSource);
     connect(&uio,&uiobj::rxREFSourceChanged,this,&mainGUI::updateRxREFSource);
-
-    connect(&uio,&uiobj::rxLO_OffsetChanged,this,&mainGUI::updateRxLO_Offset);
-
-    connect(&uio,&uiobj::txSamplingRateChanged,this,&mainGUI::updateTxSamplingRate);
-    connect(&uio,&uiobj::rxSamplingRateChanged,this,&mainGUI::updateRxSamplingRate);
-
 
     connect(&uio,&uiobj::USRPConfigurationChanged,this,&mainGUI::onUSRPConfigurationChanged);
     //connect(&uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateUSRPSetupChanged);
@@ -51,7 +68,7 @@ mainGUI::mainGUI(QWidget *parent)
 
     processingTimer.setInterval(500);
     processingTimer.setSingleShot(false);
-    processingTimer.start();
+    processingTimer.start();    
 
     //uio.ForceUpdateAll();
 
@@ -101,15 +118,6 @@ void mainGUI::updateRxSetupStatus(bool status)
 
 }
 
-void mainGUI::updateRxLO_Offset(bool status)
-{
-    if(status){
-        double value = radObj->sysConf.getRxLO_offset();
-        ui->lineEdit_lo_offset->setText(QString::number(value / 1e6));
-        ui->vslider_lo_offset->setValue(value / 1e5);
-    }
-}
-
 mainGUI::~mainGUI()
 {
     delete ui;
@@ -123,41 +131,6 @@ void mainGUI::setRadioSysObject(RadioSysObject *RadObj)
     uio.ForceUpdateAll();
 }
 
-void mainGUI::updateTxCarrierFrequency(bool status)
-{
-    if(status){
-        double value = radObj->sysConf.getTxCarrierFrequency();
-        ui->lineEdit_tx_fc->setText(QString::number(value/1e9));
-        ui->hslider_tx_fc->setValue(value/1e6);
-    }
-}
-
-void mainGUI::updateRxCarrierFrequency(bool status)
-{
-    if(status){
-        double value = radObj->sysConf.getRxCarrierFrequency();
-        ui->lineEdit_rx_fc->setText(QString::number(value/1e9));
-        ui->hslider_rx_fc->setValue(value/1e6);
-    }
-}
-
-void mainGUI::updateTxGain(bool status)
-{
-    if(status){
-        double value = radObj->sysConf.getTxGain();
-        ui->lineEdit_tx_gain->setText(QString::number(value));
-        ui->vslider_tx_gain->setValue(value);
-    }
-}
-
-void mainGUI::updateRxGain(bool status)
-{
-    if(status){
-        double value = radObj->sysConf.getRxGain();
-        ui->lineEdit_rx_gain->setText(QString::number(value));
-        ui->vslider_rx_gain->setValue(value);
-    }
-}
 
 void mainGUI::updateTxIPAddress(bool status)
 {
@@ -188,24 +161,6 @@ void mainGUI::updateRxPPSSource(bool status)
         ui->buttonGroup_rx_pps->button(-2)->setChecked(true);
     }else{
         ui->buttonGroup_rx_pps->button(-3)->setChecked(true);
-    }
-}
-
-void mainGUI::updateTxSamplingRate(bool status)
-{
-    if(status){
-        double value = radObj->sysConf.getTxSamplingRate() / 1e6 * 1e3;
-        ui->lineEdit_tx_rs->setText(QString::number(value));
-        ui->hslider_tx_rs->setValue(value);
-    }
-}
-
-void mainGUI::updateRxSamplingRate(bool status)
-{
-    if(status){
-        double value = radObj->sysConf.getRxSamplingRate() / 1e6 * 1e3;
-        ui->lineEdit_rx_rs->setText(QString::number(value));
-        ui->hslider_rx_rs->setValue(value);
     }
 }
 
@@ -469,6 +424,17 @@ void mainGUI::on_button_load_cfg_released()
     if(radObj->readConfigFile((ui->lineEdit_cfg_file->text()).toStdString())){
         //SetWidgetColor(ui->button_load_cfg,9433252);
 
+        rxCarrierSlider->Request2SetComponentValue(radObj->sysConf.getRxCarrierFrequency());
+        txCarrierSlider->Request2SetComponentValue(radObj->sysConf.getTxCarrierFrequency());
+
+        rxSamplingRateSlider->Request2SetComponentValue(radObj->sysConf.getRxSamplingRate());
+        txSamplingRateSlider->Request2SetComponentValue(radObj->sysConf.getTxSamplingRate());
+
+        rxGainSlider->Request2SetComponentValue(radObj->sysConf.getRxGain());
+        txGainSlider->Request2SetComponentValue(radObj->sysConf.getTxGain());
+
+        rxLOOffsetSlider->Request2SetComponentValue(radObj->sysConf.getRxLO_offset());
+
 
         uio.ForceUpdateAll();
 
@@ -522,42 +488,16 @@ void mainGUI::on_lineEdit_rx_gain_textEdited(const QString &arg1)
     uio.setRxGain(rx_gain);
 }
 
-void mainGUI::on_hslider_tx_fc_valueChanged(int value)
-{
-    uio.setTxCarrierFrequency(value*1e6);
-}
-
-void mainGUI::on_lineEdit_tx_fc_editingFinished()
-{
-    QString arg1 = ui->lineEdit_tx_fc->text();
-    double tx_fc = arg1.toDouble();
-    tx_fc = std::round(tx_fc*100)/100;
-    uio.setTxCarrierFrequency(tx_fc*1e9);
-}
-
-void mainGUI::on_lineEdit_rx_fc_editingFinished()
-{
-    QString arg1 = ui->lineEdit_rx_fc->text();
-    double rx_fc = arg1.toDouble();
-    rx_fc = std::round(rx_fc*100)/100;
-    uio.setRxCarrierFrequency(rx_fc*1e9);
-}
-
-void mainGUI::on_hslider_rx_fc_valueChanged(int value)
-{
-    uio.setRxCarrierFrequency(value*1e6);
-}
-
 void mainGUI::applyTxConfig()
 {
-    radObj->sysConf.tx.CarrierFrequency = (ui->lineEdit_tx_fc->text()).toDouble()*1e9;
-    radObj->sysConf.tx.Gain = (ui->lineEdit_tx_gain->text()).toDouble();
+    //radObj->sysConf.tx.CarrierFrequency = (ui->lineEdit_tx_fc->text()).toDouble()*1e9;
+    //radObj->sysConf.tx.Gain = (ui->lineEdit_tx_gain->text()).toDouble();
 }
 
 void mainGUI::applyRxConfig()
 {
-    radObj->sysConf.rx.CarrierFrequency = (ui->lineEdit_rx_fc->text()).toDouble()*1e9;
-    radObj->sysConf.rx.Gain = (ui->lineEdit_rx_gain->text()).toDouble();
+   // radObj->sysConf.rx.CarrierFrequency = (ui->lineEdit_rx_fc->text()).toDouble()*1e9;
+    //radObj->sysConf.rx.Gain = (ui->lineEdit_rx_gain->text()).toDouble();
 }
 
 void mainGUI::removeAllMCControlWidgets()
@@ -720,33 +660,6 @@ void mainGUI::on_vslider_lo_offset_valueChanged(int value)
     uio.setRxLO_Offset(value*1e5);
 }
 
-
-void mainGUI::on_lineEdit_rx_rs_textEdited(const QString &arg1)
-{
-    double rx_rs = arg1.toDouble() * 1e6 / 1e3;
-    uio.setRxSamplingRate(rx_rs);
-}
-
-
-void mainGUI::on_lineEdit_tx_rs_textEdited(const QString &arg1)
-{
-    double tx_rs = arg1.toDouble() * 1e6 / 1e3;
-    uio.setTxSamplingRate(tx_rs);
-}
-
-
-void mainGUI::on_hslider_rx_rs_valueChanged(int value)
-{
-    uio.setRxSamplingRate(value * 1e6 / 1e3);
-}
-
-
-void mainGUI::on_hslider_tx_rs_valueChanged(int value)
-{
-    uio.setTxSamplingRate(value * 1e6 / 1e3);
-}
-
-
 void mainGUI::on_pushButton_released()
 {
     tcom.requestAvailableDevices();
@@ -828,5 +741,51 @@ void mainGUI::updateMCSCycle(int id)
             mcControlWidgets[i]->requestRead();
         }
     }
+}
+
+void mainGUI::userChangedTxCarrierFrequency(double value)
+{
+    //uio.setTxCarrierFrequency(value);
+    radObj->sysConf.setTxCarrierFrequency(value);
+    uio.txUSRPConfigurationChanged(true);
+}
+
+void mainGUI::userChangedRxCarrierFrequency(double value)
+{
+    //uio.setRxCarrierFrequency(value);
+    radObj->sysConf.setRxCarrierFrequency(value);
+    uio.rxUSRPConfigurationChanged(true);
+
+    //txUSRPConfigurationChanged(true);
+}
+
+void mainGUI::userChangedTxSamplingRate(double value)
+{
+    radObj->sysConf.setTxSamplingRate(value);
+    uio.txUSRPConfigurationChanged(true);
+}
+
+void mainGUI::userChangedRxSamplingRate(double value)
+{
+    radObj->sysConf.setRxSamplingRate(value);
+    uio.rxUSRPConfigurationChanged(true);
+}
+
+void mainGUI::userChangedTxGain(double value)
+{
+    radObj->sysConf.setTxGain(value);
+    uio.txUSRPConfigurationChanged(true);
+}
+
+void mainGUI::userChangedRxGain(double value)
+{
+    radObj->sysConf.setRxGain(value);
+    uio.rxUSRPConfigurationChanged(true);
+}
+
+void mainGUI::userChangedLOOffset(double value)
+{
+    radObj->sysConf.setRxLO_offset(value);
+    uio.rxUSRPConfigurationChanged(true);
 }
 
