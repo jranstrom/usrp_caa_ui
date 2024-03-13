@@ -46,9 +46,6 @@ mainGUI::mainGUI(QWidget *parent)
 
     connect(&tcom,&Tcom_ui::availableDevicesChanged,this,&mainGUI::updateAvailableDevices);
     connect(&tcom,&Tcom_ui::connectionChanged,this,&mainGUI::updateConnection);
-    connect(&tcom,&Tcom_ui::responseChanged,this,&mainGUI::updateResponse);
-    connect(&tcom,&Tcom_ui::mcIdChanged,this,&mainGUI::updateMCId);
-    connect(&tcom,&Tcom_ui::mcTypeChanged,this,&mainGUI::updateMCType);
 
     SetWidgetColor(ui->indicator_captured_buffer,16146769);
 
@@ -567,7 +564,7 @@ void mainGUI::removeAllMCControlWidgets()
 {
     for (MCControlWidget* customWidget : mcControlWidgets) {
         disconnect(customWidget,&MCControlWidget::cycleButtonReleased,this,&mainGUI::updateMCSCycle);
-        ui->verticalLayout_mc_controls->removeWidget(customWidget);
+        ui->gridLayout_mcs->removeWidget(customWidget);
         delete customWidget;
     }
 
@@ -772,73 +769,6 @@ void mainGUI::updateConnection(std::string value)
     }
 }
 
-void mainGUI::updateResponse(std::string value)
-{
-    ui->lineEdit_tcom_response->setText(QString::fromStdString(value));
-    size_t pos = value.find("caae");
-    int caae_config = 0;
-    bool elementStates[] = {false,false,false,false};
-    if (pos != std::string::npos) {
-        pos += 4;
-        std::string number = "";
-
-        while(isdigit(value[pos])){
-            number += value[pos++];
-        }
-
-        caae_config = std::stoi(number);
-        elementStates[0] = static_cast<bool>((caae_config >> 0) & 1);
-        elementStates[1] = static_cast<bool>((caae_config >> 1) & 1);
-        elementStates[2] = static_cast<bool>((caae_config >> 2) & 1);
-        elementStates[3] = static_cast<bool>((caae_config >> 3) & 1);
-
-        SetWidgetColorState(ui->button_cmc_element_1,elementStates[0]);
-        SetWidgetColorState(ui->button_cmc_element_2,elementStates[1]);
-        SetWidgetColorState(ui->button_cmc_element_3,elementStates[2]);
-        SetWidgetColorState(ui->button_cmc_element_4,elementStates[3]);
-    }
-}
-
-void mainGUI::updateMCId(std::string value)
-{
-    ui->lineEdit_mc_id->setText(QString::fromStdString(value));
-}
-
-void mainGUI::updateMCType(std::string value)
-{
-    ui->lineEdit_mc_type->setText(QString::fromStdString(value));
-
-    ui->button_mc_status->setEnabled(false);
-    ui->button_mc_info->setEnabled(false);
-    ui->button_mc_debug_mode->setEnabled(false);
-    ui->button_mc_auto_mode->setEnabled(false);
-    ui->button_mc_select_ue->setEnabled(false);
-    ui->groupBox_cmc_elements->setEnabled(false);
-    // ui->button_cmc_element_1->setEnabled(false);
-    // ui->button_cmc_element_2->setEnabled(false);
-    // ui->button_cmc_element_3->setEnabled(false);
-    // ui->button_cmc_element_4->setEnabled(false);
-
-
-    if(value == "UE Switch"){
-        ui->button_mc_status->setEnabled(true);
-        ui->button_mc_info->setEnabled(true);
-        ui->button_mc_debug_mode->setEnabled(true);
-        ui->button_mc_select_ue->setEnabled(true);
-    }else if(value == "Element Switch"){
-        ui->button_mc_status->setEnabled(true);
-        ui->button_mc_info->setEnabled(true);
-        ui->button_mc_debug_mode->setEnabled(true);
-        ui->button_mc_auto_mode->setEnabled(true);
-        ui->groupBox_cmc_elements->setEnabled(true);
-        // ui->button_cmc_element_1->setEnabled(true);
-        // ui->button_cmc_element_2->setEnabled(true);
-        // ui->button_cmc_element_3->setEnabled(true);
-        // ui->button_cmc_element_4->setEnabled(true);
-    }
-}
-
-
 void mainGUI::on_listWidget_available_devices_itemSelectionChanged()
 {
     QListWidgetItem *selectedItem = ui->listWidget_available_devices->currentItem();
@@ -848,68 +778,12 @@ void mainGUI::on_listWidget_available_devices_itemSelectionChanged()
     }
 }
 
-
-void mainGUI::on_button_mc_status_released()
-{
-    tcom.requestStatus();
-}
-
-
-void mainGUI::on_button_mc_info_released()
-{
-    tcom.requestInfo();
-}
-
-
-void mainGUI::on_button_mc_debug_mode_released()
-{
-    tcom.requestDebugToggle();
-}
-
-
-void mainGUI::on_button_mc_auto_mode_released()
-{
-    tcom.requestAutoToggle();
-}
-
-
-void mainGUI::on_button_mc_select_ue_released()
-{
-    tcom.requestUESelect(ui->spinBox_mc_ue_select->value());
-}
-
-void mainGUI::on_button_cmc_element_1_released()
-{
-    tcom.requestELToggle(1);
-}
-
-void mainGUI::on_button_cmc_element_2_released()
-{
-    tcom.requestELToggle(2);
-}
-
-void mainGUI::on_button_cmc_element_3_released()
-{
-    tcom.requestELToggle(3);
-}
-
-void mainGUI::on_button_cmc_element_4_released()
-{
-    tcom.requestELToggle(4);
-}
-
-
-void mainGUI::on_button_cmc_custom_command_released()
-{
-    tcom.requestCommand((ui->lineEdit_cmc_custom_command->text()).toStdString(),true);
-}
-
-
 void mainGUI::on_button_generate_mc_controls_released()
 {
     removeAllMCControlWidgets();
 
     int  L = ui->listWidget_available_devices->count();
+    const int rows  = 2;
 
     for(int i=0;i<L;i++){
         auto item = ui->listWidget_available_devices->item(i);
@@ -926,8 +800,8 @@ void mainGUI::on_button_generate_mc_controls_released()
             customWidget->setMAC(MCMAC);
 
             connect(customWidget,&MCControlWidget::cycleButtonReleased,this,&mainGUI::updateMCSCycle);
-
-            ui->verticalLayout_mc_controls->addWidget(customWidget);
+            int io = i+1;
+            ui->gridLayout_mcs->addWidget(customWidget,std::floor(io/rows),io % rows);
 
             mcControlWidgets.push_back(customWidget);
             //ui->verticalLayout_30->addWidget(customWidget);
@@ -946,11 +820,6 @@ void mainGUI::on_button_disconnect_released()
     }
 }
 
-
-void mainGUI::on_button_flush_released()
-{
-    tcom.flush();
-}
 
 void mainGUI::updateMCSCycle(int id)
 {

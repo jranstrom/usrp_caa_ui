@@ -81,6 +81,7 @@ else()
             custom/labelandfieldwidget.h custom/labelandfieldwidget.cpp
             custom/indicatorbuttonwidget.h custom/indicatorbuttonwidget.cpp
             custom/indicatorgroupwidget.h custom/indicatorgroupwidget.cpp
+            custom/sliderandlineedit.h custom/sliderandlineedit.cpp
 
         )
     endif()

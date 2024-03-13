@@ -133,37 +133,15 @@ private slots:
 
     void updateAvailableDevices(std::vector<std::string> & value);
     void updateConnection(std::string value);
-    void updateResponse(std::string value);
-    void updateMCId(std::string value);
-    void updateMCType(std::string value);
+    //void updateResponse(std::string value);
+    //void updateMCId(std::string value);
+    //void updateMCType(std::string value);
 
     void on_listWidget_available_devices_itemSelectionChanged();
-
-    void on_button_mc_status_released();
-
-    void on_button_mc_info_released();
-
-    void on_button_mc_debug_mode_released();
-
-    void on_button_mc_auto_mode_released();
-
-    void on_button_mc_select_ue_released();
-
-    void on_button_cmc_element_1_released();
-
-    void on_button_cmc_element_2_released();
-
-    void on_button_cmc_element_3_released();
-
-    void on_button_cmc_element_4_released();
-
-    void on_button_cmc_custom_command_released();
 
     void on_button_generate_mc_controls_released();
 
     void on_button_disconnect_released();
-
-    void on_button_flush_released();
 
     void updateMCSCycle(int id);
 
