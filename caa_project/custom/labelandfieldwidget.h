@@ -20,8 +20,13 @@ public:
 
 signals:
 
+    void fieldTextEditing(std::string value);
+    void fieldTexEditFinished(std::string value);
+
 private slots:
     void onFieldTextChanged();
+    void onFieldTextEditing(QString value);
+    void onFieldTextEditFinished();
 
 private :
     QLabel * label;
@@ -31,6 +36,7 @@ private :
     std::string fieldText = "";
 
     bool isEditable = false;
+    bool isEditing = false;
 };
 
 #endif // LABELANDFIELDWIDGET_H

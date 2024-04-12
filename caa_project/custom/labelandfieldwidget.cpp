@@ -22,6 +22,9 @@ LabelandFieldWidget::LabelandFieldWidget(QWidget *parent,
 
     if(!editable){
         connect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextChanged);
+    }else{
+        connect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextEditing);
+        connect(lineEdit,&QLineEdit::editingFinished,this,&LabelandFieldWidget::onFieldTextEditFinished);
     }
 }
 
@@ -53,4 +56,16 @@ void LabelandFieldWidget::setEditable(bool is_editable)
 void LabelandFieldWidget::onFieldTextChanged()
 {
     lineEdit->setText(QString::fromStdString(fieldText));
+}
+
+void LabelandFieldWidget::onFieldTextEditing(QString value)
+{
+    isEditing = true;
+    emit fieldTextEditing(value.toStdString());
+}
+
+void LabelandFieldWidget::onFieldTextEditFinished()
+{
+    isEditing = false;
+    emit fieldTexEditFinished((lineEdit->text()).toStdString());
 }

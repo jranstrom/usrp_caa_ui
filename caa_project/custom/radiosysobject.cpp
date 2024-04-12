@@ -235,6 +235,16 @@ bool RadioSysObject::stopReception()
     return true;
 }
 
+bool RadioSysObject::startSynchronization()
+{
+
+}
+
+bool RadioSysObject::stopSynchronization()
+{
+
+}
+
 bool RadioSysObject::isTransmitting()
 {
     return TransmissionInProgress;
@@ -655,6 +665,11 @@ void RadioSysObject::runReceptionThread()
         buff_Allocated = false;
         ReceptionInProgress = false;
     }
+
+}
+
+void RadioSysObject::rundSynchronizationThread()
+{
 
 }
 

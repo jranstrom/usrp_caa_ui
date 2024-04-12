@@ -18,6 +18,16 @@ mainGUI::mainGUI(QWidget *parent)
     connect(&uio,&uiobj::rxSetupStatusChanged,this,&mainGUI::updateRxSetupStatus);
     connect(&uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateTxSetupStatus);
 
+    rxIPAddressField = new LabelandFieldWidget(this,"RX USRP IP:","192.168.10.3",true);
+    txIPAddressField = new LabelandFieldWidget(this,"TX USRP IP:","192.168.10.4",true);
+
+    ui->verticalLayout_12->addWidget(rxIPAddressField);
+    ui->verticalLayout_12->addWidget(txIPAddressField);
+
+    connect(rxIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedRxIPAddress);
+    connect(txIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedTxIPAddress);
+
+
     txCarrierSlider = new SliderAndLineEdit("Tx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e6,true,this);
     ui->verticalLayout_12->addWidget(txCarrierSlider);
     connect(txCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxCarrierFrequency);
@@ -45,10 +55,6 @@ mainGUI::mainGUI(QWidget *parent)
     rxGainSlider = new SliderAndLineEdit("Rx Gain",15,-15,"dB",1,1,true,this);
     ui->verticalLayout_12->addWidget(rxGainSlider);
     connect(rxGainSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxGain);
-
-
-    connect(&uio,&uiobj::txIPAddressChanged,this,&mainGUI::updateTxIPAddress);
-    connect(&uio,&uiobj::rxIPAddressChanged,this,&mainGUI::updateRxIPAddress);
 
     connect(&uio,&uiobj::txPPSSourceChanged,this,&mainGUI::updateTxPPSSource);
     connect(&uio,&uiobj::rxPPSSourceChanged,this,&mainGUI::updateRxPPSSource);
@@ -131,20 +137,6 @@ void mainGUI::setRadioSysObject(RadioSysObject *RadObj)
     uio.ForceUpdateAll();
 }
 
-
-void mainGUI::updateTxIPAddress(bool status)
-{
-    if(status){
-        ui->lineEdit_tx_ip->setText(QString::fromStdString(radObj->sysConf.getTxIPAddress()));
-    }
-}
-
-void mainGUI::updateRxIPAddress(bool status)
-{
-    if(status){
-        ui->lineEdit_rx_ip->setText(QString::fromStdString(radObj->sysConf.getRxIPAddress()));
-    }
-}
 
 void mainGUI::updateTxPPSSource(bool status)
 {
@@ -238,40 +230,6 @@ void mainGUI::addStatusUpdate(QString entry, QTableWidget *table)
     table->setItem(0, 1, item2); // Row 0, Column 1
 
     table->selectRow(0);
-
-}
-
-void mainGUI::on_button_rx_test_connection_released()
-{
-    SetWidgetColor(ui->indicator_rx_connection,9433252);
-}
-
-
-void mainGUI::on_button_tx_test_connection_released()
-{
-    SetWidgetColor(ui->indicator_tx_connection,9433252);
-
-    QProcess process;
-
-    // Set the command to be executed
-    QString command = "uhd_find_devices"; // Example command, replace with your desired command
-
-    // Set the arguments if needed
-    QStringList arguments; // You can add command line arguments here if your command requires
-    // arguments << "arg1" << "arg2";
-
-    // Start the process
-    process.start(command, arguments);
-
-    // Wait for the process to finish
-    if (process.waitForFinished()) {
-        // Read the output from the process
-        QByteArray output = process.readAllStandardOutput();
-        qDebug() << "Output:" << output;
-    } else {
-        // Error occurred
-        qDebug() << "Error:" << process.errorString();
-    }
 
 }
 
@@ -435,6 +393,8 @@ void mainGUI::on_button_load_cfg_released()
 
         rxLOOffsetSlider->Request2SetComponentValue(radObj->sysConf.getRxLO_offset());
 
+        rxIPAddressField->setFieldText(radObj->sysConf.getRxIPAddress());
+        txIPAddressField->setFieldText(radObj->sysConf.getTxIPAddress());
 
         uio.ForceUpdateAll();
 
@@ -464,28 +424,6 @@ void mainGUI::on_button_load_cfg_released()
     }else{
         addStatusUpdate("Error loading configuration",ui->tableWidget_status);
     }
-}
-
-void mainGUI::on_vslider_tx_gain_valueChanged(int value)
-{
-    uio.setTxGain(value);
-}
-
-void mainGUI::on_lineEdit_tx_gain_textEdited(const QString &arg1)
-{
-    double tx_gain = arg1.toDouble();
-    uio.setTxGain(tx_gain);
-}
-
-void mainGUI::on_vslider_rx_gain_valueChanged(int value)
-{
-    uio.setRxGain(value);
-}
-
-void mainGUI::on_lineEdit_rx_gain_textEdited(const QString &arg1)
-{
-    double rx_gain = arg1.toDouble();
-    uio.setRxGain(rx_gain);
 }
 
 void mainGUI::applyTxConfig()
@@ -606,18 +544,6 @@ void mainGUI::on_button_save_cf_released()
 }
 
 
-void mainGUI::on_lineEdit_tx_ip_editingFinished()
-{
-    uio.setTxIPAddress((ui->lineEdit_tx_ip->text()).toStdString());
-}
-
-
-void mainGUI::on_lineEdit_rx_ip_editingFinished()
-{
-    uio.setRxIPAddress((ui->lineEdit_rx_ip->text()).toStdString());
-}
-
-
 void mainGUI::on_button_receive_released()
 {
     radObj->startReception();
@@ -643,21 +569,6 @@ void mainGUI::on_button_write_buffer_to_file_released()
     radObj->stopReception();
     radObj->requestWriteBufferToFile((ui->lineEdit_buffer_file_capture_path->text()).toStdString(),
                                      ui->spinBox_capture_samples->value()*1e3);
-}
-
-
-void mainGUI::on_lineEdit_lo_offset_textEdited(const QString &arg1)
-{
-    //QString arg1 = ui->lineEdit_lo_offset->text();
-
-    double offset = arg1.toDouble();
-    uio.setRxLO_Offset(offset*1e6);
-}
-
-
-void mainGUI::on_vslider_lo_offset_valueChanged(int value)
-{
-    uio.setRxLO_Offset(value*1e5);
 }
 
 void mainGUI::on_pushButton_released()
@@ -714,7 +625,7 @@ void mainGUI::on_button_generate_mc_controls_released()
 
             connect(customWidget,&MCControlWidget::cycleButtonReleased,this,&mainGUI::updateMCSCycle);
             int io = i+1;
-            ui->gridLayout_mcs->addWidget(customWidget,std::floor(io/rows),io % rows);
+            ui->gridLayout_mcs->addWidget(customWidget,io % rows,std::floor(io/rows));
 
             mcControlWidgets.push_back(customWidget);
             //ui->verticalLayout_30->addWidget(customWidget);
@@ -725,14 +636,12 @@ void mainGUI::on_button_generate_mc_controls_released()
 
 }
 
-
 void mainGUI::on_button_disconnect_released()
 {
     if(mcControlWidgets.size() > 0){
         removeAllMCControlWidgets();
     }
 }
-
 
 void mainGUI::updateMCSCycle(int id)
 {
@@ -787,5 +696,17 @@ void mainGUI::userChangedLOOffset(double value)
 {
     radObj->sysConf.setRxLO_offset(value);
     uio.rxUSRPConfigurationChanged(true);
+}
+
+void mainGUI::userChangedRxIPAddress(std::string value)
+{
+    radObj->sysConf.setRxIPAddress(value);
+    ui->verticalLayout_12->addWidget(rxIPAddressField);
+}
+
+void mainGUI::userChangedTxIPAddress(std::string value)
+{
+    radObj->sysConf.setTxIPAddress(value);
+    ui->verticalLayout_12->addWidget(txIPAddressField);
 }
 

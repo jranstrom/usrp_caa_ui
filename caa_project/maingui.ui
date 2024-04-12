@@ -110,176 +110,6 @@
               </item>
              </layout>
             </item>
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_4">
-              <item>
-               <widget class="QLabel" name="label">
-                <property name="text">
-                 <string>TX USRP IP:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_4">
-                <item>
-                 <widget class="QPushButton" name="indicator_tx_connection">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>25</width>
-                    <height>25</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>25</width>
-                    <height>25</height>
-                   </size>
-                  </property>
-                  <property name="palette">
-                   <palette>
-                    <active>
-                     <colorrole role="Button">
-                      <brush brushstyle="SolidPattern">
-                       <color alpha="255">
-                        <red>249</red>
-                        <green>240</green>
-                        <blue>107</blue>
-                       </color>
-                      </brush>
-                     </colorrole>
-                    </active>
-                    <inactive>
-                     <colorrole role="Button">
-                      <brush brushstyle="SolidPattern">
-                       <color alpha="255">
-                        <red>249</red>
-                        <green>240</green>
-                        <blue>107</blue>
-                       </color>
-                      </brush>
-                     </colorrole>
-                    </inactive>
-                    <disabled>
-                     <colorrole role="Button">
-                      <brush brushstyle="SolidPattern">
-                       <color alpha="255">
-                        <red>249</red>
-                        <green>240</green>
-                        <blue>107</blue>
-                       </color>
-                      </brush>
-                     </colorrole>
-                    </disabled>
-                   </palette>
-                  </property>
-                  <property name="text">
-                   <string/>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLineEdit" name="lineEdit_tx_ip">
-                  <property name="text">
-                   <string/>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="button_tx_test_connection">
-                  <property name="text">
-                   <string>Test</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_6">
-              <item>
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>RX USRP IP:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_5">
-                <item>
-                 <widget class="QPushButton" name="indicator_rx_connection">
-                  <property name="maximumSize">
-                   <size>
-                    <width>25</width>
-                    <height>25</height>
-                   </size>
-                  </property>
-                  <property name="palette">
-                   <palette>
-                    <active>
-                     <colorrole role="Button">
-                      <brush brushstyle="SolidPattern">
-                       <color alpha="255">
-                        <red>249</red>
-                        <green>240</green>
-                        <blue>107</blue>
-                       </color>
-                      </brush>
-                     </colorrole>
-                    </active>
-                    <inactive>
-                     <colorrole role="Button">
-                      <brush brushstyle="SolidPattern">
-                       <color alpha="255">
-                        <red>249</red>
-                        <green>240</green>
-                        <blue>107</blue>
-                       </color>
-                      </brush>
-                     </colorrole>
-                    </inactive>
-                    <disabled>
-                     <colorrole role="Button">
-                      <brush brushstyle="SolidPattern">
-                       <color alpha="255">
-                        <red>249</red>
-                        <green>240</green>
-                        <blue>107</blue>
-                       </color>
-                      </brush>
-                     </colorrole>
-                    </disabled>
-                   </palette>
-                  </property>
-                  <property name="text">
-                   <string/>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLineEdit" name="lineEdit_rx_ip">
-                  <property name="text">
-                   <string/>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="button_rx_test_connection">
-                  <property name="text">
-                   <string>Test</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
            </layout>
           </item>
           <item>
@@ -1052,6 +882,12 @@
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>200</height>
+       </size>
+      </property>
       <property name="maximumSize">
        <size>
         <width>16777215</width>
@@ -1106,9 +942,9 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_tx_ref"/>
-  <buttongroup name="buttonGroup_tx_pps"/>
-  <buttongroup name="buttonGroup_rx_ref"/>
   <buttongroup name="buttonGroup_rx_pps"/>
+  <buttongroup name="buttonGroup_rx_ref"/>
+  <buttongroup name="buttonGroup_tx_pps"/>
+  <buttongroup name="buttonGroup_tx_ref"/>
  </buttongroups>
 </ui>

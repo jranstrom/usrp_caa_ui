@@ -26,6 +26,9 @@ public:
     bool stopTransmission();
     bool stopReception();
 
+    bool startSynchronization();
+    bool stopSynchronization();
+
     bool isTransmitting();
     bool isReceiving();
 
@@ -82,7 +85,7 @@ private:
     size_t rxSampleCount = 0;
 
     size_t txTimeoutCount = 0;
-    size_t txTimeoutMax = 100;
+    size_t txTimeoutMax = 1;
 
     bool txUSRPConfigured = false;
     bool rxUSRPConfigured = false;
