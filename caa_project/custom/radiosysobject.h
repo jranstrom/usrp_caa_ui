@@ -5,6 +5,7 @@
 #include "../circbuffer.h"
 #include <uhd/usrp/multi_usrp.hpp>
 #include <vector>
+#include <armadillo>
 
 class RadioSysObject
 {
@@ -31,6 +32,7 @@ public:
 
     bool isTransmitting();
     bool isReceiving();
+    bool isSynchronizing();
 
     bool isProcessingTxSetup() {return txSetupInProgress;}
     bool isProcessingRxSetup() {return rxSetupInProgress;}
@@ -69,6 +71,7 @@ private:
 
     void runTransmissionThread();
     void runReceptionThread();
+    void runSynchronizationThread();
 
     void writeBufferToFile(int count);
 
@@ -94,6 +97,7 @@ private:
     bool ReceptionInProgress = false;
     bool SynchronizationInProgress = false;
 
+
     std::vector<std::complex<short>> captured_data;
 
 
@@ -104,12 +108,16 @@ private:
     //CircBuffer<std::complex<short>> * txSignalBuffer;
     CircBuffer<std::complex<short>> txSignalBuffer;
     CircBuffer<std::complex<short>> rxSignalBuffer;
+    CircBuffer<std::complex<short>> txSynchSignalBuffer;
+
+    CircBuffer<size_t> syncPointBuffer;
 
     double timeOffset = 0.0;
 
     bool stop_signal_called = false;
     bool stop_transmit_signal_called = false;
     bool stop_reception_signal_called = false;
+    bool stop_synchronization_signal_called = false;
 
 };
 

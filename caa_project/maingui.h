@@ -120,6 +120,10 @@ private slots:
     void userChangedRxIPAddress(std::string value);
     void userChangedTxIPAddress(std::string value);
 
+    void on_pushButton_2_released();
+
+    void on_pushButton_3_released();
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;

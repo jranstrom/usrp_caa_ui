@@ -710,3 +710,26 @@ void mainGUI::userChangedTxIPAddress(std::string value)
     ui->verticalLayout_12->addWidget(txIPAddressField);
 }
 
+
+void mainGUI::on_pushButton_2_released()
+{
+    if(radObj->startSynchronization()){
+        addStatusUpdate("Synchronization started",ui->tableWidget_status);
+    }
+}
+
+
+void mainGUI::on_pushButton_3_released()
+{
+    if(radObj->isSynchronizing()){
+        if(radObj->stopSynchronization()){
+            addStatusUpdate("Synchronization stopped",ui->tableWidget_status);
+        }
+        else{
+            addStatusUpdate("Synchronization could not be stopped",ui->tableWidget_status);
+        }
+    }else{
+        addStatusUpdate("Synchronization was not running...",ui->tableWidget_status);
+    }
+}
+
