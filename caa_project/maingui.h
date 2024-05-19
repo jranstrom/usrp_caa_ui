@@ -46,6 +46,8 @@ public:
 
     void updateTransmitStatus(bool status);
     void updateReceiveStatus(bool status);
+    void updateSynchronizationStatus(bool status);
+
     void updateTxSetupStatus(bool status);
     void updateRxSetupStatus(bool status);
 
@@ -58,6 +60,7 @@ public:
 private slots:
     void trackTransmissionProcess();
     void trackReceptionProcess();
+    void trackSynchronizationProcess();
 
     void trackCaptureBufferProcess();
 
@@ -66,6 +69,7 @@ private slots:
 
     void updateTxUSRPSetupStatus(bool val);
     void updateRxUSRPSetupStatus(bool val);
+
 
     void on_buttonGroup_tx_pps_buttonClicked(int val);
     void on_buttonGroup_tx_ref_buttonClicked(int val);
@@ -120,9 +124,12 @@ private slots:
     void userChangedRxIPAddress(std::string value);
     void userChangedTxIPAddress(std::string value);
 
+
     void on_pushButton_2_released();
 
     void on_pushButton_3_released();
+
+    void on_button_capture_synch_released();
 
 private:
     Ui::mainGUI *ui;
@@ -138,6 +145,7 @@ private:
 
     QDateTime transmissionStartTime;
     QDateTime receptionStartTime;
+    QDateTime synchronizationStartTime;
 
     LabelandFieldWidget * rxIPAddressField;
     LabelandFieldWidget * txIPAddressField;
@@ -152,6 +160,12 @@ private:
     SliderAndLineEdit * rxGainSlider;
 
     SliderAndLineEdit * rxLOOffsetSlider;
+
+    LabelandFieldWidget * captureFileFormatField;
+    LabelandFieldWidget * captureFileTypeField;
+
+    LabelandFieldWidget * synchCaptureFile;
+
 
     void SetWidgetColor(QWidget * widg, int colorc);
 

@@ -55,9 +55,11 @@ public:
     void requestRxUSRPSetup();
 
     void requestWriteBufferToFile(std::string completeFilepath,int count=-1);
+    bool requestWriteSynchFrameToFile(int offset=-1, int length=0);
     bool isWritingBufferToFile() {return writingBufferInProgress;}
 
     size_t getRxSampleCount() { return rxSampleCount; }
+    size_t getSynchPointCount() {return syncPointBuffer.get_push_count();}
 
     RadioSysConfig sysConf = RadioSysConfig();
 
@@ -65,6 +67,7 @@ public:
     bool rxUSRPSetup = false;
 
     std::vector<std::complex<short>> getCapturedData(){ return captured_data;}
+    std::vector<std::complex<short>> getExtractedSynchData(){return extracted_synch_data;}
 
 private:
     std::mutex recv_mutex;
@@ -77,6 +80,8 @@ private:
 
     void setupTxUSRP();
     void setupRxUSRP();
+
+    void extractFrameSequence(int offset=-1,int length=0);
 
     bool txSetupInProgress = false;
     bool rxSetupInProgress = false;
@@ -99,6 +104,8 @@ private:
 
 
     std::vector<std::complex<short>> captured_data;
+
+    std::vector<std::complex<short>> extracted_synch_data;
 
 
 

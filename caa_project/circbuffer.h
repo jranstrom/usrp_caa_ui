@@ -6,6 +6,7 @@
 #include <boost/thread/condition.hpp>
 #include <boost/thread/thread.hpp>
 #include <typeinfo>
+#include <iostream>
 
 template <class T>
 class CircBuffer {

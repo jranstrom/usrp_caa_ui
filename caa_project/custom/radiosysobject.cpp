@@ -30,8 +30,11 @@
 
 using namespace std::chrono_literals;
 
-RadioSysObject::RadioSysObject() {
+RadioSysObject::RadioSysObject() : syncPointBuffer(200) {
     std::cout<<"RadioSysObject created" << std::endl;
+
+
+
 }
 
 bool RadioSysObject::writeConfigFile(std::string configFilepath){
@@ -158,6 +161,9 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
         sysConf.SetSynchOffset(static_cast<size_t>(matHF::read_double(filepath,"sys.synchOffset")));
         sysConf.SetSynchTolerance(matHF::read_as_int(filepath,"sys.synchCorrTolerance"));
 
+        sysConf.csvPattern = matHF::read_as_int_mat("csv_last_params.mat","sys.csvPattern");
+        sysConf.csvPattern = uhd_clib::transpose_int_mat(sysConf.csvPattern);
+
         //CircBuffer<std::complex<short>> tx_signal_buff = uhd_clib::cvec_conv_double2short(sysConf.txSignal);
         txSignalBuffer.from_vector(uhd_clib::cvec_conv_double2short(sysConf.txSignal));
         txSynchSignalBuffer.from_vector(uhd_clib::cvec_conv_double2short(sysConf.synchSignal));
@@ -238,7 +244,7 @@ bool RadioSysObject::stopReception()
 
 bool RadioSysObject::startSynchronization()
 {
-    if(!ReceptionInProgress){
+    if(!ReceptionInProgress || SynchronizationInProgress){
         return false;
     }
 
@@ -300,6 +306,10 @@ void RadioSysObject::requestRxUSRPSetup()
 
 void RadioSysObject::requestWriteBufferToFile(std::string completeFilepath,int count)
 {
+    size_t idx_value;
+    if(syncPointBuffer.back(&idx_value) > 0){
+        std::cout << "Last synch index: " << idx_value << std::endl;
+    }
     if(stopReception() && not writingBufferInProgress){
         writingBufferInProgress = true;
         rxCaptureFilepath = completeFilepath;
@@ -494,6 +504,37 @@ void RadioSysObject::setupRxUSRP()
     rxUSRPConfigured = true;
     rxSetupInProgress = false;
 
+}
+
+void RadioSysObject::extractFrameSequence(int offset,int length)
+{
+    size_t rx_index;
+    bool back_out = syncPointBuffer.back(&rx_index,1); // pick out latest synch point
+
+
+
+
+    int frame_length = 0;
+
+    if(length > 0){
+        frame_length = length;
+    }else{
+        for(int i=0;i<sysConf.winfo.numSymbols; ++i){
+            frame_length += sysConf.winfo.guardLengths[i];
+            frame_length += sysConf.winfo.symbolLengths[i];
+        }
+    }
+
+    if(back_out){
+        size_t synchOffset = sysConf.synchOffset;
+
+        rx_index -= synchOffset;        // adjust for synch point not being start of frame
+        if(offset > -1){
+            rx_index += offset;
+        }
+
+        extracted_synch_data = rxSignalBuffer.extract_range(rx_index,frame_length);
+    }
 }
 
 void RadioSysObject::runTransmissionThread()
@@ -694,12 +735,14 @@ void RadioSysObject::runSynchronizationThread()
     std::vector<int> synch_pattern  = sysConf.syncCorrelationPattern;
     int synch_tolerance             = sysConf.synchTolerance;
 
+    txSynchSignalBuffer.reset_pop();
+
     std::vector<size_t> c_rx_buffer_load(1e4);
     size_t max_rx_buffer_load = 0;
 
     //const int osr = 4;
 
-     size_t L_tx = txSynchSignalBuffer.get_push_count(); // read number of samples in synch signal
+    size_t L_tx = txSynchSignalBuffer.get_push_count(); // read number of samples in synch signal
 
     using samp_type = std::complex<short>;
     using namespace arma;
@@ -739,6 +782,7 @@ void RadioSysObject::runSynchronizationThread()
         size_t num_skipped_smpls = 0;   // track # of skipped samples
         size_t num_read_smpls = 0;      // tracks # of samples that have been read
 
+        captured_data.clear();
         while((not stop_synchronization_signal_called) and (num_read_smpls < L)){
             mk_c = rxSignalBuffer.pop(&c_smpl); // Returns difference between input and output in buffer, is zero if taken out too many
             c_rx_buffer_load[(bi++ % mx_count)] = mk_c;
@@ -753,7 +797,7 @@ void RadioSysObject::runSynchronizationThread()
                     no_r_fail = false;     // flag that samples have been skipped
                     //--ref_rx_indx;
                 }
-
+                captured_data.push_back(c_smpl);
                 rx_sig(num_read_smpls) = std::complex<double>(std::real(c_smpl),std::imag(c_smpl)); // add sample to arma vector
                 ++num_read_smpls;   // increase samples read counter
 
@@ -764,6 +808,8 @@ void RadioSysObject::runSynchronizationThread()
         }
 
         rx_sig -= mean(rx_sig); // remove mean from signal
+
+
 
         double max_v_r = max(abs(real(rx_sig)));
         double max_v_i = max(abs(imag(rx_sig)));
@@ -838,6 +884,9 @@ void RadioSysObject::runSynchronizationThread()
                     std::vector<std::complex<double>> vv_frame = uhd_clib::cvec_conv_short2double(v_frame,1);
 
                     cx_vec frame = conv_to<cx_vec>::from(vv_frame);
+
+                    //captured_data.clear();
+                    //captured_data = v_frame;
 
                     uvec indices = regspace<uvec>(0, 1, vv_frame.size() - 1);
                     frame = frame(indices);
@@ -930,3 +979,107 @@ void RadioSysObject::writeBufferToFile(int count)
 
     writingBufferInProgress = false;
 }
+
+//save_buffer_to_csv<samp_type>("class_sample.csv",Nfft,auth_sig,csv_pattern,smpl_i);
+// std::string bformat = "data/class%d_sample%d.csv";
+
+bool RadioSysObject::requestWriteSynchFrameToFile(int offset,int length){
+
+    if(SynchronizationInProgress){
+        extractFrameSequence(offset,length);
+        return true;
+    }else{
+        return false;
+    }
+    // std::string bformat = "data/class%d_sample%d.csv";
+    // int smpl_i = 1;
+    // int N_ant_el = 1;
+    // int N_files = 1;
+
+    // std::vector<std::string> fnames(N_files);
+    // std::vector<std::ofstream> outfiles(N_files);
+
+    // for (int k=0;k<N_files;k++){
+    //     boost::format fmt = boost::format(bformat) % (k+1) % smpl_i;
+    //     fnames[k] = fmt.str();
+    //     outfiles[k].open(fnames[k]);
+    // }
+
+    // std::vector<std::vector<double>> buffer(1024, std::vector<double>(2*N_ant_el));
+
+    // get last synchronization point
+
+    //std::vector<std::complex<short>> ttmp_v = circ_buff.to_vector();
+    //std::vector<std::complex<double>> tmp_v = uhd_clib::cvec_conv_short2double(ttmp_v);
+
+}
+
+
+// void RadioSysObject::writeToCSVFile(const std::string& bformat,
+//                             size_t samps_per_buff,
+//                             circ_buffer<samp_type>& circ_buff,
+//                             std::vector<std::vector<int>>& pattern,
+//                             int smpl_i = 1){
+
+//         int N_files = pattern[pattern.size()-1][0];    // Number of CAA
+//         int N_ant_el = pattern[pattern.size()-1][1];   // Number of CAAE (assume all CAA have the same #)
+
+//         std::vector<std::string> fnames(N_files);
+//         std::vector<std::ofstream> outfiles(N_files);
+//         for (int k=0;k<N_files;k++){
+//             boost::format fmt = boost::format(bformat) % (k+1) % smpl_i;
+//             fnames[k] = fmt.str();
+//             outfiles[k].open(fnames[k]);
+//         }
+
+//         std::vector<std::vector<double>> buffer(samps_per_buff, std::vector<double>(2*N_ant_el));
+
+//         // Read in the buffer
+//         std::vector<std::complex<short>> ttmp_v = circ_buff.to_vector();
+//         std::vector<std::complex<double>> tmp_v = uhd_clib::cvec_conv_short2double(ttmp_v);
+
+//         int lst_file_i = -1;
+//         for(int i=0;i<tmp_v.size();i++){
+//             //std::cout << tmp_v[i] << std::endl;
+//             int k = i % samps_per_buff;
+//             int l = static_cast<int>(std::floor((double)i/(double)samps_per_buff)) % N_ant_el;
+//             int m = static_cast<int>(std::floor((double)i/(double)(N_ant_el*samps_per_buff)));
+
+//             if(lst_file_i != -1 and m != lst_file_i){ //write
+
+//                 if(outfiles[lst_file_i].is_open()){ // make sure file is open
+//                     for(int ii=0;ii<samps_per_buff;ii++){
+//                         for(int p=0;p<2*N_ant_el;p++){
+//                             outfiles[lst_file_i] << buffer[ii][p] << ",";
+//                         }
+//                         outfiles[lst_file_i] << "\n";
+//                     }
+//                 }
+
+//             }
+//             lst_file_i = m;
+
+//             buffer[k][2*l] = std::real(tmp_v[i]);
+//             buffer[k][2*l+1] = std::imag(tmp_v[i]);
+
+//             //std::cout << i << " :: " << m << " :: "  << k << " :: " << l << std::endl;
+//         }
+
+//         if(outfiles[lst_file_i].is_open()){ // make sure file is open
+//             for(int ii=0;ii<samps_per_buff;ii++){
+//                 for(int p=0;p<2*N_ant_el;p++){
+//                     outfiles[lst_file_i] << buffer[ii][p] << ",";
+//                 }
+//                 outfiles[lst_file_i] << "\n";
+//             }
+//         }
+
+
+//         for(int fi=0;fi<N_files;fi++){
+//             if(outfiles[fi].is_open()){
+//                 outfiles[fi].close();
+//             }
+//         }
+
+//     }
+// }

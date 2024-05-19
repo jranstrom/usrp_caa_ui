@@ -72,6 +72,13 @@ mainGUI::mainGUI(QWidget *parent)
 
     SetWidgetColor(ui->indicator_captured_buffer,16146769);
 
+    captureFileFormatField = new LabelandFieldWidget(this,"Capture File format:","/data/capture_",true);
+    ui->verticalLayout_6->addWidget(captureFileFormatField);
+
+    captureFileTypeField = new LabelandFieldWidget(this,"Capture File type:",".csv",true);
+    ui->verticalLayout_6->addWidget(captureFileTypeField);
+
+
     processingTimer.setInterval(500);
     processingTimer.setSingleShot(false);
     processingTimer.start();    
@@ -90,6 +97,19 @@ void mainGUI::updateTransmitStatus(bool status){
         addStatusUpdate("Transmission terminated",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_tx_in_progress,16146769);
         disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackTransmissionProcess);
+    }
+}
+
+void mainGUI::updateSynchronizationStatus(bool status){
+    if(status){
+        ui->button_capture_synch->setEnabled(true);
+        addStatusUpdate("Synchronization Initialized",ui->tableWidget_status);
+        synchronizationStartTime = QDateTime::currentDateTime();
+        connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackSynchronizationProcess);
+    }else{
+        ui->button_capture_synch->setEnabled(false);
+        addStatusUpdate("Synchronization terminated",ui->tableWidget_status);
+        disconnect(&processingTimer,&QTimer::timeout, this,&mainGUI::trackSynchronizationProcess);
     }
 }
 
@@ -273,6 +293,11 @@ void mainGUI::trackReceptionProcess()
     }else{
         uio.setReceptionInProgress(false);
     }
+}
+
+void mainGUI::trackSynchronizationProcess()
+{
+
 }
 
 void mainGUI::trackCaptureBufferProcess()
@@ -562,6 +587,9 @@ void mainGUI::on_button_rx_stop_released()
 
 void mainGUI::on_button_write_buffer_to_file_released()
 {
+
+    //addStatusUpdate("Synchronization started",ui->tableWidget_status);
+
     ui->button_write_buffer_to_file->setEnabled(false);
     ui->button_receive->setEnabled(false);
     SetWidgetColor(ui->indicator_captured_buffer,16380011);
@@ -714,7 +742,8 @@ void mainGUI::userChangedTxIPAddress(std::string value)
 void mainGUI::on_pushButton_2_released()
 {
     if(radObj->startSynchronization()){
-        addStatusUpdate("Synchronization started",ui->tableWidget_status);
+        updateSynchronizationStatus(true);
+        //addStatusUpdate("Synchronization started",ui->tableWidget_status);
     }
 }
 
@@ -723,13 +752,50 @@ void mainGUI::on_pushButton_3_released()
 {
     if(radObj->isSynchronizing()){
         if(radObj->stopSynchronization()){
-            addStatusUpdate("Synchronization stopped",ui->tableWidget_status);
+            updateSynchronizationStatus(false);
+            //addStatusUpdate("Synchronization stopped",ui->tableWidget_status);
+            //addStatusUpdate("Synchronization Points:" + QString::number(radObj->getSynchPointCount()),ui->tableWidget_status);
+
         }
         else{
             addStatusUpdate("Synchronization could not be stopped",ui->tableWidget_status);
         }
     }else{
         addStatusUpdate("Synchronization was not running...",ui->tableWidget_status);
+    }
+}
+
+
+void mainGUI::on_button_capture_synch_released()
+{
+    int offset = ui->spinBox_3->value();
+    int length = ui->spinBox_4->value();
+    if(radObj->requestWriteSynchFrameToFile(offset,length)){
+
+    std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
+
+    QVector<double> x(vc_data.size()), y(vc_data.size()); // initialize with entries 0..100
+    double max_element = 0;
+
+    for (int i=0; i<vc_data.size(); ++i)
+    {
+        x[i] = i;
+        y[i] = 10 * std::log10(std::norm(vc_data[i]));
+
+        if(y[i] > max_element){
+            max_element = y[i];
+        }
+    }
+
+    ui->captured_sig_plot->addGraph();
+    ui->captured_sig_plot->graph(0)->setData(x, y);
+    ui->captured_sig_plot->xAxis->setLabel("Sample");
+    ui->captured_sig_plot->yAxis->setLabel("Power (dB)");
+    ui->captured_sig_plot->xAxis->setRange(0, vc_data.size());
+    ui->captured_sig_plot->yAxis->setRange(0, max_element);
+    ui->captured_sig_plot->replot();
+    }else{
+        addStatusUpdate("Synchronization must be running...",ui->tableWidget_status);
     }
 }
 

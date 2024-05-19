@@ -186,6 +186,8 @@ class RadioSysConfig {
 		double txRELrxTimeOffset;
 		std::string default_command_list;
 
+        std::vector<std::vector<int>> csvPattern;
+
 		
 
 
