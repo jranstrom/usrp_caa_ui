@@ -180,9 +180,11 @@ void RadioSysObject::StopAll()
     //std::cout << "Transmission in progress: " << TransmissionInProgress << std::endl;
     stop_transmit_signal_called = true;
     stop_reception_signal_called = true;
+    stop_synchronization_signal_called = true;
     std::this_thread::sleep_for(1s);
     stop_transmit_signal_called = false;
     stop_reception_signal_called = false;
+    stop_synchronization_signal_called = false;
     std::cout << "Terminated All" <<std::endl;
     //std::cout << "Transmission in progress: " << TransmissionInProgress << std::endl;
 }
@@ -234,6 +236,9 @@ bool RadioSysObject::stopTransmission()
 
 bool RadioSysObject::stopReception()
 {
+    if(SynchronizationInProgress){
+        stopSynchronization();
+    }
     stop_reception_signal_called = true;
     std::this_thread::sleep_for(1s);
     stop_reception_signal_called = false;
@@ -511,9 +516,6 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
     size_t rx_index;
     bool back_out = syncPointBuffer.back(&rx_index,1); // pick out latest synch point
 
-
-
-
     int frame_length = 0;
 
     if(length > 0){
@@ -775,6 +777,11 @@ void RadioSysObject::runSynchronizationThread()
     // Continously process RX buffer
     while(not stop_synchronization_signal_called){
 
+        if(pendingSynchPointReset){
+            syncPointBuffer.reset_buffer();
+            pendingSynchPointReset = false;
+        }
+
         ref_rx_indx = rxSignalBuffer.get_pop_count();
         //time_point = std::chrono::high_resolution_clock::now();
 
@@ -782,7 +789,6 @@ void RadioSysObject::runSynchronizationThread()
         size_t num_skipped_smpls = 0;   // track # of skipped samples
         size_t num_read_smpls = 0;      // tracks # of samples that have been read
 
-        captured_data.clear();
         while((not stop_synchronization_signal_called) and (num_read_smpls < L)){
             mk_c = rxSignalBuffer.pop(&c_smpl); // Returns difference between input and output in buffer, is zero if taken out too many
             c_rx_buffer_load[(bi++ % mx_count)] = mk_c;
@@ -797,7 +803,6 @@ void RadioSysObject::runSynchronizationThread()
                     no_r_fail = false;     // flag that samples have been skipped
                     //--ref_rx_indx;
                 }
-                captured_data.push_back(c_smpl);
                 rx_sig(num_read_smpls) = std::complex<double>(std::real(c_smpl),std::imag(c_smpl)); // add sample to arma vector
                 ++num_read_smpls;   // increase samples read counter
 
@@ -808,8 +813,6 @@ void RadioSysObject::runSynchronizationThread()
         }
 
         rx_sig -= mean(rx_sig); // remove mean from signal
-
-
 
         double max_v_r = max(abs(real(rx_sig)));
         double max_v_i = max(abs(imag(rx_sig)));
@@ -983,103 +986,135 @@ void RadioSysObject::writeBufferToFile(int count)
 //save_buffer_to_csv<samp_type>("class_sample.csv",Nfft,auth_sig,csv_pattern,smpl_i);
 // std::string bformat = "data/class%d_sample%d.csv";
 
-bool RadioSysObject::requestWriteSynchFrameToFile(int offset,int length){
+
+bool RadioSysObject::requestCaptureSynchFrame(int captureIndex){
 
     if(SynchronizationInProgress){
-        extractFrameSequence(offset,length);
+        extractFrameSequence(frameOffset,frameLength);
+
+        std::vector<std::complex<double>> frame_temp = uhd_clib::cvec_conv_short2double(extracted_synch_data);
+        // double xi;
+        // double yi;
+        // for(int i=0;i<frameLength;i++){
+        //     //xi = 10 * std::log10(std::norm(vc_data[i]));
+        //     xi = std::real(extracted_synch_data[i]);
+        //     yi = std::imag(extracted_synch_data[i]);
+
+        //     frame_temp[i] = std::complex<double>(xi,yi);
+        // }
+
+        // put in the vector
+        for(int i=0; i<frameLength;i++){
+            capturedFrames[i][2*captureIndex] = std::real(frame_temp[i]);
+            capturedFrames[i][2*captureIndex+1] = std::imag(frame_temp[i]);
+        }
+
+        currentFramesCaptured[captureIndex] = true;
+
         return true;
     }else{
         return false;
     }
-    // std::string bformat = "data/class%d_sample%d.csv";
-    // int smpl_i = 1;
-    // int N_ant_el = 1;
-    // int N_files = 1;
-
-    // std::vector<std::string> fnames(N_files);
-    // std::vector<std::ofstream> outfiles(N_files);
-
-    // for (int k=0;k<N_files;k++){
-    //     boost::format fmt = boost::format(bformat) % (k+1) % smpl_i;
-    //     fnames[k] = fmt.str();
-    //     outfiles[k].open(fnames[k]);
-    // }
-
-    // std::vector<std::vector<double>> buffer(1024, std::vector<double>(2*N_ant_el));
-
-    // get last synchronization point
-
-    //std::vector<std::complex<short>> ttmp_v = circ_buff.to_vector();
-    //std::vector<std::complex<double>> tmp_v = uhd_clib::cvec_conv_short2double(ttmp_v);
-
 }
 
+bool RadioSysObject::requestWriteLastCapturedFrame(std::string filepath)
+{
+    std::ofstream outfile;
+    outfile.open(filepath,std::ofstream::binary);
 
-// void RadioSysObject::writeToCSVFile(const std::string& bformat,
-//                             size_t samps_per_buff,
-//                             circ_buffer<samp_type>& circ_buff,
-//                             std::vector<std::vector<int>>& pattern,
-//                             int smpl_i = 1){
+    std::complex<short> * buff;
+    buff = new std::complex<short>[frameLength];
 
-//         int N_files = pattern[pattern.size()-1][0];    // Number of CAA
-//         int N_ant_el = pattern[pattern.size()-1][1];   // Number of CAAE (assume all CAA have the same #)
+    for(int i = 0;i<frameLength;i++){
+        buff[i] = extracted_synch_data[i];
+    }
 
-//         std::vector<std::string> fnames(N_files);
-//         std::vector<std::ofstream> outfiles(N_files);
-//         for (int k=0;k<N_files;k++){
-//             boost::format fmt = boost::format(bformat) % (k+1) % smpl_i;
-//             fnames[k] = fmt.str();
-//             outfiles[k].open(fnames[k]);
-//         }
+    if(outfile.is_open()){
+        outfile.write((const char *)buff,frameLength*sizeof(std::complex<short>));
+    }
+    delete[] buff;
 
-//         std::vector<std::vector<double>> buffer(samps_per_buff, std::vector<double>(2*N_ant_el));
+    return true;
+}
 
-//         // Read in the buffer
-//         std::vector<std::complex<short>> ttmp_v = circ_buff.to_vector();
-//         std::vector<std::complex<double>> tmp_v = uhd_clib::cvec_conv_short2double(ttmp_v);
+bool RadioSysObject::requestFrameCaptureFormat(int rframeOffset, int rframeLength, int rnumFrameCaptures)
+{
+    if(SynchronizationInProgress){
+        return false;
+    }
 
-//         int lst_file_i = -1;
-//         for(int i=0;i<tmp_v.size();i++){
-//             //std::cout << tmp_v[i] << std::endl;
-//             int k = i % samps_per_buff;
-//             int l = static_cast<int>(std::floor((double)i/(double)samps_per_buff)) % N_ant_el;
-//             int m = static_cast<int>(std::floor((double)i/(double)(N_ant_el*samps_per_buff)));
+    frameOffset = rframeOffset;
+    frameLength = rframeLength;
+    numFrameCaptures = rnumFrameCaptures;
 
-//             if(lst_file_i != -1 and m != lst_file_i){ //write
+    std::vector<std::vector<double>> captureFrame_tmp(frameLength, std::vector<double>(2*numFrameCaptures));
+    capturedFrames = captureFrame_tmp;
 
-//                 if(outfiles[lst_file_i].is_open()){ // make sure file is open
-//                     for(int ii=0;ii<samps_per_buff;ii++){
-//                         for(int p=0;p<2*N_ant_el;p++){
-//                             outfiles[lst_file_i] << buffer[ii][p] << ",";
-//                         }
-//                         outfiles[lst_file_i] << "\n";
-//                     }
-//                 }
+    std::vector<bool> currentFramesCaptured_tmp(frameLength);
+    for(int i=0; i<frameLength;i++){
+        currentFramesCaptured_tmp[i] = false;
+    }
 
-//             }
-//             lst_file_i = m;
+    currentFramesCaptured = currentFramesCaptured_tmp;
 
-//             buffer[k][2*l] = std::real(tmp_v[i]);
-//             buffer[k][2*l+1] = std::imag(tmp_v[i]);
+    return true;
+}
 
-//             //std::cout << i << " :: " << m << " :: "  << k << " :: " << l << std::endl;
-//         }
+int RadioSysObject::requestWriteFramesToFile(std::string filepath, std::string fileType)
+{
+    if(fileType != "csv"){
+        return -2; // Error unsupported file format
+    }
 
-//         if(outfiles[lst_file_i].is_open()){ // make sure file is open
-//             for(int ii=0;ii<samps_per_buff;ii++){
-//                 for(int p=0;p<2*N_ant_el;p++){
-//                     outfiles[lst_file_i] << buffer[ii][p] << ",";
-//                 }
-//                 outfiles[lst_file_i] << "\n";
-//             }
-//         }
+    if(!isCapturedFramesReadyToSave()){
+        return -3; // Error missing frames
+    }
 
+    std::ofstream outfile;
+    outfile.open(filepath);
+    if(outfile.is_open()){ // make sure file is open
+        for(int i=0;i<frameLength;i++){
+            for(int k=0;k<2*numFrameCaptures-1;k++){
+                outfile << capturedFrames[i][k] << ",";
+            }
+            outfile << capturedFrames[i][2*numFrameCaptures-1] << "\n";
+        }
+        outfile.close();
+    }
 
-//         for(int fi=0;fi<N_files;fi++){
-//             if(outfiles[fi].is_open()){
-//                 outfiles[fi].close();
-//             }
-//         }
+    //currentFramesCaptured();
 
-//     }
-// }
+    return 1; // success
+}
+
+bool RadioSysObject::isCapturedFramesReadyToSave()
+{
+    bool all_finished = true;
+    for(int i=1;i<numFrameCaptures;i++){
+        if(!currentFramesCaptured[i]){
+            all_finished = false;
+        }
+    }
+
+    return all_finished;
+}
+
+bool RadioSysObject::resetCurrentFramesCaptured()
+{
+    for(int i=0;i<numFrameCaptures;i++){
+        currentFramesCaptured[i] = false;
+    }
+
+    return true;
+}
+
+bool RadioSysObject::requestResetSynchPoints()
+{
+    if(isSynchronizing()){
+        pendingSynchPointReset = true;
+    }else{
+        syncPointBuffer.reset_buffer();
+    }
+
+    return true;
+}

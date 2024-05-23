@@ -21,6 +21,7 @@ public:
     void InitializeMCControlWidget(int id,std::string mcType,
                                    std::string mcPort,Tcom_ui * tcom_ptr,QWidget * parent);
     int getIdentifier() {return identifier;}
+    std::string getMCType() {return MCType;}
     std::string getPort() {return port;}
     void setPort(std::string value){
         if(value != port){
@@ -44,6 +45,8 @@ public:
     }
 
     void requestRead();
+    void requestSelectElement(int value);
+    void requestSelectUE(int value);
 
 signals:
     void cycleButtonReleased(int id);

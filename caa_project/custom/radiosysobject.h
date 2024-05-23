@@ -55,11 +55,22 @@ public:
     void requestRxUSRPSetup();
 
     void requestWriteBufferToFile(std::string completeFilepath,int count=-1);
-    bool requestWriteSynchFrameToFile(int offset=-1, int length=0);
+    bool requestCaptureSynchFrame(int captureIndex=0);
     bool isWritingBufferToFile() {return writingBufferInProgress;}
 
+
+    bool requestWriteLastCapturedFrame(std::string filepath);
+    bool requestFrameCaptureFormat(int rframeOffset=0,int rframeLength=1024, int rnumFrameCaptures=4);
+    int requestWriteFramesToFile(std::string filepath,std::string fileType="csv");
+
+    bool isCapturedFramesReadyToSave();
+    bool resetCurrentFramesCaptured();
+
     size_t getRxSampleCount() { return rxSampleCount; }
+    bool requestResetSynchPoints();
     size_t getSynchPointCount() {return syncPointBuffer.get_push_count();}
+
+    int getNumFrameCaptures() {return numFrameCaptures;}
 
     RadioSysConfig sysConf = RadioSysConfig();
 
@@ -68,6 +79,8 @@ public:
 
     std::vector<std::complex<short>> getCapturedData(){ return captured_data;}
     std::vector<std::complex<short>> getExtractedSynchData(){return extracted_synch_data;}
+
+    bool getAllCSVDataCaptured() {return allCSVDataCaptured;}
 
 private:
     std::mutex recv_mutex;
@@ -107,7 +120,14 @@ private:
 
     std::vector<std::complex<short>> extracted_synch_data;
 
+    bool allCSVDataCaptured = false;
+    int frameLength = 1024;
+    int frameOffset = 0;
+    int numFrameCaptures = 4;
 
+    std::vector<std::vector<double>> capturedFrames;
+
+    std::vector<bool> currentFramesCaptured = {false,false,false,false};
 
     uhd::usrp::multi_usrp::sptr tx_usrp;
     uhd::usrp::multi_usrp::sptr rx_usrp;
@@ -125,6 +145,8 @@ private:
     bool stop_transmit_signal_called = false;
     bool stop_reception_signal_called = false;
     bool stop_synchronization_signal_called = false;
+
+    bool pendingSynchPointReset = false;
 
 };
 

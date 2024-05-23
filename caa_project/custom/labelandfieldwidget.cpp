@@ -53,6 +53,13 @@ void LabelandFieldWidget::setEditable(bool is_editable)
     }
 }
 
+std::string LabelandFieldWidget::getFieldText()
+{
+    QString qstring = lineEdit->text();
+
+    return qstring.toStdString();
+}
+
 void LabelandFieldWidget::onFieldTextChanged()
 {
     lineEdit->setText(QString::fromStdString(fieldText));

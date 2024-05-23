@@ -115,6 +115,22 @@ void MCControlWidget::requestRead()
     }
 }
 
+void MCControlWidget::requestSelectElement(int value)
+{
+    tcom->requestToConnect(port,true);
+    tcom->requestAllUEsOFF();
+    connect(tcom,&Tcom_ui::responseChanged,this,&MCControlWidget::responseChanged);
+    tcom->requestELToggle(value);
+}
+
+void MCControlWidget::requestSelectUE(int value)
+{
+    tcom->requestToConnect(port,true);
+    connect(tcom,&Tcom_ui::responseChanged,this,&MCControlWidget::responseChanged);
+    tcom->requestUESelect(value);
+
+}
+
 void MCControlWidget::onStatusButtonReleased()
 {
     connect(tcom,&Tcom_ui::responseChanged,this,&MCControlWidget::responseChanged);

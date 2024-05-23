@@ -27,7 +27,6 @@ mainGUI::mainGUI(QWidget *parent)
     connect(rxIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedRxIPAddress);
     connect(txIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedTxIPAddress);
 
-
     txCarrierSlider = new SliderAndLineEdit("Tx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e6,true,this);
     ui->verticalLayout_12->addWidget(txCarrierSlider);
     connect(txCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxCarrierFrequency);
@@ -65,18 +64,15 @@ mainGUI::mainGUI(QWidget *parent)
     connect(&uio,&uiobj::USRPConfigurationChanged,this,&mainGUI::onUSRPConfigurationChanged);
     //connect(&uio,&uiobj::txSetupStatusChanged,this,&mainGUI::updateUSRPSetupChanged);
 
-    connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_USRP_setup);
+    connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_USRP_setup);   
 
     connect(&tcom,&Tcom_ui::availableDevicesChanged,this,&mainGUI::updateAvailableDevices);
     connect(&tcom,&Tcom_ui::connectionChanged,this,&mainGUI::updateConnection);
 
     SetWidgetColor(ui->indicator_captured_buffer,16146769);
+    ui->indicator_synchronization->setState(1);
 
-    captureFileFormatField = new LabelandFieldWidget(this,"Capture File format:","/data/capture_",true);
-    ui->verticalLayout_6->addWidget(captureFileFormatField);
-
-    captureFileTypeField = new LabelandFieldWidget(this,"Capture File type:",".csv",true);
-    ui->verticalLayout_6->addWidget(captureFileTypeField);
+    ui->indicator_synchronization->setState(1);
 
 
     processingTimer.setInterval(500);
@@ -102,11 +98,17 @@ void mainGUI::updateTransmitStatus(bool status){
 
 void mainGUI::updateSynchronizationStatus(bool status){
     if(status){
+        ui->pushButton_2->setEnabled(false);
+        ui->pushButton_3->setEnabled(true);
         ui->button_capture_synch->setEnabled(true);
         addStatusUpdate("Synchronization Initialized",ui->tableWidget_status);
         synchronizationStartTime = QDateTime::currentDateTime();
         connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackSynchronizationProcess);
     }else{
+        if(radObj->isReceiving()){
+            ui->pushButton_2->setEnabled(true);
+        }
+        ui->pushButton_3->setEnabled(false);
         ui->button_capture_synch->setEnabled(false);
         addStatusUpdate("Synchronization terminated",ui->tableWidget_status);
         disconnect(&processingTimer,&QTimer::timeout, this,&mainGUI::trackSynchronizationProcess);
@@ -116,6 +118,7 @@ void mainGUI::updateSynchronizationStatus(bool status){
 void mainGUI::updateReceiveStatus(bool status)
 {
     if(status){
+        ui->pushButton_2->setEnabled(true); // enable synch start
         addStatusUpdate("Reception Initialized",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_rx_in_progress,9433252);
         SetWidgetColor(ui->indicator_captured_buffer,16146769); // last capture does not correspond to current
@@ -124,6 +127,13 @@ void mainGUI::updateReceiveStatus(bool status)
         connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackReceptionProcess);
 
     }else{
+        if(radObj->isSynchronizing()){
+            radObj->stopSynchronization();
+            ui->indicator_synchronization->setState(1);
+        }
+        ui->pushButton_2->setEnabled(false);
+        ui->pushButton_3->setEnabled(false);
+        ui->button_capture_synch->setEnabled(false);
         addStatusUpdate("Reception terminated",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_rx_in_progress,16146769);
         ui->button_write_buffer_to_file->setEnabled(false);
@@ -297,7 +307,18 @@ void mainGUI::trackReceptionProcess()
 
 void mainGUI::trackSynchronizationProcess()
 {
+    if(radObj->isSynchronizing()){
+        if(radObj->getSynchPointCount() > 0){
+            ui->indicator_synchronization->setState(2);
+            ui->button_capture_synch->setEnabled(true);
+        }else{
+           ui->indicator_synchronization->setState(3);
+           ui->button_capture_synch->setEnabled(false);
+        }
 
+    }else{
+        ui->indicator_synchronization->setState(1);
+    }
 }
 
 void mainGUI::trackCaptureBufferProcess()
@@ -741,6 +762,7 @@ void mainGUI::userChangedTxIPAddress(std::string value)
 
 void mainGUI::on_pushButton_2_released()
 {
+    radObj->requestResetSynchPoints();
     if(radObj->startSynchronization()){
         updateSynchronizationStatus(true);
         //addStatusUpdate("Synchronization started",ui->tableWidget_status);
@@ -753,6 +775,7 @@ void mainGUI::on_pushButton_3_released()
     if(radObj->isSynchronizing()){
         if(radObj->stopSynchronization()){
             updateSynchronizationStatus(false);
+            ui->indicator_synchronization->setState(1);
             //addStatusUpdate("Synchronization stopped",ui->tableWidget_status);
             //addStatusUpdate("Synchronization Points:" + QString::number(radObj->getSynchPointCount()),ui->tableWidget_status);
 
@@ -768,9 +791,18 @@ void mainGUI::on_pushButton_3_released()
 
 void mainGUI::on_button_capture_synch_released()
 {
-    int offset = ui->spinBox_3->value();
-    int length = ui->spinBox_4->value();
-    if(radObj->requestWriteSynchFrameToFile(offset,length)){
+    int currentCaptureIndex = ui->spinBox_current_element->value();
+    std::string currentType;
+    if(ui->checkBox_auto_switch->isChecked()){
+        for(int i=0;i<mcControlWidgets.size();i++){
+            currentType = mcControlWidgets[i]->getMCType();
+            if(currentType == "Element Switch"){
+                mcControlWidgets[i]->requestSelectElement(currentCaptureIndex);
+            }
+        }
+    }
+
+    if(radObj->requestCaptureSynchFrame(currentCaptureIndex-1)){
 
     std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
 
@@ -787,6 +819,15 @@ void mainGUI::on_button_capture_synch_released()
         }
     }
 
+    int last_element = radObj->getNumFrameCaptures();
+    int next_element = ((currentCaptureIndex) % last_element)+1;
+
+    ui->spinBox_current_element->setValue(next_element);
+
+    if(radObj->isCapturedFramesReadyToSave()){
+        ui->button_save_synch_capture->setEnabled(true);
+    }
+
     ui->captured_sig_plot->addGraph();
     ui->captured_sig_plot->graph(0)->setData(x, y);
     ui->captured_sig_plot->xAxis->setLabel("Sample");
@@ -794,8 +835,107 @@ void mainGUI::on_button_capture_synch_released()
     ui->captured_sig_plot->xAxis->setRange(0, vc_data.size());
     ui->captured_sig_plot->yAxis->setRange(0, max_element);
     ui->captured_sig_plot->replot();
+
+    if(ui->checkBox_save_capture->isChecked()){
+        if(radObj->requestWriteLastCapturedFrame("data/capture1.dat")){
+           addStatusUpdate("Saved capture...",ui->tableWidget_status);
+        }else{
+           addStatusUpdate("Could not save capture...",ui->tableWidget_status);
+        }
+    }
+
+    radObj->requestResetSynchPoints();
+
     }else{
         addStatusUpdate("Synchronization must be running...",ui->tableWidget_status);
     }
+}
+
+
+void mainGUI::on_button_set_synch_format_released()
+{
+    if(radObj->requestFrameCaptureFormat(ui->spinBox_frame_offset->value(),
+                                      ui->spinBox_frame_length->value(),
+                                      ui->spinBox_num_antenna_elements->value())){
+        addStatusUpdate("Frame format updated...",ui->tableWidget_status);
+    }else if(radObj->isSynchronizing()){
+        addStatusUpdate("Coult not update frame format: synchronization running...",ui->tableWidget_status);
+    }else{
+        addStatusUpdate("Unknown error updating frame format...",ui->tableWidget_status);
+    }
+}
+
+
+void mainGUI::on_spinBox_num_antenna_elements_valueChanged(int arg1)
+{
+    ui->spinBox_current_element->setMaximum(arg1);
+}
+
+
+void mainGUI::on_button_save_synch_capture_released()
+{
+    int c_sample = ui->spinBox_current_sample->value();
+    int c_class = ui->spinBox_current_class->value();
+
+    std::string fileDirectory = "data";//captureFileFormatField->getFieldText();
+    if(fileDirectory != ""){
+        fileDirectory = fileDirectory + "/";
+    }
+
+    std::string filepath = fileDirectory + "class"  + std::to_string(c_class) +
+                           "_sample" + std::to_string(c_sample) + ".csv";
+    int response = radObj->requestWriteFramesToFile(filepath,"csv");
+
+    if(response == 1){
+        addStatusUpdate("CSV file saved...",ui->tableWidget_status);
+    }
+}
+
+
+void mainGUI::on_spinBox_current_sample_valueChanged(int arg1)
+{
+    radObj->requestResetSynchPoints();
+    bool response = radObj->resetCurrentFramesCaptured();
+    ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
+}
+
+
+void mainGUI::on_spinBox_current_class_valueChanged(int arg1)
+{
+    bool response = radObj->resetCurrentFramesCaptured();
+    radObj->requestResetSynchPoints();
+    ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
+    int currentUEIndex = ui->spinBox_current_class->value();
+    std::string currentType;
+    if(ui->checkBox_auto_switch->isChecked()){
+        for(int i=0;i<mcControlWidgets.size();i++){
+            currentType = mcControlWidgets[i]->getMCType();
+            if(currentType == "UE Switch"){
+                mcControlWidgets[i]->requestSelectUE(currentUEIndex);
+            }
+        }
+    }
+}
+
+
+void mainGUI::on_spinBox_current_element_valueChanged(int arg1)
+{
+    int currentCaptureIndex = ui->spinBox_current_element->value();
+    radObj->requestResetSynchPoints();
+    std::string currentType;
+    if(ui->checkBox_auto_switch->isChecked()){
+        for(int i=0;i<mcControlWidgets.size();i++){
+            currentType = mcControlWidgets[i]->getMCType();
+            if(currentType == "Element Switch"){
+                mcControlWidgets[i]->requestSelectElement(currentCaptureIndex);
+            }
+        }
+    }
+}
+
+
+void mainGUI::on_spinBox_samples_valueChanged(int arg1)
+{
+    ui->spinBox_current_class->setMaximum(arg1);
 }
 

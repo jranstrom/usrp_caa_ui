@@ -18,6 +18,8 @@ public:
     void setFieldText(std::string value);
     void setEditable(bool is_editable);
 
+    std::string getFieldText();
+
 signals:
 
     void fieldTextEditing(std::string value);

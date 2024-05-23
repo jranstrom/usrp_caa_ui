@@ -131,6 +131,20 @@ private slots:
 
     void on_button_capture_synch_released();
 
+    void on_button_set_synch_format_released();
+
+    void on_spinBox_num_antenna_elements_valueChanged(int arg1);
+
+    void on_button_save_synch_capture_released();
+
+    void on_spinBox_current_sample_valueChanged(int arg1);
+
+    void on_spinBox_current_class_valueChanged(int arg1);
+
+    void on_spinBox_current_element_valueChanged(int arg1);
+
+    void on_spinBox_samples_valueChanged(int arg1);
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
@@ -161,10 +175,6 @@ private:
 
     SliderAndLineEdit * rxLOOffsetSlider;
 
-    LabelandFieldWidget * captureFileFormatField;
-    LabelandFieldWidget * captureFileTypeField;
-
-    LabelandFieldWidget * synchCaptureFile;
 
 
     void SetWidgetColor(QWidget * widg, int colorc);
