@@ -80,6 +80,39 @@ static double read_double(const std::string & filename,const std::string & path)
 	return ret_val;
 }
 
+static std::string read_string(const std::string & filename,const std::string & path){
+    std::string ret_str;
+
+        mat_t *matfile = open_mat_file(filename);
+
+        std::vector<std::string> n_obj = separate_string(path);
+
+        matvar_t* var_b = read_base_var(matfile,n_obj[0]); // read base struct
+
+        if(n_obj.size() > 1){	// var_b is a struct
+
+            std::vector<matvar_t*> mvars;
+            mvars.push_back(var_b);
+            for(size_t i=1;i<n_obj.size();i++){
+                matvar_t* mvar = Mat_VarGetStructFieldByName(mvars[mvars.size()-1],n_obj[i].c_str(),0);
+                mvars.push_back(mvar); // put the current struct in the list
+            }
+
+            char * ret_val = (static_cast<char *>(mvars[mvars.size()-1]->data));
+            ret_str = ret_val;
+
+        }else{
+            char * ret_val = (static_cast<char *>(var_b->data));
+            ret_str = ret_val;
+        }
+
+        free_var(var_b); // Mat_VarFree will loop through and delete all nested structs
+
+        close_mat_file(matfile);
+
+    return ret_str;
+}
+
 static std::vector<double> read_double_vec(const std::string & filename,const std::string & path){
 	std::vector<double> ret_vec;
 
