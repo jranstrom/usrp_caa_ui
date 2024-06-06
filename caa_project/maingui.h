@@ -182,7 +182,10 @@ private:
     void SetWidgetColorState(QWidget * widg, bool state);
     void SetWidgetColorState(QWidget *widg, int state);
 
-    void addStatusUpdate(QString entry,QTableWidget *table);
+    void addStatusUpdate(QString entry,QTableWidget *table, int type=0);
+
+    void hideLayout(QLayout* layout);
+    void unhideLayout(QLayout* layout);
 
     void applyTxConfig();
     void applyRxConfig();

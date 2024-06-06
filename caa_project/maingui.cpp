@@ -74,6 +74,12 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->indicator_synchronization->setState(1);
 
+    ui->lafw_synch_capture->setLabelText("Capture file:");
+    ui->lafw_synch_capture->setFieldText("data/capture1.dat");
+    ui->lafw_synch_capture->setEditable(true);
+
+    hideLayout(ui->layout_frs);
+
 
     processingTimer.setInterval(500);
     processingTimer.setSingleShot(false);
@@ -245,7 +251,7 @@ void mainGUI::SetWidgetColorState(QWidget *widg, int state)
     }
 }
 
-void mainGUI::addStatusUpdate(QString entry, QTableWidget *table)
+void mainGUI::addStatusUpdate(QString entry, QTableWidget *table,int type)
 {
     QDateTime currentDateTime = QDateTime::currentDateTime();
     QString currentDateTimeString = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -255,12 +261,42 @@ void mainGUI::addStatusUpdate(QString entry, QTableWidget *table)
     QTableWidgetItem *item1 = new QTableWidgetItem(currentDateTimeString);
     QTableWidgetItem *item2 = new QTableWidgetItem(entry);
 
+    if(type == -1)
+        item2->setForeground(QBrush(QColor(Qt::red)));
+    else if(type == 1){
+        item2->setForeground(QBrush(QColor(Qt::green)));
+    }
+
     // Add items to the table widget
     table->setItem(0, 0, item1); // Row 0, Column 0
     table->setItem(0, 1, item2); // Row 0, Column 1
 
-    table->selectRow(0);
+    //table->selectRow(0);
 
+}
+
+void mainGUI::hideLayout(QLayout *layout)
+{
+    for(int i=0;i<layout->count(); i++){
+        QLayoutItem* item = layout->itemAt(i);
+        if(item->layout()){
+            hideLayout(item->layout());
+        }else if(item->widget()){
+            item->widget()->hide();
+        }
+    }
+}
+
+void mainGUI::unhideLayout(QLayout *layout)
+{
+    for(int i=0;i<layout->count(); i++){
+        QLayoutItem* item = layout->itemAt(i);
+        if(item->layout()){
+            unhideLayout(item->layout());
+        }else if(item->widget()){
+            item->widget()->show();
+        }
+    }
 }
 
 void mainGUI::trackTransmissionProcess()
@@ -325,7 +361,7 @@ void mainGUI::trackCaptureBufferProcess()
 {
     if(not radObj->isWritingBufferToFile()){
         disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
-        addStatusUpdate("Success writing buffer to file",ui->tableWidget_status);
+        addStatusUpdate("Success writing buffer to file",ui->tableWidget_status,1);
         ui->button_receive->setEnabled(true);
         SetWidgetColor(ui->indicator_captured_buffer,9433252);
 
@@ -444,7 +480,7 @@ void mainGUI::on_button_load_cfg_released()
 
         uio.ForceUpdateAll();
 
-        addStatusUpdate("Success loading configuration",ui->tableWidget_status);
+        addStatusUpdate("Success loading configuration",ui->tableWidget_status,1);
 
         // Set PPS and REF Source
         // if(radObj->sysConf.tx.PPS_Source == "external"){
@@ -468,7 +504,7 @@ void mainGUI::on_button_load_cfg_released()
         //     ui->buttonGroup_rx_ref->button(-3)->setChecked(true);
         // }
     }else{
-        addStatusUpdate("Error loading configuration",ui->tableWidget_status);
+        addStatusUpdate("Error loading configuration",ui->tableWidget_status,-1);
     }
 }
 
@@ -526,7 +562,7 @@ void mainGUI::processing_USRP_setup()
             ui->button_receive->setEnabled(true);
             ui->button_transmit->setEnabled(true);
             if(pendingConfigurationRequest){
-                addStatusUpdate("Success configurating USRPs",ui->tableWidget_status);
+                addStatusUpdate("Success configurating USRPs",ui->tableWidget_status,1);
                 pendingConfigurationRequest = false;
             }
         }else{
@@ -534,7 +570,7 @@ void mainGUI::processing_USRP_setup()
             ui->button_receive->setEnabled(false);
             ui->button_transmit->setEnabled(false);
             if(pendingConfigurationRequest){
-                addStatusUpdate("Failed configurating USRPs",ui->tableWidget_status);
+                addStatusUpdate("Failed configurating USRPs",ui->tableWidget_status,-1);
                 pendingConfigurationRequest = false;
             }
         }
@@ -558,9 +594,27 @@ void mainGUI::on_button_load_data_released()
 {
     if(radObj->readConfigSignalFile((ui->lineEdit_sig_config->text()).toStdString())){
         SetWidgetColor(ui->indicator_sig_config,9433252);
-        addStatusUpdate("Signal file loaded",ui->tableWidget_status);
+        addStatusUpdate("Signal file succesfully loaded",ui->tableWidget_status,1);
+        unhideLayout(ui->layout_frs);
+
+        ui->lafw_frs_num_symbols->setLabelText("Number of symbols: ");
+        ui->lafw_frs_num_symbols->setFieldText(radObj->sysConf.GetNumberOfSymbols());
+
+        ui->lafw_frs_symbol_id->setLabelText("Frame symbols:");
+        ui->lafw_frs_symbol_id->setFieldText(radObj->sysConf.GetSignalPattern());
+
+        ui->lafw_frs_synch_length->setLabelText("Synch. sequence length: ");
+        ui->lafw_frs_synch_length->setFieldText(static_cast<int>(radObj->sysConf.synchSignal.size()));
+
+        ui->lafw_frs_fs->setLabelText("Spec. sampling rate (MHz):");
+        ui->lafw_frs_fs->setFieldText(radObj->sysConf.GetSamplingRate()/1e6,4);
+
+        ui->lafw_frs_data_modulation->setLabelText("Data Modulation:");
+        ui->lafw_frs_data_modulation->setFieldText(radObj->sysConf.GetDataModulationType());
+
     }else{
         SetWidgetColor(ui->indicator_sig_config,16380011);
+        hideLayout(ui->layout_frs);
     }
 }
 
@@ -581,9 +635,9 @@ void mainGUI::on_button_apply_config_clicked()
 void mainGUI::on_button_save_cf_released()
 {
     if(radObj->writeConfigFile((ui->lineEdit_cfg_file->text()).toStdString())){
-        addStatusUpdate("Success saving configuration",ui->tableWidget_status);
+        addStatusUpdate("Success saving configuration",ui->tableWidget_status,1);
     }else{
-        addStatusUpdate("Error saving configuration",ui->tableWidget_status);
+        addStatusUpdate("Error saving configuration",ui->tableWidget_status,-1);
     }
 
 
@@ -837,10 +891,10 @@ void mainGUI::on_button_capture_synch_released()
     ui->captured_sig_plot->replot();
 
     if(ui->checkBox_save_capture->isChecked()){
-        if(radObj->requestWriteLastCapturedFrame("data/capture1.dat")){
-           addStatusUpdate("Saved capture...",ui->tableWidget_status);
+        if(radObj->requestWriteLastCapturedFrame()){
+           addStatusUpdate("Successfully saved capture...",ui->tableWidget_status,1);
         }else{
-           addStatusUpdate("Could not save capture...",ui->tableWidget_status);
+           addStatusUpdate("Error, could not save capture...",ui->tableWidget_status,-1);
         }
     }
 
@@ -854,11 +908,14 @@ void mainGUI::on_button_capture_synch_released()
 
 void mainGUI::on_button_set_synch_format_released()
 {
-    if(radObj->requestFrameCaptureFormat(ui->spinBox_frame_offset->value(),
-                                      ui->spinBox_frame_length->value(),
-                                      ui->spinBox_num_antenna_elements->value())){
+    int response = radObj->requestFrameCaptureFormat(ui->spinBox_frame_offset->value(),
+                                                     ui->spinBox_frame_length->value(),
+                                                     ui->spinBox_num_antenna_elements->value(),
+                                                     ui->lafw_synch_capture->getFieldText(),
+                                                     ui->checkBox_wind_synch->isChecked());
+    if(response == 1){
         addStatusUpdate("Frame format updated...",ui->tableWidget_status);
-    }else if(radObj->isSynchronizing()){
+    }else if(response == -1){
         addStatusUpdate("Coult not update frame format: synchronization running...",ui->tableWidget_status);
     }else{
         addStatusUpdate("Unknown error updating frame format...",ui->tableWidget_status);

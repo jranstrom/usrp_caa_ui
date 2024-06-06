@@ -41,6 +41,18 @@ void LabelandFieldWidget::setFieldText(std::string value)
     }
 }
 
+void LabelandFieldWidget::setFieldText(double value, int precision)
+{
+    std::string value_str = doubleToString(value,precision);
+    setFieldText(value_str);
+}
+
+void LabelandFieldWidget::setFieldText(int value)
+{
+    std::string value_str = std::to_string(value);
+    setFieldText(value_str);
+}
+
 void LabelandFieldWidget::setEditable(bool is_editable)
 {
     if(isEditable != is_editable){
@@ -76,3 +88,11 @@ void LabelandFieldWidget::onFieldTextEditFinished()
     isEditing = false;
     emit fieldTexEditFinished((lineEdit->text()).toStdString());
 }
+
+std::string LabelandFieldWidget::doubleToString(double value, int precision)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(precision) << value;
+    return out.str();
+}
+

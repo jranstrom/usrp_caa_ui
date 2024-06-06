@@ -59,8 +59,12 @@ public:
     bool isWritingBufferToFile() {return writingBufferInProgress;}
 
 
-    bool requestWriteLastCapturedFrame(std::string filepath);
-    bool requestFrameCaptureFormat(int rframeOffset=0,int rframeLength=1024, int rnumFrameCaptures=4);
+    bool requestWriteLastCapturedFrame(std::string filepath="");
+    int requestFrameCaptureFormat(int rframeOffset=0,
+                                   int rframeLength=1024,
+                                   int rnumFrameCaptures=4,
+                                   std::string filepath="capture1.dat",
+                                   bool enableWindowSynch=false);
     int requestWriteFramesToFile(std::string filepath,std::string fileType="csv");
 
     bool isCapturedFramesReadyToSave();
@@ -115,8 +119,11 @@ private:
     bool ReceptionInProgress = false;
     bool SynchronizationInProgress = false;
 
+    bool WindowedSynchronizationEnabled = false;
+
 
     std::vector<std::complex<short>> captured_data;
+    std::string captureSynchFilepath = "";
 
     std::vector<std::complex<short>> extracted_synch_data;
 

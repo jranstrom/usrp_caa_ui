@@ -1,6 +1,10 @@
 #ifndef LABELANDFIELDWIDGET_H
 #define LABELANDFIELDWIDGET_H
 
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <string>
 #include <QWidget>
 #include <QLabel>
 #include <QLayout>
@@ -16,6 +20,8 @@ public:
 
     void setLabelText(std::string value);
     void setFieldText(std::string value);
+    void setFieldText(double value,int precision=0);
+    void setFieldText(int value);
     void setEditable(bool is_editable);
 
     std::string getFieldText();
@@ -31,6 +37,10 @@ private slots:
     void onFieldTextEditFinished();
 
 private :
+
+    std::string doubleToString(double value,int precision);
+
+
     QLabel * label;
     QHBoxLayout * main_layout;
     QLineEdit * lineEdit;

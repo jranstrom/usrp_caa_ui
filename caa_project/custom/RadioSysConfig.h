@@ -13,6 +13,7 @@ namespace RSC{
 		int numSymbols;
 		std::vector<int> guardLengths;
 		std::vector<int> symbolLengths;
+        std::string dataModulationType = "none";
 	};
 
 	struct FileConfig{		
@@ -57,10 +58,19 @@ class RadioSysConfig {
 
 		void SetNfft(double value);
 		void SetSamplingRate(double value);
+        double GetSamplingRate() { return winfo.samplingRate;}
 		void SetGuardLengths(std::vector<int> value);
 		void SetSymbolLengths(std::vector<int> value);
 
+        std::string GetDataModulationType(){ return winfo.dataModulationType;}
+        void SetDataModulationType(std::string value){
+            if(winfo.dataModulationType != value){
+                winfo.dataModulationType = value;
+            }
+        }
+
 		void SetSignalPattern(std::vector<char> value);
+        std::string GetSignalPattern();
 		void SetSynchCorrelationPattern(std::vector<int> value);
 
 		void SetIndexGrid(std::vector<std::vector<int>> value);
@@ -159,6 +169,21 @@ class RadioSysConfig {
             }
         }
 
+        bool GetSupportWindowSync(){return supportWindowSynchronization;}
+        void SetSupportWindowSynch(int value){
+            if(value == 1){
+                supportWindowSynchronization = true;
+            }else{
+                supportWindowSynchronization = false;
+            }
+        }
+        int GetWindowSynchronizationSize(){return windowSynchronizationSize;}
+        void SetWindowSynchronizationSize(int value){
+            windowSynchronizationSize = value;
+        }
+
+        int GetNumberOfSymbols(){ return winfo.numSymbols;}
+
         std::string GetrxUSRP_IPaddress() { return "addr=" + getRxIPAddress();}
         std::string GettxUSRP_IPaddress() { return "addr=" + getTxIPAddress();}
 
@@ -182,6 +207,9 @@ class RadioSysConfig {
 		std::vector<std::complex<double>> synchSignal;
 		size_t synchOffset;
 		int synchTolerance = 1;
+
+        bool supportWindowSynchronization = false;
+        int windowSynchronizationSize = 256;
 
 		double txRELrxTimeOffset;
 		std::string default_command_list;

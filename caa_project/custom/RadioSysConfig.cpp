@@ -12,6 +12,13 @@ void RadioSysConfig::SetGuardLengths(std::vector<int> value){ this->winfo.guardL
 void RadioSysConfig::SetSymbolLengths(std::vector<int> value){ this->winfo.symbolLengths = value; }
 
 void RadioSysConfig::SetSignalPattern(std::vector<char> value){ this->signalPattern = value; }
+
+std::string RadioSysConfig::GetSignalPattern()
+{
+    std::string result_str(this->signalPattern.begin(), this->signalPattern.end());
+
+    return result_str;
+}
 void RadioSysConfig::SetSynchCorrelationPattern(std::vector<int> value){ this->syncCorrelationPattern = value; }
 
 void RadioSysConfig::SetIndexGrid(std::vector<std::vector<int>> value){ this->iGrid = value; }

@@ -109,6 +109,18 @@ public:
         }
     }
 
+    size_t pop_w_count(T* pItem){
+        if (mk_out+1 > mk_in){    // will potentially take out more than is put in
+            return 0;             // don't do it!
+        } else {
+            *pItem = buffer[m_out++];
+            if(m_out >= capacity)
+                m_out = 0;
+            ++mk_out;
+            return mk_out; // Return difference
+        }
+    }
+
     bool back(T* out_p,int offset=0){
 
         if (offset < capacity && ((int)mk_in - offset)>=0){
@@ -173,6 +185,10 @@ public:
         return res_v;
     }
 
+    int get_internal_buff_index(size_t strt_mk_i){
+        return (strt_mk_i % capacity);
+    }
+
     std::vector<T> to_vector(){
         std::vector<T> out_vec;
 
@@ -235,6 +251,10 @@ public:
         return mk_out;
     }
 
+    size_t get_internal_pop_count(){
+        return m_out;
+    }
+
     bool check_any_overflow(){
         return overflow;
     }
@@ -257,8 +277,8 @@ private:
 
     size_t nc_out = 0;  // holds non-circular index 'out'
 
-    size_t mk_in;
-    size_t mk_out;
+    size_t mk_in;   // holds absolute 'in' index
+    size_t mk_out;  // holds absolute 'out' index
 
     size_t capacity;
 
