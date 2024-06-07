@@ -57,6 +57,7 @@ class RadioSysConfig {
 		//void ReadPropertyFromMat(std::string property_name,std::string property_path,std::string file_name="");
 
 		void SetNfft(double value);
+        int GetNfft() {return static_cast<int>(winfo.Nfft);}
 		void SetSamplingRate(double value);
         double GetSamplingRate() { return winfo.samplingRate;}
 		void SetGuardLengths(std::vector<int> value);

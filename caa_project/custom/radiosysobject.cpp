@@ -745,12 +745,31 @@ void RadioSysObject::runReceptionThread()
 
 void RadioSysObject::runSynchronizationThread()
 {
+    using samp_type = std::complex<short>;
+    using namespace arma;
+
+    std::complex<double> j               = std::complex<double>(0,1);
+    double pi                            = datum::pi;
+
     SynchronizationInProgress = true;
 
     size_t L                        = 3*sysConf.txSignal.size();
     double fs                       = sysConf.rx.SamplingRate;
     std::vector<int> synch_pattern  = sysConf.syncCorrelationPattern;
     int synch_tolerance             = sysConf.synchTolerance;
+    bool external_freq_ref          = true; // use carrier offset compensation
+
+    // Calculate half of subcarrier spacing
+    int Nfft = sysConf.GetNfft();
+    double half_scs = fs/Nfft/2;
+
+    int num_shift_candidates = 0;
+    if(external_freq_ref){
+        num_shift_candidates = 5;
+    }
+
+    vec shift_vec = linspace<vec>(-num_shift_candidates,num_shift_candidates,2*num_shift_candidates+1);
+    num_shift_candidates = shift_vec.n_elem;
 
     txSynchSignalBuffer.reset_pop();
 
@@ -761,10 +780,7 @@ void RadioSysObject::runSynchronizationThread()
 
     //const int osr = 4;
 
-    size_t L_tx = txSynchSignalBuffer.get_push_count(); // read number of samples in synch signal
-
-    using samp_type = std::complex<short>;
-    using namespace arma;
+    size_t L_tx = txSynchSignalBuffer.get_push_count(); // read number of samples in synch signal    
 
     cx_vec tx_synch_base(L); // Synch signal base (copy)
     cx_vec tx_synch(L);      // Synch signal (for freq-domain correlation)
@@ -817,36 +833,6 @@ void RadioSysObject::runSynchronizationThread()
 
             rx_sig = conv_to<cx_vec>::from(vv_frame);
 
-            //time_point = std::chrono::high_resolution_clock::now();
-
-            // bool no_r_fail = true;          // read fail
-            // size_t num_skipped_smpls = 0;   // track # of skipped samples
-            // size_t num_read_smpls = 0;      // tracks # of samples that have been read
-
-            // while((not stop_synchronization_signal_called) and (num_read_smpls < L)){
-            //     mk_c = rxSignalBuffer.pop_w_count(&c_smpl); // Returns difference between input and output in buffer, is zero if taken out too many
-            //     //c_rx_buffer_load[(bi++ % mx_count)] = mk_c;
-            //     // if(mk_c > max_rx_buffer_load){
-            //     //     max_rx_buffer_load = mk_c;
-            //     // }
-
-            //     // if read sample is valid
-            //     if(mk_c > 0 or num_skipped_smpls > L){
-            //         if(num_skipped_smpls > 0){
-            //             num_skipped_smpls = 0; // why is this reset?
-            //             no_r_fail = false;     // flag that samples have been skipped
-            //             //--ref_rx_indx;
-            //         }
-            //         rx_sig(num_read_smpls) = std::complex<double>(std::real(c_smpl),std::imag(c_smpl)); // add sample to arma vector
-            //         mk_index[num_read_smpls] = mk_c;
-            //         ++num_read_smpls;   // increase samples read counter
-
-            //     }else{
-            //         //std::this_thread::sleep_for(1us);
-            //         ++num_skipped_smpls; // increase skipped counter
-            //     }
-            // }
-
             rx_sig -= mean(rx_sig); // remove mean from signal
 
             double max_v_r = max(abs(real(rx_sig)));
@@ -857,8 +843,6 @@ void RadioSysObject::runSynchronizationThread()
 
             int max_i = 0;
             double max_val = 0;
-
-            vec corr_out = abs(ifft(tx_synch % fft(rx_sig)));
 
             // Implement repetition based time synchronization
             std::vector<double> corr_out_bb(L-2*L_tx,0.0);
@@ -875,12 +859,9 @@ void RadioSysObject::runSynchronizationThread()
                }
             }
 
-            std::vector<int> peak_locs_bb;
-            std::vector<double> peak_vals_bb = uhd_clib::find_peaks(corr_out_bb,peak_locs_bb,0.9*max_corr_out_bb,2*L_tx,10);
 
-            std::vector<int> peak_locs;
-            std::vector<double> tmp_v = conv_to<std::vector<double>>::from(corr_out);
-            std::vector<double> peak_vals = uhd_clib::find_peaks(tmp_v,peak_locs,0.8*max(corr_out),L_tx-sysConf.synchTolerance,20); // find the peaks
+            std::vector<int> peak_locs_bb;
+            std::vector<double> peak_vals_bb = uhd_clib::find_peaks(corr_out_bb,peak_locs_bb,0.9*max_corr_out_bb,sysConf.txSignal.size()-sysConf.synchTolerance,10);
 
             //rx_buffer.skip(debug_var3*L*osr); // skip 5x2 frames to limit computational load
             rxSignalBuffer.skip(0); // skip rest of buffer
@@ -910,96 +891,71 @@ void RadioSysObject::runSynchronizationThread()
                     // // Close the file stream
                     // outFile.close();
 
-                    // requestCaptureSynchFrame(0);
-                    // requestWriteLastCapturedFrame("data_cap1.dat");
-                    //std::cout << "Testing mode" << std::endl;
+                    // // requestCaptureSynchFrame(0);
+                    // // requestWriteLastCapturedFrame("data_cap1.dat");
+                    // std::cout << "Testing mode" << std::endl;
 
                 }
             }
 
-            if(!synchPointFound && peak_locs.size() > 2){
-            std::vector<int> peak_locs_diff;
-            for(int ii=1;ii<peak_locs.size(); ii++){
-                peak_locs_diff.push_back(peak_locs[ii]-peak_locs[ii-1]);
-            }
+            if(!synchPointFound){
+                vec t = regspace(0,rx_sig.n_elem-1)/fs; // define time vector
 
-            bool pattern_req = false;
-            int ii = -1;
+                std::vector<double> corr_max(num_shift_candidates,0.0);
+                double curr_corr_max = 0.0;
+                int curr_corr_max_ix = 0;
+                std::vector<int> synch_point(num_shift_candidates,-1);
 
-            while(not pattern_req and (ii < (int)(peak_locs_diff.size()-synch_pattern.size()))){
-                ++ii;
-                int ik = 0;
-                bool match = true;
-                while(ik < synch_pattern.size()){
-                    if (abs(synch_pattern[ik]-peak_locs_diff[ik+ii]) > synch_tolerance){
-                        match = false;
+                for(int it=0;it<num_shift_candidates;it++){
+                    double foc = half_scs*shift_vec(it); // current frequency offset candidate
+                    vec corr_out = abs(ifft(tx_synch % fft(rx_sig % exp((double)2*j*pi*foc*t))));
+
+                    double crr_max = max(corr_out);
+
+                    std::vector<int> peak_locs;
+                    std::vector<double> corr_out_std_vec = conv_to<std::vector<double>>::from(corr_out);
+                    std::vector<double> peak_vals = uhd_clib::find_peaks(corr_out_std_vec,
+                                                                         peak_locs,
+                                                                         0.8*crr_max,
+                                                                         L_tx-sysConf.synchTolerance,
+                                                                         20); // find the peaks
+
+                    // Validate peaks
+                    std::vector<int> peak_locs_diff;
+                    for(int ii=1;ii<peak_locs.size(); ii++){
+                        peak_locs_diff.push_back(peak_locs[ii]-peak_locs[ii-1]);
                     }
-                    ++ik;
-                }
-
-                pattern_req = match;
-            }
-
-            if(pattern_req){
-                //if(false){
-                syncPointBuffer.push(ref_rx_indx + peak_locs[ii]);
-                //synch_time_stamps.push(time_point); // track time point when synch read
-
-                cx_vec m1 = rx_sig.subvec(peak_locs[ii],peak_locs[ii]+L_tx-1);
-                //cx_vec m2 = rx_sig.subvec(peak_locs[ii]+L_tx+1,peak_locs[ii]+2*L_tx+1);
-                cx_vec m2 = rx_sig.subvec(peak_locs[ii+1],peak_locs[ii+1]+L_tx-1);
-
-                double P = (double)(peak_locs[ii+1]-peak_locs[ii]);
-
-
-                //fo_ests(l_est) = mean(arg(m1 / m2))/2/pi/P*fs; // carrier frequency offset (CFO) estimation
-                //fo_est = (double)fo_ests(l_est);
-                //fo_est = mean(fo_ests);
-                //l_est = ++l_est % L_est;
-
-                size_t last_loc;
-
-                //std::cout << last_loc << " :: " << ll_exist << std::endl;
-
-                if(syncPointBuffer.back(&last_loc,0)){
-
-                    std::vector<std::complex<short>> v_frame;
-                    try{
-                        v_frame = rxSignalBuffer.extract_range(ref_rx_indx + max_i+peak_locs[ii],L/2);
-                    } catch (const std::runtime_error& error){
-                        std::cout << "Synchronization processing is too slow. RX buffer has already been overwritten!" << std::endl;
+                    bool match_synch_pattern = false;
+                    int ii = -1;
+                    while(not match_synch_pattern and (ii < (int)(peak_locs_diff.size()-synch_pattern.size()))){
+                        ++ii;
+                        int ik = 0;
+                        bool match = true;
+                        while(ik < synch_pattern.size()){
+                            if (abs(synch_pattern[ik]-peak_locs_diff[ik+ii]) > synch_tolerance){
+                                match = false;
+                            }
+                            ++ik;
+                        }
+                        match_synch_pattern = match;
                     }
-                    std::vector<std::complex<double>> vv_frame = uhd_clib::cvec_conv_short2double(v_frame,1);
 
-                    cx_vec frame = conv_to<cx_vec>::from(vv_frame);
-
-                    //captured_data.clear();
-                    //captured_data = v_frame;
-
-                    uvec indices = regspace<uvec>(0, 1, vv_frame.size() - 1);
-                    frame = frame(indices);
-
-                    //cx_vec frame = rx_sig.subvec(peak_locs[ii],peak_locs[ii]+debug_var3);
-
-                    vec t = regspace(0,frame.n_elem-1)/fs;
-
-                    //std::cout << "Last Loc >> " << last_loc << std::endl;
-                   // frame = frame % exp((double)2*j*pi*fo_est*t); // correct for CFO
-
-                    //debug_cvec1 = conv_to<std::vector<std::complex<double>>>::from(frame);
-
-
-                    //std::cout << "Current frequency offset estimate: " << fo_est << " Hz" << std::endl;
-                    // std::cout << ">> P1:" << peak_locs[ii] << " :: P2:" << peak_locs[ii+1] << " :: END:" << peak_locs[ii]+debug_var1+1024 <<" :: L:" << rx_sig.n_elem << std::endl;
-                    //cx_vec auth1 = frame.subvec(debug_var1,debug_var1+1024-1);
-                    //auth1 = fft(auth1);
-                    // f_est_v = conv_to<std::vector<double>>::from(arg(m2 / m1)/2/pi/1024*10e6);
-                    //in_phase_v = conv_to<std::vector<double>>::from(real(auth1));
-                    //quad_comp_v = conv_to<std::vector<double>>::from(imag(auth1));
-                    //assigned_val = true;
+                    if(match_synch_pattern){
+                        synch_point[it] = peak_locs[ii]; // save starting point
+                        if(crr_max > curr_corr_max){
+                            curr_corr_max = crr_max;
+                            curr_corr_max_ix = it;
+                        }
+                    }
                 }
+
+                if(synch_point[curr_corr_max_ix] != -1){
+                   syncPointBuffer.push(ref_rx_indx + synch_point[curr_corr_max_ix]);
+                }
+
             }
-        }
+
+
         }
     }
 
