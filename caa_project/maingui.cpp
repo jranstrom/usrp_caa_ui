@@ -370,10 +370,28 @@ void mainGUI::trackCaptureBufferProcess()
         QVector<double> x(vc_data.size()), y(vc_data.size()); // initialize with entries 0..100
         double max_element = 0;
 
+        QVector<double> freq(vc_data.size()),spectrum(vc_data.size());
+        std::vector<std::complex<double>> vc_data_dbl = uhd_clib::cvec_conv_short2double(vc_data);
+        arma::cx_vec arma_sig = arma::conv_to<arma::cx_vec>::from(vc_data_dbl);
+        arma::vec spectrum_c  = arma::pow(arma::abs(arma::fft(arma_sig)),2);
+
+        int N = spectrum_c.n_elem;
+        int halfN = (N + 1) / 2;
+        arma::vec shifted_spectrum(N);
+
+        // Split and swap the vector
+        shifted_spectrum.head(N - halfN) = spectrum_c.tail(N - halfN);
+        shifted_spectrum.tail(halfN) = spectrum_c.head(halfN);
+
+        std::vector<double> freq_spectrum  = arma::conv_to<std::vector<double>>::from(shifted_spectrum);
+
         for (int i=0; i<vc_data.size(); ++i)
         {
             x[i] = i;
             y[i] = 10 * std::log10(std::norm(vc_data[i]));
+
+            freq[i] = ((double)i/(double)N -0.5)*(radObj->sysConf.getRxSamplingRate()) / 1e3;
+            spectrum[i] = 10 * std::log10(shifted_spectrum(i));
 
             if(y[i] > max_element){
                 max_element = y[i];
@@ -387,6 +405,21 @@ void mainGUI::trackCaptureBufferProcess()
         ui->captured_sig_plot->xAxis->setRange(0, vc_data.size());
         ui->captured_sig_plot->yAxis->setRange(0, max_element);
         ui->captured_sig_plot->replot();
+
+        auto max_spec = std::max_element(spectrum.begin(), spectrum.end());
+        int max_spec_value = *max_spec;
+
+        auto min_spec = std::min_element(spectrum.begin(), spectrum.end());
+        int min_spec_value = *min_spec;
+
+        ui->capture_spectrum_plot->addGraph();
+        ui->capture_spectrum_plot->graph(0)->setData(freq,spectrum);
+        ui->capture_spectrum_plot->xAxis->setLabel("Frequency (kHz)");
+        ui->capture_spectrum_plot->yAxis->setLabel("Power (dB)");
+        ui->capture_spectrum_plot->xAxis->setRange(freq[0],freq[N-1]);
+        ui->capture_spectrum_plot->yAxis->setRange(min_spec_value,max_spec_value);
+
+        ui->capture_spectrum_plot->replot();
 
     }
 }
@@ -861,12 +894,14 @@ void mainGUI::on_button_capture_synch_released()
     std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
 
     QVector<double> x(vc_data.size()), y(vc_data.size()); // initialize with entries 0..100
+
     double max_element = 0;
+
 
     for (int i=0; i<vc_data.size(); ++i)
     {
         x[i] = i;
-        y[i] = 10 * std::log10(std::norm(vc_data[i]));
+        y[i] = 10 * std::log10(std::norm(vc_data[i]));      
 
         if(y[i] > max_element){
             max_element = y[i];

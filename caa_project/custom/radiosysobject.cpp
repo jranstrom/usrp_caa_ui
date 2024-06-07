@@ -30,7 +30,7 @@
 
 using namespace std::chrono_literals;
 
-RadioSysObject::RadioSysObject() : syncPointBuffer(200) {
+RadioSysObject::RadioSysObject() : syncPointBuffer(1e3),frequencyOffsetBuffer(1e3) {
     std::cout<<"RadioSysObject created" << std::endl;
 
     int response = requestFrameCaptureFormat(frameOffset,frameLength,numFrameCaptures); // set default capture format
@@ -387,7 +387,8 @@ void RadioSysObject::setupTxUSRP()
         actual_CarrierFrequency = tx_usrp->get_tx_freq(channel);
 
         if(sysConf.tx.CarrierFrequency != actual_CarrierFrequency)
-            std::cout << boost::format("Actual Carrier freq: %.2f MHz\n") % (actual_CarrierFrequency / 1e6);
+            std::cout << boost::format("Desired Carrier freq: %.9f MHz \n") % (sysConf.tx.CarrierFrequency / 1e6);
+            std::cout << boost::format("Actual Carrier freq: %.9f MHz\n") % (actual_CarrierFrequency / 1e6);
 
         // Set gain
         double actual_gain;
@@ -476,6 +477,7 @@ void RadioSysObject::setupRxUSRP()
         actual_CarrierFrequency = rx_usrp->get_rx_freq(channel);
 
         if(sysConf.rx.CarrierFrequency != actual_CarrierFrequency)
+            std::cout << boost::format("Desired Carrier freq: %.9f MHz \n") % (sysConf.rx.CarrierFrequency / 1e6);
             std::cout << boost::format("Actual Carrier freq: %.2f MHz\n") % (actual_CarrierFrequency / 1e6);
 
         // Set gain
@@ -528,8 +530,9 @@ void RadioSysObject::setupRxUSRP()
 void RadioSysObject::extractFrameSequence(int offset,int length)
 {
     size_t rx_index;
+    double foc;
     bool back_out = syncPointBuffer.back(&rx_index,1); // pick out latest synch point
-
+    bool f_back_out = frequencyOffsetBuffer.back(&foc,1);
     int frame_length = 0;
 
     if(length > 0){
@@ -551,6 +554,16 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
         // int fart = rxSignalBuffer.get_internal_buff_index(rx_index);
         // std::cout << " :: " << fart << "(internal)" << std::endl;
         extracted_synch_data = rxSignalBuffer.extract_range(rx_index,frame_length);
+        double dt = 1/sysConf.rx.SamplingRate;
+        double pi = M_PI;
+        std::complex<double> j(0.0,1.0);
+
+        std::vector<std::complex<double>> tmp_cvec =  uhd_clib::cvec_conv_short2double(extracted_synch_data);
+        for(int ik=0; ik<extracted_synch_data.size();ik++){
+            tmp_cvec[ik] = tmp_cvec[ik]*std::exp(-2.0*j*pi*foc*dt*(double)ik);
+        }
+
+        //extracted_synch_data = uhd_clib::cvec_conv_double2short(tmp_cvec);
     }
 }
 
@@ -761,11 +774,11 @@ void RadioSysObject::runSynchronizationThread()
 
     // Calculate half of subcarrier spacing
     int Nfft = sysConf.GetNfft();
-    double half_scs = fs/Nfft/2;
+    double half_scs = fs/Nfft/2/2;
 
     int num_shift_candidates = 0;
     if(external_freq_ref){
-        num_shift_candidates = 5;
+        num_shift_candidates = 14;
     }
 
     vec shift_vec = linspace<vec>(-num_shift_candidates,num_shift_candidates,2*num_shift_candidates+1);
@@ -814,6 +827,7 @@ void RadioSysObject::runSynchronizationThread()
 
         if(pendingSynchPointReset){
             syncPointBuffer.reset_buffer();
+            frequencyOffsetBuffer.reset_buffer();
             pendingSynchPointReset = false;
         }
 
@@ -866,12 +880,13 @@ void RadioSysObject::runSynchronizationThread()
             //rx_buffer.skip(debug_var3*L*osr); // skip 5x2 frames to limit computational load
             rxSignalBuffer.skip(0); // skip rest of buffer
 
-            bool synchPointFound = false;
+            bool synchPointFound = WindowedSynchronizationEnabled;
             double peak_locs_diff_bb = 0.0;
             if(peak_locs_bb.size() > 1 && WindowedSynchronizationEnabled){
                 peak_locs_diff_bb = peak_locs_bb[1]-peak_locs_bb[0];
                 if(std::abs(peak_locs_diff_bb-sysConf.txSignal.size()) < 5){
                     syncPointBuffer.push(ref_rx_indx + peak_locs_bb[0]);
+                    frequencyOffsetBuffer.push(0.0);
                     //syncPointBuffer.push(ref_rx_indx);
                     synchPointFound = true;
 
@@ -910,13 +925,13 @@ void RadioSysObject::runSynchronizationThread()
                     double foc = half_scs*shift_vec(it); // current frequency offset candidate
                     vec corr_out = abs(ifft(tx_synch % fft(rx_sig % exp((double)2*j*pi*foc*t))));
 
-                    double crr_max = max(corr_out);
+                    double crr_max = sum(corr_out);
 
                     std::vector<int> peak_locs;
                     std::vector<double> corr_out_std_vec = conv_to<std::vector<double>>::from(corr_out);
                     std::vector<double> peak_vals = uhd_clib::find_peaks(corr_out_std_vec,
                                                                          peak_locs,
-                                                                         0.8*crr_max,
+                                                                         0.8*max(corr_out),
                                                                          L_tx-sysConf.synchTolerance,
                                                                          20); // find the peaks
 
@@ -951,6 +966,7 @@ void RadioSysObject::runSynchronizationThread()
 
                 if(synch_point[curr_corr_max_ix] != -1){
                    syncPointBuffer.push(ref_rx_indx + synch_point[curr_corr_max_ix]);
+                   frequencyOffsetBuffer.push(half_scs*shift_vec(curr_corr_max_ix));
                 }
 
             }
@@ -1175,6 +1191,7 @@ bool RadioSysObject::requestResetSynchPoints()
         pendingSynchPointReset = true;
     }else{
         syncPointBuffer.reset_buffer();
+        frequencyOffsetBuffer.reset_buffer();
     }
 
     return true;

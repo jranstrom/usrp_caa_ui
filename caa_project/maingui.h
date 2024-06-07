@@ -11,6 +11,8 @@
 #include "mccontrolwidget.h"
 #include "custom/sliderandlineedit.h"
 
+#include "uhd_clib.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class mainGUI;

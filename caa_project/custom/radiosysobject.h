@@ -144,7 +144,9 @@ private:
     CircBuffer<std::complex<short>> rxSignalBuffer;
     CircBuffer<std::complex<short>> txSynchSignalBuffer;
 
+
     CircBuffer<size_t> syncPointBuffer;
+    CircBuffer<double> frequencyOffsetBuffer;
 
     double timeOffset = 0.0;
 

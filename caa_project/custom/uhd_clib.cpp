@@ -51,12 +51,27 @@ std::vector<std::complex<short>> uhd_clib::cvec_conv_double2short(std::vector<st
 std::vector<std::complex<double>> uhd_clib::cvec_conv_short2double(std::vector<std::complex<short>> & in_vec, double mx){
     std::vector<std::complex<double>> out_vec(in_vec.size());
 
-    // double max_val = 0;
-    // for(size_t i=0;i<out_vec.size();i++){
-    //     max_val = std::max(max_val,std::max(abs(real(in_vec[i])),abs(imag(in_vec[i]))));
-    // }
+    if(mx == -1){
+        double max_val = 0;
+        for(size_t i=0;i<out_vec.size();i++){
+            short real_amp = abs(real(in_vec[i]));
+            short imag_amp = abs(imag(in_vec[i]));
 
-    //double mx = std::pow(2,(16-1))/max_val;
+            double comp_val;
+
+            if(real_amp > imag_amp){
+                comp_val = static_cast<double>(real_amp);
+            }else{
+                comp_val = static_cast<double>(imag_amp);
+            }
+
+            if(comp_val > max_val){
+                max_val = comp_val;
+            }
+        }
+
+        mx = std::pow(2,(16-1))/max_val;
+    }
     //double mx = std::pow(2,(16-1));
 
 
