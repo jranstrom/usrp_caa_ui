@@ -67,7 +67,9 @@ static double read_double(const std::string & filename,const std::string & path)
 			mvars.push_back(mvar); // put the current struct in the list
 		}
 
-		ret_val = *(static_cast<double*>(mvars[mvars.size()-1]->data));
+        if(mvars[mvars.size()-1] != nullptr){
+            ret_val = *(static_cast<double*>(mvars[mvars.size()-1]->data));
+        }
 
 	}else{
 		ret_val = *(static_cast<double*>(var_b->data));		
@@ -98,8 +100,11 @@ static std::string read_string(const std::string & filename,const std::string & 
                 mvars.push_back(mvar); // put the current struct in the list
             }
 
-            char * ret_val = (static_cast<char *>(mvars[mvars.size()-1]->data));
-            ret_str = ret_val;
+            if(mvars[mvars.size()-1] != nullptr){
+                char * ret_val = (static_cast<char *>(mvars[mvars.size()-1]->data));
+                ret_str = ret_val;
+            }
+
 
         }else{
             char * ret_val = (static_cast<char *>(var_b->data));
