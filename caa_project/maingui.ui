@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>757</width>
+    <width>853</width>
     <height>903</height>
    </rect>
   </property>
@@ -51,7 +51,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -290,6 +290,29 @@
              </layout>
             </item>
             <item>
+             <widget class="QGroupBox" name="groupBox_4">
+              <property name="title">
+               <string>USRP Reset</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_15">
+               <item>
+                <widget class="QPushButton" name="button_reset_tx">
+                 <property name="text">
+                  <string>Transmitter</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="button_reset_rx">
+                 <property name="text">
+                  <string>Receiver</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
              <spacer name="verticalSpacer_3">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -453,6 +476,33 @@
            <item>
             <layout class="QVBoxLayout" name="layout_frs">
              <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_21">
+               <item>
+                <widget class="LabelandFieldWidget" name="lafw_frs_date" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>50</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_8">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
               <layout class="QHBoxLayout" name="horizontalLayout_11">
                <item>
                 <widget class="LabelandFieldWidget" name="lafw_frs_symbol_id" native="true">
@@ -571,19 +621,12 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_7">
                <item>
-                <widget class="QLabel" name="label">
-                 <property name="text">
-                  <string>Classes:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="spinBox_classes">
-                 <property name="maximum">
-                  <number>33</number>
-                 </property>
-                 <property name="value">
-                  <number>33</number>
+                <widget class="LabelandSpinBoxWidget" name="lasbw_num_classes" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>0</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -595,46 +638,12 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_2">
-                 <property name="text">
-                  <string>Samples:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="spinBox_samples">
-                 <property name="maximum">
-                  <number>300</number>
-                 </property>
-                 <property name="value">
-                  <number>4</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="Line" name="line_3">
-                 <property name="orientation">
-                  <enum>Qt::Vertical</enum>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_12">
-                 <property name="text">
-                  <string>Antenna Elements:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="spinBox_num_antenna_elements">
-                 <property name="minimum">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <number>16</number>
-                 </property>
-                 <property name="value">
-                  <number>4</number>
+                <widget class="LabelandSpinBoxWidget" name="lasbw_num_elements" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>0</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -663,19 +672,12 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_8">
                <item>
-                <widget class="QLabel" name="label_13">
-                 <property name="text">
-                  <string>Samples Offset: </string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="spinBox_frame_offset">
-                 <property name="maximum">
-                  <number>100000</number>
-                 </property>
-                 <property name="value">
-                  <number>0</number>
+                <widget class="LabelandSpinBoxWidget" name="lasbw_synchCaptureOffset" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>0</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -687,22 +689,12 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_14">
-                 <property name="text">
-                  <string>Capture Length:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="spinBox_frame_length">
-                 <property name="minimum">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <number>100000</number>
-                 </property>
-                 <property name="value">
-                  <number>4608</number>
+                <widget class="LabelandSpinBoxWidget" name="lasbw_synchCaptureLength" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>0</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -754,6 +746,16 @@
                 </size>
                </property>
               </spacer>
+             </item>
+             <item>
+              <widget class="IndicatorButtonWidget" name="indicator_format" native="true">
+               <property name="minimumSize">
+                <size>
+                 <width>25</width>
+                 <height>0</height>
+                </size>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="button_set_synch_format">
@@ -1048,6 +1050,30 @@
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="Line" name="line_5">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="IndicatorButtonWidget" name="indicator_auto_capture" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>50</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="button_auto_capture">
+                 <property name="text">
+                  <string>Auto Capture</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
              <item>
@@ -1056,6 +1082,19 @@
                 <widget class="QCheckBox" name="checkBox_auto_switch">
                  <property name="text">
                   <string>Auto switch</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_auto_save">
+                 <property name="text">
+                  <string>Auto Save</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -1073,53 +1112,32 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QLabel" name="label_6">
-                 <property name="text">
-                  <string>Sample:</string>
+                <widget class="LabelandSpinBoxWidget" name="lasbw_active_sample" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>33</width>
+                   <height>0</height>
+                  </size>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QSpinBox" name="spinBox_current_sample">
-                 <property name="minimum">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <number>500</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_7">
-                 <property name="text">
-                  <string>Class:</string>
+                <widget class="LabelandSpinBoxWidget" name="lasbw_active_class" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>0</height>
+                  </size>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QSpinBox" name="spinBox_current_class">
-                 <property name="minimum">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <number>4</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_8">
-                 <property name="text">
-                  <string>Antenna Element:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="spinBox_current_element">
-                 <property name="minimum">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <number>4</number>
+                <widget class="LabelandSpinBoxWidget" name="lasbw_antenna_elements" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>30</width>
+                   <height>0</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -1426,7 +1444,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>757</width>
+     <width>853</width>
      <height>22</height>
     </rect>
    </property>
@@ -1451,13 +1469,19 @@
    <header>labelandfieldwidget.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>LabelandSpinBoxWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">labelandspinboxwidget.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_rx_pps"/>
-  <buttongroup name="buttonGroup_tx_pps"/>
   <buttongroup name="buttonGroup_tx_ref"/>
+  <buttongroup name="buttonGroup_tx_pps"/>
   <buttongroup name="buttonGroup_rx_ref"/>
+  <buttongroup name="buttonGroup_rx_pps"/>
  </buttongroups>
 </ui>

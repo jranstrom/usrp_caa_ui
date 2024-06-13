@@ -186,6 +186,12 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
 
     }
 
+    try{
+        sysConf.SetDate(matHF::read_string(filepath,"sys.date"));
+    }catch(...){
+
+    }
+
     return success;
 }
 
@@ -529,10 +535,29 @@ void RadioSysObject::setupRxUSRP()
 
 void RadioSysObject::extractFrameSequence(int offset,int length)
 {
+
+    // Extract latest synched frame
+    // If overwritten, then this function should await next frame synch
     size_t rx_index;
-    double foc;
-    bool back_out = syncPointBuffer.back(&rx_index,1); // pick out latest synch point
-    bool f_back_out = frequencyOffsetBuffer.back(&foc,1);
+    double foc = 0.0;
+    std::chrono::nanoseconds duration(5);
+
+    // Loop while no valid synch point (exist and is not overwritten)
+    bool synchPoint_exist = syncPointBuffer.back(&rx_index,1);
+    bool isOverwritten = false;
+    if(synchPoint_exist){
+     isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
+    }
+    while(!synchPoint_exist || isOverwritten){
+        //frequencyOffsetBuffer.back(&foc,1);
+        std::this_thread::sleep_for(duration);
+        synchPoint_exist = syncPointBuffer.back(&rx_index,1);
+        isOverwritten = false;
+        if(synchPoint_exist){
+            isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
+        }
+    }
+
     int frame_length = 0;
 
     if(length > 0){
@@ -544,27 +569,25 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
         }
     }
 
-    if(back_out){
-        // size_t synchOffset = sysConf.synchOffset;
+    // size_t synchOffset = sysConf.synchOffset;
 
-        //rx_index -= synchOffset;        // adjust for synch point not being start of frame
-        if(offset > -1){
-            rx_index += offset;
-        }
-        // int fart = rxSignalBuffer.get_internal_buff_index(rx_index);
-        // std::cout << " :: " << fart << "(internal)" << std::endl;
-        extracted_synch_data = rxSignalBuffer.extract_range(rx_index,frame_length);
-        double dt = 1/sysConf.rx.SamplingRate;
-        double pi = M_PI;
-        std::complex<double> j(0.0,1.0);
-
-        std::vector<std::complex<double>> tmp_cvec =  uhd_clib::cvec_conv_short2double(extracted_synch_data);
-        for(int ik=0; ik<extracted_synch_data.size();ik++){
-            tmp_cvec[ik] = tmp_cvec[ik]*std::exp(-2.0*j*pi*foc*dt*(double)ik);
-        }
-
-        //extracted_synch_data = uhd_clib::cvec_conv_double2short(tmp_cvec);
+    //rx_index -= synchOffset;        // adjust for synch point not being start of frame
+    if(offset > -1){
+        rx_index += offset;
     }
+    // int fart = rxSignalBuffer.get_internal_buff_index(rx_index);
+    // std::cout << " :: " << fart << "(internal)" << std::endl;
+    extracted_synch_data =  rxSignalBuffer.extract_range(rx_index,frame_length);
+    double dt = 1/sysConf.rx.SamplingRate;
+    double pi = M_PI;
+    std::complex<double> j(0.0,1.0);
+
+    std::vector<std::complex<double>> tmp_cvec =  uhd_clib::cvec_conv_short2double(extracted_synch_data);
+    for(int ik=0; ik<extracted_synch_data.size();ik++){
+        tmp_cvec[ik] = tmp_cvec[ik]*std::exp(2.0*j*pi*foc*dt*(double)ik);
+    }
+
+    //extracted_synch_data = uhd_clib::cvec_conv_double2short(tmp_cvec);
 }
 
 void RadioSysObject::runTransmissionThread()
@@ -770,15 +793,15 @@ void RadioSysObject::runSynchronizationThread()
     double fs                       = sysConf.rx.SamplingRate;
     std::vector<int> synch_pattern  = sysConf.syncCorrelationPattern;
     int synch_tolerance             = sysConf.synchTolerance;
-    bool external_freq_ref          = true; // use carrier offset compensation
+    bool external_freq_ref          = false; // use carrier offset compensation
 
     // Calculate half of subcarrier spacing
     int Nfft = sysConf.GetNfft();
-    double half_scs = fs/Nfft/2/2;
+    double half_scs = fs/Nfft/2;
 
     int num_shift_candidates = 0;
     if(external_freq_ref){
-        num_shift_candidates = 14;
+        num_shift_candidates = 28;
     }
 
     vec shift_vec = linspace<vec>(-num_shift_candidates,num_shift_candidates,2*num_shift_candidates+1);
@@ -841,7 +864,7 @@ void RadioSysObject::runSynchronizationThread()
             current_rx_indx = rxSignalBuffer.get_push_count();
         }
 
-        if(not stop_synchronization_signal_called){
+        if(not stop_synchronization_signal_called && !rxSignalBuffer.check_overwritten(ref_rx_indx)){
             std::vector<std::complex<short>> v_frame = rxSignalBuffer.extract_range(ref_rx_indx,L);
             std::vector<std::complex<double>> vv_frame = uhd_clib::cvec_conv_short2double(v_frame,1);
 
@@ -1127,8 +1150,8 @@ int RadioSysObject::requestFrameCaptureFormat(int rframeOffset,
     std::vector<std::vector<double>> captureFrame_tmp(frameLength, std::vector<double>(2*numFrameCaptures));
     capturedFrames = captureFrame_tmp;
 
-    std::vector<bool> currentFramesCaptured_tmp(frameLength);
-    for(int i=0; i<frameLength;i++){
+    std::vector<bool> currentFramesCaptured_tmp(numFrameCaptures);
+    for(int i=0; i<numFrameCaptures;i++){
         currentFramesCaptured_tmp[i] = false;
     }
 
@@ -1195,4 +1218,19 @@ bool RadioSysObject::requestResetSynchPoints()
     }
 
     return true;
+}
+
+int RadioSysObject::requestResetTransmitter()
+{
+    if(tx_usrp != nullptr){
+        StopAll();
+        uhd::stream_cmd_t stop_cmd(uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS);
+        stop_cmd.stream_now = true;
+
+        tx_usrp->issue_stream_cmd(stop_cmd);
+        tx_usrp.reset();
+
+        setTxUSRPConfigured(false);
+    }
+
 }

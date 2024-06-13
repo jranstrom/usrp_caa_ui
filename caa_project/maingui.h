@@ -85,6 +85,7 @@ private slots:
     void on_button_apply_config_released();
 
     void processing_USRP_setup();
+    void processing_automatic_capture();
 
     void on_button_load_data_released();
 
@@ -135,17 +136,22 @@ private slots:
 
     void on_button_set_synch_format_released();
 
-    void on_spinBox_num_antenna_elements_valueChanged(int arg1);
-
     void on_button_save_synch_capture_released();
 
-    void on_spinBox_current_sample_valueChanged(int arg1);
+    void plot_time_and_freq(std::vector<std::complex<short>> vc_data);
 
-    void on_spinBox_current_class_valueChanged(int arg1);
+    void on_button_reset_tx_released();
 
-    void on_spinBox_current_element_valueChanged(int arg1);
+    void on_button_auto_capture_released();
 
-    void on_spinBox_samples_valueChanged(int arg1);
+    void onActiveElementSpinBoxChanged(int value,bool noSynchReset);
+    void onActiveClassSpinBoxChanged(int value,bool noSynchReset);
+    void onActiveSampleSpinBoxChanged(int value,bool noSynchReset);
+    void onNumElementSpinBoxChanged(int value);
+    void onNumClassesSpinBoxChanged(int value);
+    void onSynchCaptureOffsetSpinBoxChanged(int value);
+    void onSynchCaptureLengthSpinBoxChanged(int value);
+
 
 private:
     Ui::mainGUI *ui;
@@ -158,6 +164,12 @@ private:
 
     bool usrpSetupInterrupted;
     bool pendingConfigurationRequest = false;
+
+    int frameFormatStatus = 0; // 0 - never initialized | 1 - initialized and up to date | 2 - initialized but out of date
+
+    bool automaticCaptureRunning = false;
+    bool automaticCaptureProcessing = false;
+    int validateAutomaticCapture();
 
     QDateTime transmissionStartTime;
     QDateTime receptionStartTime;
@@ -177,7 +189,13 @@ private:
 
     SliderAndLineEdit * rxLOOffsetSlider;
 
+    void SaveSynchCaptures();
+    void SaveSyncCaptures(std::string filepath,std::string message="");
 
+    void SetActiveElementForAllUEs(int value);
+    void SetActiveUEForAll(int value);
+
+    void triggerFormatChanged(bool value);
 
     void SetWidgetColor(QWidget * widg, int colorc);
 

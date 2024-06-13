@@ -27,11 +27,11 @@ mainGUI::mainGUI(QWidget *parent)
     connect(rxIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedRxIPAddress);
     connect(txIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedTxIPAddress);
 
-    txCarrierSlider = new SliderAndLineEdit("Tx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e6,true,this);
+    txCarrierSlider = new SliderAndLineEdit("Tx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e3,true,this);
     ui->verticalLayout_12->addWidget(txCarrierSlider);
     connect(txCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxCarrierFrequency);
 
-    rxCarrierSlider = new SliderAndLineEdit("Rx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e6,true,this);
+    rxCarrierSlider = new SliderAndLineEdit("Rx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e3,true,this);
     ui->verticalLayout_10->addWidget(rxCarrierSlider);
     connect(rxCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxCarrierFrequency);
 
@@ -78,12 +78,76 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lafw_synch_capture->setFieldText("data/capture1.dat");
     ui->lafw_synch_capture->setEditable(true);
 
+    ui->indicator_format->setState(1);
+
+    ui->lasbw_antenna_elements->requestSetValue(1,true);
+    ui->lasbw_antenna_elements->setMinimum(1);
+    ui->lasbw_antenna_elements->setLabelText("Active Element:");
+
+    ui->lasbw_active_class->requestSetValue(1,true);
+    ui->lasbw_active_class->setMinimum(1);
+    ui->lasbw_active_class->setLabelText("Active class (UE):");
+
+    ui->lasbw_active_sample->requestSetValue(1,true);
+    ui->lasbw_active_sample->setMinimum(1);
+    ui->lasbw_active_sample->setMaximum(3000);
+    ui->lasbw_active_sample->setLabelText("Current sample:");
+
+    ui->lasbw_num_elements->requestSetValue(4,true);
+    ui->lasbw_num_elements->setMinimum(1);
+    ui->lasbw_num_elements->setLabelText("Number of Elements:");
+
+    ui->lasbw_num_classes->requestSetValue(4,true);
+    ui->lasbw_num_classes->setMinimum(1);
+    ui->lasbw_num_classes->setLabelText("Number of Classes:");
+
+    ui->lasbw_synchCaptureOffset->setLabelText("Capture Offset:");
+    ui->lasbw_synchCaptureOffset->setMaximum(500000);
+    ui->lasbw_synchCaptureOffset->requestSetValue(2176);
+
+    ui->lasbw_synchCaptureLength->setLabelText("Capture Length:");
+    ui->lasbw_synchCaptureLength->setMaximum(500000);
+    ui->lasbw_synchCaptureLength->requestSetValue(1024);
+
+    connect(ui->lasbw_antenna_elements,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onActiveElementSpinBoxChanged);
+
+    connect(ui->lasbw_active_class,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onActiveClassSpinBoxChanged);
+
+    connect(ui->lasbw_active_sample,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onActiveSampleSpinBoxChanged);
+
+    connect(ui->lasbw_num_elements,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onActiveSampleSpinBoxChanged);
+
+    connect(ui->lasbw_num_classes,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onNumClassesSpinBoxChanged);
+
+    connect(ui->lasbw_synchCaptureOffset,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onSynchCaptureOffsetSpinBoxChanged);
+
+    connect(ui->lasbw_synchCaptureLength,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onSynchCaptureLengthSpinBoxChanged);
+
+
+    ui->indicator_auto_capture->setState(1);
+
+
     hideLayout(ui->layout_frs);
 
 
-    processingTimer.setInterval(500);
+    processingTimer.setInterval(300);
     processingTimer.setSingleShot(false);
-    processingTimer.start();    
+    processingTimer.start();
+
 
     //uio.ForceUpdateAll();
 
@@ -344,6 +408,7 @@ void mainGUI::trackReceptionProcess()
 void mainGUI::trackSynchronizationProcess()
 {
     if(radObj->isSynchronizing()){
+        ui->pushButton_3->setEnabled(true);
         if(radObj->getSynchPointCount() > 0){
             ui->indicator_synchronization->setState(2);
             ui->button_capture_synch->setEnabled(true);
@@ -367,59 +432,7 @@ void mainGUI::trackCaptureBufferProcess()
 
         std::vector<std::complex<short>> vc_data = radObj->getCapturedData();
 
-        QVector<double> x(vc_data.size()), y(vc_data.size()); // initialize with entries 0..100
-        double max_element = 0;
-
-        QVector<double> freq(vc_data.size()),spectrum(vc_data.size());
-        std::vector<std::complex<double>> vc_data_dbl = uhd_clib::cvec_conv_short2double(vc_data);
-        arma::cx_vec arma_sig = arma::conv_to<arma::cx_vec>::from(vc_data_dbl);
-        arma::vec spectrum_c  = arma::pow(arma::abs(arma::fft(arma_sig)),2);
-
-        int N = spectrum_c.n_elem;
-        int halfN = (N + 1) / 2;
-        arma::vec shifted_spectrum(N);
-
-        // Split and swap the vector
-        shifted_spectrum.head(N - halfN) = spectrum_c.tail(N - halfN);
-        shifted_spectrum.tail(halfN) = spectrum_c.head(halfN);
-
-        std::vector<double> freq_spectrum  = arma::conv_to<std::vector<double>>::from(shifted_spectrum);
-
-        for (int i=0; i<vc_data.size(); ++i)
-        {
-            x[i] = i;
-            y[i] = 10 * std::log10(std::norm(vc_data[i]));
-
-            freq[i] = ((double)i/(double)N -0.5)*(radObj->sysConf.getRxSamplingRate()) / 1e3;
-            spectrum[i] = 10 * std::log10(shifted_spectrum(i));
-
-            if(y[i] > max_element){
-                max_element = y[i];
-            }
-        }
-
-        ui->captured_sig_plot->addGraph();
-        ui->captured_sig_plot->graph(0)->setData(x, y);
-        ui->captured_sig_plot->xAxis->setLabel("Sample");
-        ui->captured_sig_plot->yAxis->setLabel("Power (dB)");
-        ui->captured_sig_plot->xAxis->setRange(0, vc_data.size());
-        ui->captured_sig_plot->yAxis->setRange(0, max_element);
-        ui->captured_sig_plot->replot();
-
-        auto max_spec = std::max_element(spectrum.begin(), spectrum.end());
-        int max_spec_value = *max_spec;
-
-        auto min_spec = std::min_element(spectrum.begin(), spectrum.end());
-        int min_spec_value = *min_spec;
-
-        ui->capture_spectrum_plot->addGraph();
-        ui->capture_spectrum_plot->graph(0)->setData(freq,spectrum);
-        ui->capture_spectrum_plot->xAxis->setLabel("Frequency (kHz)");
-        ui->capture_spectrum_plot->yAxis->setLabel("Power (dB)");
-        ui->capture_spectrum_plot->xAxis->setRange(freq[0],freq[N-1]);
-        ui->capture_spectrum_plot->yAxis->setRange(min_spec_value,max_spec_value);
-
-        ui->capture_spectrum_plot->replot();
+        plot_time_and_freq(vc_data);
 
     }
 }
@@ -615,6 +628,59 @@ void mainGUI::processing_USRP_setup()
     }
 }
 
+void mainGUI::processing_automatic_capture()
+{
+    // > Validate conditions
+    // Frame structure is set up
+    // Transmission is running
+    // Reception is running
+    // Synchronization is running
+
+
+    int validation_response = validateAutomaticCapture();
+    if(validation_response == 1){
+        if(!radObj->hasPendingSynchPointReset()){
+
+            int currentElement = ui->lasbw_antenna_elements->getValue();
+            int currentClass = ui->lasbw_active_class->getValue();
+            int currentSample = ui->lasbw_active_sample->getValue();
+
+            int increment = 1;
+
+            if(radObj->requestCaptureSynchFrame(currentElement-1)){
+
+                if(radObj->isCapturedFramesReadyToSave()){
+                    SaveSynchCaptures();
+
+                    if(currentClass == ui->lasbw_active_class->getMaximum()){
+                        currentClass = ui->lasbw_active_class->getMaximum();
+                        currentElement = ui->lasbw_antenna_elements->getMaximum();
+                        currentSample = ui->lasbw_active_sample->requestSetValue(currentSample+increment,true); // increment sample
+                        automaticCaptureRunning = false;
+                        ui->indicator_auto_capture->setState(2);
+                        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+                        addStatusUpdate("Automatic Capture finished...",ui->tableWidget_status,1);
+                    }
+                    currentClass = ui->lasbw_active_class->requestSetValue(currentClass+increment,true); //increment class
+                }
+                currentElement = ui->lasbw_antenna_elements->requestSetValue(currentElement+increment,true); //increment element
+                radObj->requestResetSynchPoints();
+
+                std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
+                plot_time_and_freq(vc_data);
+            }
+        }
+
+       // std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    }else{
+        ui->indicator_auto_capture->setState(1);
+        addStatusUpdate("Error running automatic capture",ui->tableWidget_status,-1);
+        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+        automaticCaptureRunning = false;
+    }
+}
+
 // CONTROL SECTION
 void mainGUI::on_button_transmit_released()
 {
@@ -644,6 +710,9 @@ void mainGUI::on_button_load_data_released()
 
         ui->lafw_frs_data_modulation->setLabelText("Data Modulation:");
         ui->lafw_frs_data_modulation->setFieldText(radObj->sysConf.GetDataModulationType());
+
+        ui->lafw_frs_date->setLabelText("File Modified Date:");
+        ui->lafw_frs_date->setFieldText(radObj->sysConf.GetDate());
 
     }else{
         SetWidgetColor(ui->indicator_sig_config,16380011);
@@ -878,43 +947,126 @@ void mainGUI::on_pushButton_3_released()
 
 void mainGUI::on_button_capture_synch_released()
 {
-    int currentCaptureIndex = ui->spinBox_current_element->value();
-    std::string currentType;
-    if(ui->checkBox_auto_switch->isChecked()){
-        for(int i=0;i<mcControlWidgets.size();i++){
-            currentType = mcControlWidgets[i]->getMCType();
-            if(currentType == "Element Switch"){
-                mcControlWidgets[i]->requestSelectElement(currentCaptureIndex);
+    int currentElement = ui->lasbw_antenna_elements->getValue();
+    int currentClass = ui->lasbw_active_class->getValue();
+    int currentSample = ui->lasbw_active_sample->getValue();
+
+    if(radObj->requestCaptureSynchFrame(currentElement-1)){
+
+        ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
+
+        int increment = 0;
+        if(ui->checkBox_auto_switch->isChecked()){
+            increment = 1;
+        }
+
+        if(ui->checkBox_auto_save->isChecked() && radObj->isCapturedFramesReadyToSave()){
+            // Since it can be saved, it must be the last antenna element
+            SaveSynchCaptures();
+
+            if(currentClass == ui->lasbw_active_class->getMaximum()){
+                // It is the last class
+                // -> Reset the class and element
+                // -> Increment Sample
+
+                currentClass = ui->lasbw_active_class->getMaximum();
+                currentElement = ui->lasbw_antenna_elements->getMaximum();
+
+                currentSample = ui->lasbw_active_sample->requestSetValue(currentSample+increment,true); // increment sample
+            }
+
+            currentClass = ui->lasbw_active_class->requestSetValue(currentClass+increment,true); //increment class
+        }
+
+        currentElement = ui->lasbw_antenna_elements->requestSetValue(currentElement+increment,true); //increment element
+
+        radObj->requestResetSynchPoints();
+
+        std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
+
+        plot_time_and_freq(vc_data);
+
+        if(ui->checkBox_save_capture->isChecked()){
+            if(radObj->requestWriteLastCapturedFrame()){
+               addStatusUpdate("Successfully saved capture...",ui->tableWidget_status,1);
+
+            }else{
+               addStatusUpdate("Error, could not save capture...",ui->tableWidget_status,-1);
             }
         }
+
+        radObj->requestResetSynchPoints();
+
+    }else{
+        addStatusUpdate("Synchronization must be running...",ui->tableWidget_status);
     }
+}
 
-    if(radObj->requestCaptureSynchFrame(currentCaptureIndex-1)){
 
-    std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
+void mainGUI::on_button_set_synch_format_released()
+{
+    int response = radObj->requestFrameCaptureFormat(ui->lasbw_synchCaptureOffset->getValue(),
+                                                     ui->lasbw_synchCaptureLength->getValue(),
+                                                     ui->lasbw_num_elements->getValue(),
+                                                     ui->lafw_synch_capture->getFieldText(),
+                                                     ui->checkBox_wind_synch->isChecked());
+    if(response == 1){
+        addStatusUpdate("Frame format updated...",ui->tableWidget_status);
 
+        ui->lasbw_antenna_elements->setMaximum(ui->lasbw_num_elements->getValue());
+        ui->lasbw_active_class->setMaximum(ui->lasbw_num_classes->getValue());
+
+        frameFormatStatus = 1;
+        ui->indicator_format->setState(2);
+    }else if(response == -1){
+        addStatusUpdate("Coult not update frame format: synchronization running...",ui->tableWidget_status);
+        frameFormatStatus = 0;
+        ui->indicator_format->setState(1);
+    }else{
+        addStatusUpdate("Unknown error updating frame format...",ui->tableWidget_status);
+        frameFormatStatus = 0;
+        ui->indicator_format->setState(1);
+    }
+}
+
+
+void mainGUI::on_button_save_synch_capture_released()
+{
+    SaveSynchCaptures();
+}
+
+
+void mainGUI::plot_time_and_freq(std::vector<std::complex<short>> vc_data)
+{
     QVector<double> x(vc_data.size()), y(vc_data.size()); // initialize with entries 0..100
-
     double max_element = 0;
 
+    QVector<double> freq(vc_data.size()),spectrum(vc_data.size());
+    std::vector<std::complex<double>> vc_data_dbl = uhd_clib::cvec_conv_short2double(vc_data);
+    arma::cx_vec arma_sig = arma::conv_to<arma::cx_vec>::from(vc_data_dbl);
+    arma::vec spectrum_c  = arma::pow(arma::abs(arma::fft(arma_sig)),2);
+
+    int N = spectrum_c.n_elem;
+    int halfN = (N + 1) / 2;
+    arma::vec shifted_spectrum(N);
+
+    // Split and swap the vector
+    shifted_spectrum.head(N - halfN) = spectrum_c.tail(N - halfN);
+    shifted_spectrum.tail(halfN) = spectrum_c.head(halfN);
+
+    std::vector<double> freq_spectrum  = arma::conv_to<std::vector<double>>::from(shifted_spectrum);
 
     for (int i=0; i<vc_data.size(); ++i)
     {
         x[i] = i;
-        y[i] = 10 * std::log10(std::norm(vc_data[i]));      
+        y[i] = 10 * std::log10(std::norm(vc_data[i]));
+
+        freq[i] = ((double)i/(double)N -0.5)*(radObj->sysConf.getRxSamplingRate()) / 1e3;
+        spectrum[i] = 10 * std::log10(shifted_spectrum(i));
 
         if(y[i] > max_element){
             max_element = y[i];
         }
-    }
-
-    int last_element = radObj->getNumFrameCaptures();
-    int next_element = ((currentCaptureIndex) % last_element)+1;
-
-    ui->spinBox_current_element->setValue(next_element);
-
-    if(radObj->isCapturedFramesReadyToSave()){
-        ui->button_save_synch_capture->setEnabled(true);
     }
 
     ui->captured_sig_plot->addGraph();
@@ -925,49 +1077,26 @@ void mainGUI::on_button_capture_synch_released()
     ui->captured_sig_plot->yAxis->setRange(0, max_element);
     ui->captured_sig_plot->replot();
 
-    if(ui->checkBox_save_capture->isChecked()){
-        if(radObj->requestWriteLastCapturedFrame()){
-           addStatusUpdate("Successfully saved capture...",ui->tableWidget_status,1);
-        }else{
-           addStatusUpdate("Error, could not save capture...",ui->tableWidget_status,-1);
-        }
-    }
+    auto max_spec = std::max_element(spectrum.begin(), spectrum.end());
+    int max_spec_value = *max_spec;
 
-    radObj->requestResetSynchPoints();
+    auto min_spec = std::min_element(spectrum.begin(), spectrum.end());
+    int min_spec_value = *min_spec;
 
-    }else{
-        addStatusUpdate("Synchronization must be running...",ui->tableWidget_status);
-    }
+    ui->capture_spectrum_plot->addGraph();
+    ui->capture_spectrum_plot->graph(0)->setData(freq,spectrum);
+    ui->capture_spectrum_plot->xAxis->setLabel("Frequency (kHz)");
+    ui->capture_spectrum_plot->yAxis->setLabel("Power (dB)");
+    ui->capture_spectrum_plot->xAxis->setRange(freq[0],freq[N-1]);
+    ui->capture_spectrum_plot->yAxis->setRange(min_spec_value,max_spec_value);
+
+    ui->capture_spectrum_plot->replot();
 }
 
-
-void mainGUI::on_button_set_synch_format_released()
+void mainGUI::SaveSynchCaptures()
 {
-    int response = radObj->requestFrameCaptureFormat(ui->spinBox_frame_offset->value(),
-                                                     ui->spinBox_frame_length->value(),
-                                                     ui->spinBox_num_antenna_elements->value(),
-                                                     ui->lafw_synch_capture->getFieldText(),
-                                                     ui->checkBox_wind_synch->isChecked());
-    if(response == 1){
-        addStatusUpdate("Frame format updated...",ui->tableWidget_status);
-    }else if(response == -1){
-        addStatusUpdate("Coult not update frame format: synchronization running...",ui->tableWidget_status);
-    }else{
-        addStatusUpdate("Unknown error updating frame format...",ui->tableWidget_status);
-    }
-}
-
-
-void mainGUI::on_spinBox_num_antenna_elements_valueChanged(int arg1)
-{
-    ui->spinBox_current_element->setMaximum(arg1);
-}
-
-
-void mainGUI::on_button_save_synch_capture_released()
-{
-    int c_sample = ui->spinBox_current_sample->value();
-    int c_class = ui->spinBox_current_class->value();
+    int c_sample = ui->lasbw_active_sample->getValue();
+    int c_class = ui->lasbw_active_class->getValue();
 
     std::string fileDirectory = "data";//captureFileFormatField->getFieldText();
     if(fileDirectory != ""){
@@ -976,58 +1105,158 @@ void mainGUI::on_button_save_synch_capture_released()
 
     std::string filepath = fileDirectory + "class"  + std::to_string(c_class) +
                            "_sample" + std::to_string(c_sample) + ".csv";
+
+    SaveSyncCaptures(filepath,"Saved " + filepath);
+}
+
+void mainGUI::SaveSyncCaptures(std::string filepath, std::string message)
+{
     int response = radObj->requestWriteFramesToFile(filepath,"csv");
-
     if(response == 1){
-        addStatusUpdate("CSV file saved...",ui->tableWidget_status);
+        addStatusUpdate(QString::fromStdString(message),ui->tableWidget_status,0);
+    }else{
+        addStatusUpdate("Errors saving " + QString::fromStdString(filepath),ui->tableWidget_status,-1);
     }
 }
 
-
-void mainGUI::on_spinBox_current_sample_valueChanged(int arg1)
+void mainGUI::SetActiveElementForAllUEs(int value)
 {
-    radObj->requestResetSynchPoints();
-    bool response = radObj->resetCurrentFramesCaptured();
-    ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
+    std::string currentType;
+    for(int i=0;i<mcControlWidgets.size();i++){
+        currentType = mcControlWidgets[i]->getMCType();
+        if(currentType == "Element Switch"){
+            mcControlWidgets[i]->requestSelectElement(value);
+        }
+    }
 }
 
-
-void mainGUI::on_spinBox_current_class_valueChanged(int arg1)
+void mainGUI::SetActiveUEForAll(int value)
 {
-    bool response = radObj->resetCurrentFramesCaptured();
-    radObj->requestResetSynchPoints();
-    ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
-    int currentUEIndex = ui->spinBox_current_class->value();
     std::string currentType;
-    if(ui->checkBox_auto_switch->isChecked()){
-        for(int i=0;i<mcControlWidgets.size();i++){
-            currentType = mcControlWidgets[i]->getMCType();
-            if(currentType == "UE Switch"){
-                mcControlWidgets[i]->requestSelectUE(currentUEIndex);
-            }
+    for(int i=0;i<mcControlWidgets.size();i++){
+        currentType = mcControlWidgets[i]->getMCType();
+        if(currentType == "UE Switch"){
+            mcControlWidgets[i]->requestSelectUE(value);
         }
     }
 }
 
 
-void mainGUI::on_spinBox_current_element_valueChanged(int arg1)
+void mainGUI::on_button_reset_tx_released()
 {
-    int currentCaptureIndex = ui->spinBox_current_element->value();
-    radObj->requestResetSynchPoints();
-    std::string currentType;
-    if(ui->checkBox_auto_switch->isChecked()){
-        for(int i=0;i<mcControlWidgets.size();i++){
-            currentType = mcControlWidgets[i]->getMCType();
-            if(currentType == "Element Switch"){
-                mcControlWidgets[i]->requestSelectElement(currentCaptureIndex);
-            }
+    radObj->requestResetTransmitter();
+}
+
+
+void mainGUI::on_button_auto_capture_released()
+{
+    // run auto capture
+    if(!automaticCaptureRunning){
+        // > Validate that process should run
+        // Format is set up
+        // Auto switch is on
+        automaticCaptureRunning = true;
+        ui->indicator_auto_capture->setState(3);
+        connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+    }else{
+        automaticCaptureRunning = false;
+        addStatusUpdate("Automatic Capture terminated...",ui->tableWidget_status,-1);
+        ui->indicator_auto_capture->setState(1);
+        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+    }
+}
+
+void mainGUI::onActiveElementSpinBoxChanged(int value,bool noSynchReset)
+{
+    // Update antenna elements
+    SetActiveElementForAllUEs(value);
+    if(~noSynchReset){
+        radObj->requestResetSynchPoints();
+    }
+}
+
+void mainGUI::onActiveClassSpinBoxChanged(int value,bool noSynchReset)
+{
+    // Update UE
+    SetActiveUEForAll(value);
+    radObj->resetCurrentFramesCaptured();
+    if(~noSynchReset){
+        radObj->requestResetSynchPoints();
+    }
+}
+
+void mainGUI::onActiveSampleSpinBoxChanged(int value,bool noSynchReset)
+{
+    std::cout << "Active Sample is now: " << value << std::endl;
+    radObj->resetCurrentFramesCaptured();
+    if(~noSynchReset){
+        radObj->requestResetSynchPoints();
+    }
+}
+
+void mainGUI::onNumElementSpinBoxChanged(int value)
+{
+    triggerFormatChanged(true);
+}
+
+void mainGUI::onNumClassesSpinBoxChanged(int value)
+{
+    triggerFormatChanged(true);
+}
+
+void mainGUI::onSynchCaptureOffsetSpinBoxChanged(int value)
+{
+    triggerFormatChanged(true);
+}
+
+void mainGUI::onSynchCaptureLengthSpinBoxChanged(int value)
+{
+    triggerFormatChanged(true);
+}
+
+void mainGUI::triggerFormatChanged(bool value)
+{
+    if(value){
+        if(frameFormatStatus == 1){
+            frameFormatStatus = 2;
+            ui->indicator_format->setState(3);
         }
     }
 }
 
-
-void mainGUI::on_spinBox_samples_valueChanged(int arg1)
+int mainGUI::validateAutomaticCapture()
 {
-    ui->spinBox_current_class->setMaximum(arg1);
+    // 1    = success
+    // 0    = multiple errors
+    // -1   = transmission not running
+    // -2   = reception not running
+    // -3   = synchronization not running
+    // -4   = synchronization timeout (?) (not implemented)
+    // -5   = frame structure not loaded (not implemented)
+
+    int response = 1;
+    int error_count = 0;
+
+
+    if(!radObj->isTransmitting()){
+        ++error_count;
+        response = -1;
+    }
+
+    if(!radObj->isReceiving()){
+        ++error_count;
+        response = -2;
+    }
+
+    if(!radObj->isSynchronizing()){
+        ++error_count;
+        response = -3;
+    }
+
+    if(error_count > 1){
+        response = 0;
+    }
+
+    return response;
 }
 

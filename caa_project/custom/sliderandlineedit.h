@@ -95,6 +95,8 @@ private:
 
     void SetComponentValue(double value,bool silent=false);
 
+    int calculateMinPrecision(double value);
+
 };
 
 #endif // SLIDERANDLINEEDIT_H

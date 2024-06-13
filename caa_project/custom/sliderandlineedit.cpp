@@ -60,7 +60,7 @@ void SliderAndLineEdit::InitializeSliderAndLineEdit(std::string title,
     QHBoxLayout * lineEditAndLabelLayout = new QHBoxLayout(lineEditAndLabelContainer);
 
     lineEdit = new QLineEdit();
-    lineEdit->setMaximumWidth(75);
+    lineEdit->setMaximumWidth(135);
     lineEdit->setAlignment(Qt::AlignRight);
     lineEditLabel = new QLabel(QString::fromStdString(Unit));
     QSpacerItem * leftSpacer = new QSpacerItem(5,2,QSizePolicy::Expanding, QSizePolicy::Minimum);
@@ -154,7 +154,7 @@ void SliderAndLineEdit::onLineEditChange(QString value)
             svalue = round((dvalue-LowerLimit)/Increment)*Increment+LowerLimit;
 
             if(std::abs(dvalue-UpperLimit) > std::abs(dvalue-svalue)){
-                dvalue = svalue;
+                //dvalue = svalue;
             }else{
                 dvalue = UpperLimit;
             }
@@ -176,7 +176,8 @@ void SliderAndLineEdit::onLineEditFinishedChange()
 void SliderAndLineEdit::updateLowerLimitLabel()
 {
     std::stringstream stream;
-    stream << std::fixed << std::setprecision(Precision) << LowerLimit/DisplayValueModifier;
+    int cPrecision = calculateMinPrecision(LowerLimit/DisplayValueModifier);
+    stream << std::fixed << std::setprecision(cPrecision) << LowerLimit/DisplayValueModifier;
     std::string s = stream.str() + " " + Unit;
     setLowerLimitLabel(s);
 }
@@ -184,7 +185,8 @@ void SliderAndLineEdit::updateLowerLimitLabel()
 void SliderAndLineEdit::updateUpperLimitLabel()
 {
     std::stringstream stream;
-    stream << std::fixed << std::setprecision(Precision) << UpperLimit/DisplayValueModifier;
+    int cPrecision = calculateMinPrecision(UpperLimit/DisplayValueModifier);
+    stream << std::fixed << std::setprecision(cPrecision) << UpperLimit/DisplayValueModifier;
     std::string s = stream.str() + " " +  Unit;
     setUpperLimitLabel(s);
 }
@@ -214,12 +216,26 @@ void SliderAndLineEdit::SetComponentValue(double value,bool silent)
     mainSlider->setValue(sliderValue);
 
     if(!isEditing){
-        disconnect(lineEdit,&QLineEdit::textEdited,this,&SliderAndLineEdit::onLineEditChange);
-        lineEdit->setText(QString::number(value/DisplayValueModifier));
+        disconnect(lineEdit,&QLineEdit::textEdited,this,&SliderAndLineEdit::onLineEditChange);        
+        lineEdit->setText(QString::number(value/DisplayValueModifier,'f',calculateMinPrecision(value/DisplayValueModifier)));
         connect(lineEdit,&QLineEdit::textEdited,this,&SliderAndLineEdit::onLineEditChange);
     }
 
 
     connect(mainSlider,&QSlider::valueChanged,this,&SliderAndLineEdit::onSliderChange);
 
+}
+
+int SliderAndLineEdit::calculateMinPrecision(double value)
+{
+    QString number_str = QString::number(value,'f',15); // maximum precision
+    int decimal_pos = number_str.indexOf('.');
+    int final_precision = 0;
+    if (decimal_pos > -1) {
+        while (number_str.endsWith('0')) {
+            number_str.chop(1);
+        }
+        final_precision = number_str.length() - decimal_pos - 1;
+    }
+    return final_precision;
 }

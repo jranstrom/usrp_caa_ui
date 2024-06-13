@@ -86,6 +86,10 @@ public:
 
     bool getAllCSVDataCaptured() {return allCSVDataCaptured;}
 
+    int requestResetTransmitter();
+
+    bool hasPendingSynchPointReset() {return pendingSynchPointReset; }
+
 private:
     std::mutex recv_mutex;
 
