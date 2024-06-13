@@ -167,6 +167,13 @@ public:
         return false;
     }
 
+    bool check_overwritten(size_t s_index){
+        if(mk_in < capacity || s_index > mk_in-capacity){
+            return false;
+        }
+        return true;
+    }
+
     std::vector<T> extract_range(size_t strt_mk_i,size_t L){
         std::vector<T> res_v;
         if (strt_mk_i + L <= mk_in){
