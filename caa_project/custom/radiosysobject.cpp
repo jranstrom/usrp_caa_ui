@@ -192,6 +192,12 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
 
     }
 
+    try{
+        sysConf.SetSignalType(matHF::read_string(filepath,"sys.signalType"));
+    }catch(...){
+
+    }
+
     return success;
 }
 

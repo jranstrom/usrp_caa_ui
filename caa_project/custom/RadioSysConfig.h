@@ -15,6 +15,7 @@ namespace RSC{
 		std::vector<int> symbolLengths;
         std::string dataModulationType = "none";
         std::string date = "";
+        std::string signalType = "";
 	};
 
 	struct FileConfig{		
@@ -75,6 +76,13 @@ class RadioSysConfig {
         void SetDate(std::string value){
             if(winfo.date != value){
                 winfo.date = value;
+            }
+        }
+
+        std::string GetSignalType() {return winfo.signalType;}
+        void SetSignalType(std::string value){
+            if(winfo.signalType != value){
+                winfo.signalType = value;
             }
         }
 

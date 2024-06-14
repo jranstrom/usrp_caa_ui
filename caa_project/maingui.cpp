@@ -714,6 +714,12 @@ void mainGUI::on_button_load_data_released()
         ui->lafw_frs_date->setLabelText("File Modified Date:");
         ui->lafw_frs_date->setFieldText(radObj->sysConf.GetDate());
 
+        ui->lafw_frs_signal_type->setLabelText("Signal type:");
+        ui->lafw_frs_signal_type->setFieldText(radObj->sysConf.GetSignalType());
+
+        ui->lafw_frs_signal_length->setLabelText("Signal length:");
+        ui->lafw_frs_signal_length->setFieldText(radObj->sysConf.txSignal.size());
+
     }else{
         SetWidgetColor(ui->indicator_sig_config,16380011);
         hideLayout(ui->layout_frs);
