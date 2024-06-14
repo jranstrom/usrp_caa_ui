@@ -22,6 +22,7 @@ public:
     void setFieldText(std::string value);
     void setFieldText(double value,int precision=0);
     void setFieldText(int value);
+    void setFieldText(size_t value);
     void setEditable(bool is_editable);
 
     std::string getFieldText();

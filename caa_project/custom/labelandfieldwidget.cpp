@@ -53,6 +53,12 @@ void LabelandFieldWidget::setFieldText(int value)
     setFieldText(value_str);
 }
 
+void LabelandFieldWidget::setFieldText(size_t value)
+{
+    std::string value_str = std::to_string(value);
+    setFieldText(value_str);
+}
+
 void LabelandFieldWidget::setEditable(bool is_editable)
 {
     if(isEditable != is_editable){
