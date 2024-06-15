@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <uhd/usrp/multi_usrp.hpp>
+#include <bitset>
 
 class uhd_clib{
 public:
@@ -34,6 +35,9 @@ static std::vector<double> find_peaks(std::vector<double> & in,
 
 static void print_transmitter_config(uhd::usrp::multi_usrp::sptr tx_usrp,std::string ip);
 static void print_receiver_config(uhd::usrp::multi_usrp::sptr rx_usrp,std::string ip);
+
+static std::vector<bool> encodeCRC(std::vector<bool> data, const std::vector<bool> & crcPoly);
+static bool checkValidCRC(std::vector<bool> enc_data, const std::vector<bool> & crcPoly);
 
 private :
 

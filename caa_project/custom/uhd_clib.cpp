@@ -105,6 +105,73 @@ void uhd_clib::print_receiver_config(uhd::usrp::multi_usrp::sptr rx_usrp,std::st
     std::cout << "\tREF: " << rx_usrp->get_clock_source(0) << "" << std::endl;
 }
 
+std::vector<bool> uhd_clib::encodeCRC(std::vector<bool> data, const std::vector<bool> &crcPoly)
+{
+    int M = crcPoly.size();
+    size_t N = data.size();
+    std::vector<bool> result = data;
+
+    for (int i=0;i<M-1;++i){
+        data.push_back(0);
+    }
+
+    int ix=0;
+    while(ix < N-1){
+        // find leading '1'
+        bool leadingOne_found = false;
+        while(!leadingOne_found && ix<N){
+            if(data[ix]){
+                leadingOne_found = true;
+            }else{
+                ++ix;
+            }
+        }
+        if(leadingOne_found){
+            for(int i=0; i<M;++i){
+                // xor
+                data[i+ix] = (data[i+ix] != crcPoly[i]);
+            }
+        }
+    }
+    for(int i=0;i<M-1;i++){
+        result.push_back(data[N+i]);
+    }
+    return result;
+}
+
+bool uhd_clib::checkValidCRC(std::vector<bool> enc_data, const std::vector<bool> &crcPoly)
+{
+    int M = crcPoly.size();
+    size_t N = enc_data.size()-M+1;
+
+    int ix=0;
+    while(ix < N-1){
+        // find leading '1'
+        bool leadingOne_found = false;
+        while(!leadingOne_found && ix<N){
+            if(enc_data[ix]){
+                leadingOne_found = true;
+            }else{
+                ++ix;
+            }
+        }
+        if(leadingOne_found){
+            for(int i=0; i<M;++i){
+                // xor
+                enc_data[i+ix] = (enc_data[i+ix] != crcPoly[i]);
+            }
+        }
+    }
+
+    bool valid = true;
+    for(int i=0;i<M-1;i++){
+        if(enc_data[N+i]){
+            valid = false;
+        }
+    }
+    return valid;
+}
+
 template<typename samp_type>
 void uhd_clib::read_file_into_buffer(CircBuffer<samp_type> &c_buff,
                             const std::string& file,
