@@ -6,6 +6,8 @@
 #include <iostream>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <bitset>
+#include <fftw3.h>
+#include <cmath>
 
 class uhd_clib{
 public:
@@ -38,6 +40,10 @@ static void print_receiver_config(uhd::usrp::multi_usrp::sptr rx_usrp,std::strin
 
 static std::vector<bool> encodeCRC(std::vector<bool> data, const std::vector<bool> & crcPoly);
 static bool checkValidCRC(std::vector<bool> enc_data, const std::vector<bool> & crcPoly);
+
+static std::vector<double> fft_correlation_w_ref(std::vector<std::complex<double>> &reference, std::vector<std::complex<double>> &signal);
+
+static std::vector<std::complex<double>> fft_w_zpadd(std::vector<std::complex<double>> &signal, size_t N,bool conjugate=false);
 
 private :
 

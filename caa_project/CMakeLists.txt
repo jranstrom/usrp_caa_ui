@@ -15,6 +15,9 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
 find_package(UHD 4.4.0 REQUIRED)
 find_package(Armadillo REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_search_module(FFTW REQUIRED fftw3 IMPORTED_TARGET)
+
 set(UHD_BOOST_REQUIRED_COMPONENTS
     program_options
     system
@@ -37,6 +40,7 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     ${UHD_INCLUDE_DIRS}
     ${ARMADILLO_INCLUDE_DIRS}
+    PkgConfig::FFTW
     "/usr/local/include"
     "third-party"
     "custom"
@@ -91,7 +95,15 @@ endif()
 
 set(QT_LIB Qt5::PrintSupport)
 
-target_link_libraries(caa_project PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${QT_LIB} "/usr/local/lib/libmatio.so" ${UHD_LIBRARIES} ${Boost_LIBRARIES} "serial" ${ARMADILLO_LIBRARIES})
+target_link_libraries(caa_project
+    PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+    ${QT_LIB}
+    "/usr/local/lib/libmatio.so"
+    ${UHD_LIBRARIES}
+    ${Boost_LIBRARIES}
+    "serial"
+    ${ARMADILLO_LIBRARIES}
+    PkgConfig::FFTW)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

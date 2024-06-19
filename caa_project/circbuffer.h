@@ -121,7 +121,7 @@ public:
         }
     }
 
-    bool back(T* out_p,int offset=0){
+    bool back(T* out_p,int offset=1){
 
         if (offset < capacity && ((int)mk_in - offset)>=0){
 

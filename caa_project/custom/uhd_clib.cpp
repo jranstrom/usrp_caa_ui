@@ -172,6 +172,102 @@ bool uhd_clib::checkValidCRC(std::vector<bool> enc_data, const std::vector<bool>
     return valid;
 }
 
+std::vector<std::complex<double>> uhd_clib::fft_w_zpadd(std::vector<std::complex<double>> &signal,size_t N,bool conjugate)
+{
+    std::vector<std::complex<double>> result_vec(N);
+    size_t sig_size = signal.size();
+
+    fftw_complex *in, *out;
+    fftw_plan p;
+
+    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+    for(int i=0;i<N;i++){
+        if(i<sig_size){
+            in[i][0] = std::real(signal[i]);
+            in[i][1] = std::imag(signal[i]);
+        }else{
+            in[i][0] = 0.0;
+            in[i][1] = 0.0;
+        }
+    }
+
+    p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_execute(p);
+
+    if(!conjugate){
+        for(int i=0;i<N;i++){
+            result_vec[i] = std::complex(out[i][0],out[i][1]);
+        }
+    }else{
+        for(int i=0;i<N;i++){
+            result_vec[i] = std::complex(out[i][0],-out[i][1]);
+        }
+    }
+
+    fftw_destroy_plan(p);
+    fftw_free(in);
+    fftw_free(out);
+
+    return result_vec;
+
+
+
+}
+
+std::vector<double> uhd_clib::fft_correlation_w_ref(std::vector<std::complex<double> > &reference, std::vector<std::complex<double> > &signal)
+{
+    // It is expected that reference is already zero-padded, fft and complex conjugate
+
+    size_t N  = signal.size(); //get signal length
+    std::vector<double> result_vec(N);
+
+    fftw_complex *sig, *sig_fft, *conv_fft,*conv_ifft;
+    fftw_plan p, p_inv;
+
+    // Allocate resources
+    sig = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+    sig_fft = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+    conv_fft = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+    conv_ifft = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+
+    // Load sig buffer with signal values
+    for(int i =0;i<N;i++){
+        sig[i][0] = std::real(signal[i]);
+        sig[i][1] = std::imag(signal[i]);
+    }
+
+    // Perform FFT of signal
+    p = fftw_plan_dft_1d(N, sig, sig_fft, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_execute(p);
+
+    // Multiply with reference
+    for(int i=0;i<N;i++){
+        conv_fft[i][0] = sig_fft[i][0] * std::real(reference[i])-sig_fft[i][1] * std::imag(reference[i]);
+        conv_fft[i][1] = sig_fft[i][0] * std::imag(reference[i]) + sig_fft[i][1] * std::real(reference[i]);
+    }
+
+    p_inv = fftw_plan_dft_1d(N,conv_fft,conv_ifft,FFTW_BACKWARD,FFTW_ESTIMATE);
+
+    fftw_execute(p_inv);
+
+    // Get power
+    for(int i=0;i<N;i++){
+        result_vec[i] = std::pow(conv_ifft[i][0],2) + std::pow(conv_ifft[i][1],2);
+    }
+
+
+    // Clean up
+    fftw_destroy_plan(p);
+    fftw_destroy_plan(p_inv);
+    fftw_free(sig);
+    fftw_free(sig_fft);
+    fftw_free(conv_fft);
+    fftw_free(conv_ifft);
+
+    return result_vec;
+}
+
 template<typename samp_type>
 void uhd_clib::read_file_into_buffer(CircBuffer<samp_type> &c_buff,
                             const std::string& file,

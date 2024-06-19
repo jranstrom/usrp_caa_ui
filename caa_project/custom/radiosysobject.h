@@ -5,7 +5,9 @@
 #include "../circbuffer.h"
 #include <uhd/usrp/multi_usrp.hpp>
 #include <vector>
+#include <cmath>
 #include <armadillo>
+#include <fftw3.h>
 
 class RadioSysObject
 {

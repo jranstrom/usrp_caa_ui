@@ -551,15 +551,34 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
     // Loop while no valid synch point (exist and is not overwritten)
     bool synchPoint_exist = syncPointBuffer.back(&rx_index,1);
     bool isOverwritten = false;
+    bool isStale = false;
+
+    size_t signal_length = sysConf.txSignal.size();
+    size_t synchTolerance = 50; // measured in frames
     if(synchPoint_exist){
+        size_t dist_in_frames = (rxSignalBuffer.get_push_count() - rx_index) /  signal_length;
+        // Check if stale
+        if(dist_in_frames > synchTolerance){
+            isStale = true;
+        }else{
+            rx_index + dist_in_frames*signal_length;
+        }
      isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
     }
-    while(!synchPoint_exist || isOverwritten){
+    while(!synchPoint_exist || isOverwritten || isStale){
         //frequencyOffsetBuffer.back(&foc,1);
         std::this_thread::sleep_for(duration);
-        synchPoint_exist = syncPointBuffer.back(&rx_index,1);
+        synchPoint_exist = syncPointBuffer.back(&rx_index);
         isOverwritten = false;
         if(synchPoint_exist){
+            size_t dist_in_frames = (rxSignalBuffer.get_push_count() - rx_index) /  signal_length;
+            // Check if stale
+            if(dist_in_frames > synchTolerance){
+                isStale = true;
+            }else{
+                isStale = false;
+                rx_index + dist_in_frames*signal_length;
+            }
             isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
         }
     }
@@ -584,14 +603,14 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
     // int fart = rxSignalBuffer.get_internal_buff_index(rx_index);
     // std::cout << " :: " << fart << "(internal)" << std::endl;
     extracted_synch_data =  rxSignalBuffer.extract_range(rx_index,frame_length);
-    double dt = 1/sysConf.rx.SamplingRate;
-    double pi = M_PI;
-    std::complex<double> j(0.0,1.0);
+    // double dt = 1/sysConf.rx.SamplingRate;
+    // double pi = M_PI;
+    // std::complex<double> j(0.0,1.0);
 
-    std::vector<std::complex<double>> tmp_cvec =  uhd_clib::cvec_conv_short2double(extracted_synch_data);
-    for(int ik=0; ik<extracted_synch_data.size();ik++){
-        tmp_cvec[ik] = tmp_cvec[ik]*std::exp(2.0*j*pi*foc*dt*(double)ik);
-    }
+    // std::vector<std::complex<double>> tmp_cvec =  uhd_clib::cvec_conv_short2double(extracted_synch_data);
+    // for(int ik=0; ik<extracted_synch_data.size();ik++){
+    //     tmp_cvec[ik] = tmp_cvec[ik]*std::exp(2.0*j*pi*foc*dt*(double)ik);
+    // }
 
     //extracted_synch_data = uhd_clib::cvec_conv_double2short(tmp_cvec);
 }
@@ -788,6 +807,7 @@ void RadioSysObject::runReceptionThread()
 void RadioSysObject::runSynchronizationThread()
 {
     using samp_type = std::complex<short>;
+
     using namespace arma;
 
     std::complex<double> j               = std::complex<double>(0,1);
@@ -795,23 +815,25 @@ void RadioSysObject::runSynchronizationThread()
 
     SynchronizationInProgress = true;
 
-    size_t L                        = 3*sysConf.txSignal.size();
+    size_t L                        = std::pow(2,std::floor(std::log2(2*sysConf.txSignal.size())));        // Read 2 frames at a time
     double fs                       = sysConf.rx.SamplingRate;
-    std::vector<int> synch_pattern  = sysConf.syncCorrelationPattern;
+    std::vector<int> synch_pattern  = sysConf.syncCorrelationPattern;   // Hold synchronization pattern (this pattern repeats)
     int synch_tolerance             = sysConf.synchTolerance;
-    bool external_freq_ref          = false; // use carrier offset compensation
+    bool external_freq_ref          = false;                            // use carrier offset compensation
+
+
 
     // Calculate half of subcarrier spacing
     int Nfft = sysConf.GetNfft();
     double half_scs = fs/Nfft/2;
 
-    int num_shift_candidates = 0;
+    int num_shift_candidates = 1;
     if(external_freq_ref){
         num_shift_candidates = 28;
     }
 
-    vec shift_vec = linspace<vec>(-num_shift_candidates,num_shift_candidates,2*num_shift_candidates+1);
-    num_shift_candidates = shift_vec.n_elem;
+    //vec shift_vec = linspace<vec>(-num_shift_candidates,num_shift_candidates,2*num_shift_candidates+1);
+    //num_shift_candidates = shift_vec.n_elem;
 
     txSynchSignalBuffer.reset_pop();
 
@@ -827,12 +849,18 @@ void RadioSysObject::runSynchronizationThread()
     cx_vec tx_synch_base(L); // Synch signal base (copy)
     cx_vec tx_synch(L);      // Synch signal (for freq-domain correlation)
 
+    std::vector<std::complex<double>> txSynch_alt;
+    std::vector<std::complex<double>> txSynch_base(L_tx);
+
     // Convert syncrhonization signal to arma vector
     samp_type c_smpl;
     for(int i=0;i<L_tx;i++){
         txSynchSignalBuffer.pop(&c_smpl);
         tx_synch_base(i) = std::complex<double>(std::real(c_smpl),std::imag(c_smpl));
+        txSynch_base[i] = std::complex<double>(std::real(c_smpl),std::imag(c_smpl));
     }
+
+    txSynch_alt = uhd_clib::fft_w_zpadd(txSynch_base,L,true);
 
     tx_synch = conj(fft(tx_synch_base));  // prepare for correlation
     tx_synch /= cdot(tx_synch,tx_synch); // scale
@@ -850,9 +878,12 @@ void RadioSysObject::runSynchronizationThread()
     //assigned_val = true;
 
     size_t bi = 0;
+    int times_t = 0;
+    auto start = std::chrono::high_resolution_clock::now();
 
     // Continously process RX buffer
     while(not stop_synchronization_signal_called){
+
 
         if(pendingSynchPointReset){
             syncPointBuffer.reset_buffer();
@@ -863,12 +894,36 @@ void RadioSysObject::runSynchronizationThread()
         ref_rx_indx = rxSignalBuffer.get_pop_count();
         current_rx_indx = rxSignalBuffer.get_push_count();
 
+        // Check if this new synch-point will be within 100 frames of the old one?
+        size_t last_synch_point = 1;
+        size_t sig_size = sysConf.txSignal.size();
+        if(syncPointBuffer.back(&last_synch_point) && ref_rx_indx > last_synch_point){
+
+            size_t dist_in_frames = (ref_rx_indx-last_synch_point) / sig_size;
+
+            if(dist_in_frames < 100 && false){
+                // Use last synch point as starting point for the new
+                size_t synch_margin = 256;
+                ref_rx_indx = last_synch_point+dist_in_frames * sig_size - synch_margin; // calculated latest synch point - margin
+
+                int first_synch_pattern_point = synch_pattern[0];
+                synch_pattern.clear();
+                synch_pattern.push_back(first_synch_pattern_point); // Only first point is necessary
+
+                L = std::pow(2,std::ceil(std::log2(first_synch_pattern_point + 2 * synch_margin)));
+
+                txSynch_alt = uhd_clib::fft_w_zpadd(txSynch_base,L,true);
+            }
+        }
+
         // Wait until a complete L has been received
         std::chrono::nanoseconds duration(10);
+
         while((not stop_synchronization_signal_called) and current_rx_indx-ref_rx_indx < L){
             std::this_thread::sleep_for(duration);
             current_rx_indx = rxSignalBuffer.get_push_count();
         }
+
 
         if(not stop_synchronization_signal_called && !rxSignalBuffer.check_overwritten(ref_rx_indx)){
             std::vector<std::complex<short>> v_frame = rxSignalBuffer.extract_range(ref_rx_indx,L);
@@ -890,17 +945,17 @@ void RadioSysObject::runSynchronizationThread()
             // Implement repetition based time synchronization
             std::vector<double> corr_out_bb(L-2*L_tx,0.0);
             double max_corr_out_bb = 0.0;
-            cx_vec m1;
-            cx_vec m2;
-            for(int i=0;i<L-2*L_tx;i++){
-               m1 = rx_sig.subvec(i,i+L_tx-1);
-               m2 = rx_sig.subvec(i+L_tx,i+2*L_tx-1);
-               corr_out_bb[i] = std::abs(dot(m1,conj(m2)));
+            // cx_vec m1;
+            // cx_vec m2;
+            // for(int i=0;i<L-2*L_tx;i++){
+            //    m1 = rx_sig.subvec(i,i+L_tx-1);
+            //    m2 = rx_sig.subvec(i+L_tx,i+2*L_tx-1);
+            //    corr_out_bb[i] = std::abs(dot(m1,conj(m2)));
 
-               if(corr_out_bb[i] > max_corr_out_bb){
-                   max_corr_out_bb = corr_out_bb[i];
-               }
-            }
+            //    if(corr_out_bb[i] > max_corr_out_bb){
+            //        max_corr_out_bb = corr_out_bb[i];
+            //    }
+            // }
 
 
             std::vector<int> peak_locs_bb;
@@ -917,30 +972,10 @@ void RadioSysObject::runSynchronizationThread()
                     syncPointBuffer.push(ref_rx_indx + peak_locs_bb[0]);
                     frequencyOffsetBuffer.push(0.0);
                     //syncPointBuffer.push(ref_rx_indx);
-                    synchPointFound = true;
-
-                    // int fart = rxSignalBuffer.get_internal_buff_index(ref_rx_indx);
-                    // std::cout << fart;
-
-                    // std::string filename = "correlation_out.dat";
-
-                    // // Open a file stream for writing
-                    // std::ofstream outFile(filename, std::ios::binary);
-
-                    // // Write vector contents to the file
-                    // for (double value : corr_out) {
-                    //     outFile.write(reinterpret_cast<const char*>(&value), sizeof(double));
-                    // }
-
-                    // // Close the file stream
-                    // outFile.close();
-
-                    // // requestCaptureSynchFrame(0);
-                    // // requestWriteLastCapturedFrame("data_cap1.dat");
-                    // std::cout << "Testing mode" << std::endl;
-
+                    synchPointFound = true;                    
                 }
             }
+
 
             if(!synchPointFound){
                 vec t = regspace(0,rx_sig.n_elem-1)/fs; // define time vector
@@ -951,16 +986,59 @@ void RadioSysObject::runSynchronizationThread()
                 std::vector<int> synch_point(num_shift_candidates,-1);
 
                 for(int it=0;it<num_shift_candidates;it++){
-                    double foc = half_scs*shift_vec(it); // current frequency offset candidate
-                    vec corr_out = abs(ifft(tx_synch % fft(rx_sig % exp((double)2*j*pi*foc*t))));
+                    double foc = 0.0;//half_scs*shift_vec(it); // current frequency offset candidate
+                    //start = std::chrono::high_resolution_clock::now();
+                    //vec corr_out = abs(ifft(tx_synch % fft(rx_sig % exp((double)2*j*pi*foc*t))));
+                    //vec corr_out = abs(ifft(tx_synch % fft(rx_sig)));
 
-                    double crr_max = sum(corr_out);
+                    std::vector<double> corr_out_fftw = uhd_clib::fft_correlation_w_ref(txSynch_alt,vv_frame);
+
+                    //auto end = std::chrono::high_resolution_clock::now();
+                    //std::chrono::duration<double> duration_t = end - start;
+                    //std::cout << "Execution time: " << duration_t.count() << " seconds" << std::endl;
+
+                    // ----- Save files to debug -----
+                    std::string filename = "corr_out.dat";
+                    std::ofstream file(filename, std::ios::out | std::ios::binary);
+
+                    // Write the size of the vector first (optional, but useful for reading back)
+                    size_t size = corr_out_fftw.size();
+                    // Write the data to the file
+                    file.write(reinterpret_cast<const char*>(corr_out_fftw.data()), size * sizeof(double));
+
+                    file.close();
+
+                    std::ofstream file2("rx_signal.dat", std::ios::out | std::ios::binary);
+
+                    std::vector<double> tmp_v(2*vv_frame.size());
+                    // Write the size of the vector first
+                    size_t size2 = tmp_v.size();
+
+                    for(int ik=0;ik<size2/2;ik++){
+                        tmp_v[ik] = std::real(vv_frame[ik]);
+                        tmp_v[ik+size2/2] = std::imag(vv_frame[ik]);
+                    }
+
+                    // Write the data to the file
+                    file2.write(reinterpret_cast<const char*>(tmp_v.data()), size2 * sizeof(double));
+
+                    file2.close();
+
+                    // ------------------------------------------
+                    double crr_max = 0.0;
+                    for(int ik=0;ik<corr_out_fftw.size();ik++){
+                        if(crr_max < corr_out_fftw[ik]){
+                            crr_max = corr_out_fftw[ik];
+                        }
+                    }
+
+                    //double crr_max = sum(corr_out);
 
                     std::vector<int> peak_locs;
-                    std::vector<double> corr_out_std_vec = conv_to<std::vector<double>>::from(corr_out);
-                    std::vector<double> peak_vals = uhd_clib::find_peaks(corr_out_std_vec,
+                    //std::vector<double> corr_out_std_vec = conv_to<std::vector<double>>::from(corr_out);
+                    std::vector<double> peak_vals = uhd_clib::find_peaks(corr_out_fftw,
                                                                          peak_locs,
-                                                                         0.8*max(corr_out),
+                                                                         0.8*crr_max,
                                                                          L_tx-sysConf.synchTolerance,
                                                                          20); // find the peaks
 
@@ -971,6 +1049,8 @@ void RadioSysObject::runSynchronizationThread()
                     }
                     bool match_synch_pattern = false;
                     int ii = -1;
+
+                    // Loop through to match peaks with synch pattern
                     while(not match_synch_pattern and (ii < (int)(peak_locs_diff.size()-synch_pattern.size()))){
                         ++ii;
                         int ik = 0;
@@ -984,6 +1064,7 @@ void RadioSysObject::runSynchronizationThread()
                         match_synch_pattern = match;
                     }
 
+                    // If synch-pattern is found
                     if(match_synch_pattern){
                         synch_point[it] = peak_locs[ii]; // save starting point
                         if(crr_max > curr_corr_max){
@@ -994,14 +1075,25 @@ void RadioSysObject::runSynchronizationThread()
                 }
 
                 if(synch_point[curr_corr_max_ix] != -1){
-                   syncPointBuffer.push(ref_rx_indx + synch_point[curr_corr_max_ix]);
-                   frequencyOffsetBuffer.push(half_scs*shift_vec(curr_corr_max_ix));
+                   syncPointBuffer.push(ref_rx_indx + synch_point[curr_corr_max_ix]); // put synch point in buffer;
+                   //frequencyOffsetBuffer.push(half_scs*shift_vec(curr_corr_max_ix));
+                   frequencyOffsetBuffer.push(0.0);
                 }
 
             }
 
 
         }
+
+        // if (++times_t > 10){
+        //     auto end = std::chrono::high_resolution_clock::now();
+        //     std::chrono::duration<double> duration_t = end - start;
+        //     std::cout << "Execution time: " << duration_t.count() << " seconds" << std::endl;
+
+        //     times_t = 0;
+        //     start = std::chrono::high_resolution_clock::now();
+        // }
+
     }
 
     // Read block from rx signal buffer
@@ -1092,6 +1184,7 @@ bool RadioSysObject::requestCaptureSynchFrame(int captureIndex){
 
         // put in the vector
         for(int i=0; i<frameLength;i++){
+
             capturedFrames[i][2*captureIndex] = std::real(frame_temp[i]);
             capturedFrames[i][2*captureIndex+1] = std::imag(frame_temp[i]);
         }
@@ -1217,10 +1310,10 @@ bool RadioSysObject::resetCurrentFramesCaptured()
 bool RadioSysObject::requestResetSynchPoints()
 {
     if(isSynchronizing()){
-        pendingSynchPointReset = true;
+       // pendingSynchPointReset = true;
     }else{
-        syncPointBuffer.reset_buffer();
-        frequencyOffsetBuffer.reset_buffer();
+       // syncPointBuffer.reset_buffer();
+      //  frequencyOffsetBuffer.reset_buffer();
     }
 
     return true;
