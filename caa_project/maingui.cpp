@@ -966,9 +966,12 @@ void mainGUI::on_button_capture_synch_released()
             increment = 1;
         }
 
-        if(ui->checkBox_auto_save->isChecked() && radObj->isCapturedFramesReadyToSave()){
+        if(radObj->isCapturedFramesReadyToSave()){
+
             // Since it can be saved, it must be the last antenna element
-            SaveSynchCaptures();
+            if(ui->checkBox_auto_save->isChecked()){
+                SaveSynchCaptures();
+            }
 
             if(currentClass == ui->lasbw_active_class->getMaximum()){
                 // It is the last class
