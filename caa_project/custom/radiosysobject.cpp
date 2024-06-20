@@ -815,11 +815,14 @@ void RadioSysObject::runSynchronizationThread()
 
     SynchronizationInProgress = true;
 
-    size_t L                        = std::pow(2,std::floor(std::log2(2*sysConf.txSignal.size())));        // Read 2 frames at a time
+    size_t L_base                   = std::pow(2,std::floor(std::log2(2*sysConf.txSignal.size())));        // Read 2 frames at a time
+    size_t L                        = L_base;
+    bool usingFullFrame             = true;
     double fs                       = sysConf.rx.SamplingRate;
     std::vector<int> synch_pattern  = sysConf.syncCorrelationPattern;   // Hold synchronization pattern (this pattern repeats)
     int synch_tolerance             = sysConf.synchTolerance;
     bool external_freq_ref          = false;                            // use carrier offset compensation
+
 
 
 
@@ -846,26 +849,18 @@ void RadioSysObject::runSynchronizationThread()
 
     size_t L_tx = txSynchSignalBuffer.get_push_count(); // read number of samples in synch signal    
 
-    cx_vec tx_synch_base(L); // Synch signal base (copy)
-    cx_vec tx_synch(L);      // Synch signal (for freq-domain correlation)
-
     std::vector<std::complex<double>> txSynch_alt;
     std::vector<std::complex<double>> txSynch_base(L_tx);
+    std::vector<std::complex<double>> txSynch_base_f(L_tx);
 
-    // Convert syncrhonization signal to arma vector
+    // Convert syncrhonization signal
     samp_type c_smpl;
     for(int i=0;i<L_tx;i++){
         txSynchSignalBuffer.pop(&c_smpl);
-        tx_synch_base(i) = std::complex<double>(std::real(c_smpl),std::imag(c_smpl));
         txSynch_base[i] = std::complex<double>(std::real(c_smpl),std::imag(c_smpl));
     }
 
-    txSynch_alt = uhd_clib::fft_w_zpadd(txSynch_base,L,true);
-
-    tx_synch = conj(fft(tx_synch_base));  // prepare for correlation
-    tx_synch /= cdot(tx_synch,tx_synch); // scale
-
-    cx_vec rx_sig(L);   // Hold received signal
+    txSynch_base_f = uhd_clib::fft_w_zpadd(txSynch_base,L,true);
 
     size_t ref_rx_indx = rxSignalBuffer.get_pop_count(); // current sample index being processed
     size_t current_rx_indx;
@@ -884,6 +879,9 @@ void RadioSysObject::runSynchronizationThread()
     // Continously process RX buffer
     while(not stop_synchronization_signal_called){
 
+        usingFullFrame = true;
+        L = L_base;                     // Default option is to use L_base length
+        txSynch_alt = txSynch_base_f;   // Default to longer correlation sequence
 
         if(pendingSynchPointReset){
             syncPointBuffer.reset_buffer();
@@ -901,7 +899,7 @@ void RadioSysObject::runSynchronizationThread()
 
             size_t dist_in_frames = (ref_rx_indx-last_synch_point) / sig_size;
 
-            if(dist_in_frames < 100 && false){
+            if(dist_in_frames < 100){
                 // Use last synch point as starting point for the new
                 size_t synch_margin = 256;
                 ref_rx_indx = last_synch_point+dist_in_frames * sig_size - synch_margin; // calculated latest synch point - margin
@@ -913,6 +911,8 @@ void RadioSysObject::runSynchronizationThread()
                 L = std::pow(2,std::ceil(std::log2(first_synch_pattern_point + 2 * synch_margin)));
 
                 txSynch_alt = uhd_clib::fft_w_zpadd(txSynch_base,L,true);
+
+                usingFullFrame = false;
             }
         }
 
@@ -929,22 +929,9 @@ void RadioSysObject::runSynchronizationThread()
             std::vector<std::complex<short>> v_frame = rxSignalBuffer.extract_range(ref_rx_indx,L);
             std::vector<std::complex<double>> vv_frame = uhd_clib::cvec_conv_short2double(v_frame,1);
 
-            rx_sig = conv_to<cx_vec>::from(vv_frame);
-
-            rx_sig -= mean(rx_sig); // remove mean from signal
-
-            double max_v_r = max(abs(real(rx_sig)));
-            double max_v_i = max(abs(imag(rx_sig)));
-            double max_v = std::max(max_v_r,max_v_i);
-
-            rx_sig = round(rx_sig*std::pow(2,16-1)/max_v);
-
-            int max_i = 0;
-            double max_val = 0;
-
             // Implement repetition based time synchronization
-            std::vector<double> corr_out_bb(L-2*L_tx,0.0);
-            double max_corr_out_bb = 0.0;
+            // std::vector<double> corr_out_bb(L-2*L_tx,0.0);
+            // double max_corr_out_bb = 0.0;
             // cx_vec m1;
             // cx_vec m2;
             // for(int i=0;i<L-2*L_tx;i++){
@@ -959,14 +946,14 @@ void RadioSysObject::runSynchronizationThread()
 
 
             std::vector<int> peak_locs_bb;
-            std::vector<double> peak_vals_bb = uhd_clib::find_peaks(corr_out_bb,peak_locs_bb,0.9*max_corr_out_bb,sysConf.txSignal.size()-sysConf.synchTolerance,10);
+            // std::vector<double> peak_vals_bb = uhd_clib::find_peaks(corr_out_bb,peak_locs_bb,0.9*max_corr_out_bb,sysConf.txSignal.size()-sysConf.synchTolerance,10);
 
             //rx_buffer.skip(debug_var3*L*osr); // skip 5x2 frames to limit computational load
             rxSignalBuffer.skip(0); // skip rest of buffer
 
             bool synchPointFound = WindowedSynchronizationEnabled;
             double peak_locs_diff_bb = 0.0;
-            if(peak_locs_bb.size() > 1 && WindowedSynchronizationEnabled){
+            if(WindowedSynchronizationEnabled && peak_locs_bb.size() > 1){
                 peak_locs_diff_bb = peak_locs_bb[1]-peak_locs_bb[0];
                 if(std::abs(peak_locs_diff_bb-sysConf.txSignal.size()) < 5){
                     syncPointBuffer.push(ref_rx_indx + peak_locs_bb[0]);
@@ -976,9 +963,8 @@ void RadioSysObject::runSynchronizationThread()
                 }
             }
 
-
             if(!synchPointFound){
-                vec t = regspace(0,rx_sig.n_elem-1)/fs; // define time vector
+                //vec t = regspace(0,rx_sig.n_elem-1)/fs; // define time vector
 
                 std::vector<double> corr_max(num_shift_candidates,0.0);
                 double curr_corr_max = 0.0;
@@ -997,32 +983,34 @@ void RadioSysObject::runSynchronizationThread()
                     //std::chrono::duration<double> duration_t = end - start;
                     //std::cout << "Execution time: " << duration_t.count() << " seconds" << std::endl;
 
-                    // ----- Save files to debug -----
-                    std::string filename = "corr_out.dat";
-                    std::ofstream file(filename, std::ios::out | std::ios::binary);
+                    if(! usingFullFrame && false){
+                        // ----- Save files to debug -----
+                        std::string filename = "corr_out.dat";
+                        std::ofstream file(filename, std::ios::out | std::ios::binary);
 
-                    // Write the size of the vector first (optional, but useful for reading back)
-                    size_t size = corr_out_fftw.size();
-                    // Write the data to the file
-                    file.write(reinterpret_cast<const char*>(corr_out_fftw.data()), size * sizeof(double));
+                        // Write the size of the vector first (optional, but useful for reading back)
+                        size_t size = corr_out_fftw.size();
+                        // Write the data to the file
+                        file.write(reinterpret_cast<const char*>(corr_out_fftw.data()), size * sizeof(double));
 
-                    file.close();
+                        file.close();
 
-                    std::ofstream file2("rx_signal.dat", std::ios::out | std::ios::binary);
+                        std::ofstream file2("rx_signal.dat", std::ios::out | std::ios::binary);
 
-                    std::vector<double> tmp_v(2*vv_frame.size());
-                    // Write the size of the vector first
-                    size_t size2 = tmp_v.size();
+                        std::vector<double> tmp_v(2*vv_frame.size());
+                        // Write the size of the vector first
+                        size_t size2 = tmp_v.size();
 
-                    for(int ik=0;ik<size2/2;ik++){
-                        tmp_v[ik] = std::real(vv_frame[ik]);
-                        tmp_v[ik+size2/2] = std::imag(vv_frame[ik]);
+                        for(int ik=0;ik<size2/2;ik++){
+                            tmp_v[ik] = std::real(vv_frame[ik]);
+                            tmp_v[ik+size2/2] = std::imag(vv_frame[ik]);
+                        }
+
+                        // Write the data to the file
+                        file2.write(reinterpret_cast<const char*>(tmp_v.data()), size2 * sizeof(double));
+
+                        file2.close();
                     }
-
-                    // Write the data to the file
-                    file2.write(reinterpret_cast<const char*>(tmp_v.data()), size2 * sizeof(double));
-
-                    file2.close();
 
                     // ------------------------------------------
                     double crr_max = 0.0;
@@ -1038,7 +1026,7 @@ void RadioSysObject::runSynchronizationThread()
                     //std::vector<double> corr_out_std_vec = conv_to<std::vector<double>>::from(corr_out);
                     std::vector<double> peak_vals = uhd_clib::find_peaks(corr_out_fftw,
                                                                          peak_locs,
-                                                                         0.8*crr_max,
+                                                                         0.7*crr_max,
                                                                          L_tx-sysConf.synchTolerance,
                                                                          20); // find the peaks
 
