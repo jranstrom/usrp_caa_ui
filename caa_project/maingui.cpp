@@ -74,8 +74,8 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->indicator_synchronization->setState(1);
 
-    ui->lafw_synch_capture->setLabelText("Capture file:");
-    ui->lafw_synch_capture->setFieldText("data/capture1.dat");
+    ui->lafw_synch_capture->setLabelText("Capture directory:");
+    ui->lafw_synch_capture->setFieldText("data");
     ui->lafw_synch_capture->setEditable(true);
 
     ui->indicator_format->setState(1);
@@ -108,6 +108,17 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_synchCaptureLength->setLabelText("Capture Length:");
     ui->lasbw_synchCaptureLength->setMaximum(500000);
     ui->lasbw_synchCaptureLength->requestSetValue(1024);
+
+
+    ui->lasbw_num_repetitions->setLabelText("Repetitions:");
+    ui->lasbw_num_repetitions->setMaximum(100);
+    ui->lasbw_num_repetitions->setMinimum(1);
+    ui->lasbw_num_repetitions->requestSetValue(1);
+
+    ui->lasbw_repetition->setLabelText("Repetition:");
+    ui->lasbw_repetition->setMaximum(ui->lasbw_num_repetitions->getValue());
+    ui->lasbw_repetition->setMinimum(1);
+
 
     connect(ui->lasbw_antenna_elements,
             &LabelandSpinBoxWidget::componentValueChanged,this,
@@ -645,21 +656,34 @@ void mainGUI::processing_automatic_capture()
             int currentClass = ui->lasbw_active_class->getValue();
             int currentSample = ui->lasbw_active_sample->getValue();
 
+            int currentRepetition = ui->lasbw_repetition->getValue();
+            bool useRepetition = (ui->lasbw_num_repetitions->getValue() > 1);
+
             int increment = 1;
 
             if(radObj->requestCaptureSynchFrame(currentElement-1)){
 
                 if(radObj->isCapturedFramesReadyToSave()){
                     SaveSynchCaptures();
+                    radObj->resetCurrentFramesCaptured();
 
                     if(currentClass == ui->lasbw_active_class->getMaximum()){
                         currentClass = ui->lasbw_active_class->getMaximum();
                         currentElement = ui->lasbw_antenna_elements->getMaximum();
-                        currentSample = ui->lasbw_active_sample->requestSetValue(currentSample+increment,true); // increment sample
-                        automaticCaptureRunning = false;
-                        ui->indicator_auto_capture->setState(2);
-                        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
-                        addStatusUpdate("Automatic Capture finished...",ui->tableWidget_status,1);
+
+                        // Increment repetition, then increment sample
+                        if(currentRepetition == ui->lasbw_num_repetitions->getValue() || !useRepetition){
+                            currentSample = ui->lasbw_active_sample->requestSetValue(currentSample+increment,true); // increment sample
+
+                            automaticCaptureRunning = false;
+                            ui->indicator_auto_capture->setState(2);
+                            disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+                            addStatusUpdate("Automatic Capture finished...",ui->tableWidget_status,1);
+                        }
+
+                        currentRepetition = ui->lasbw_repetition->requestSetValue(currentRepetition+increment,true); //always increment repetition
+
+
                     }
                     currentClass = ui->lasbw_active_class->requestSetValue(currentClass+increment,true); //increment class
                 }
@@ -1025,6 +1049,9 @@ void mainGUI::on_button_set_synch_format_released()
         ui->lasbw_antenna_elements->setMaximum(ui->lasbw_num_elements->getValue());
         ui->lasbw_active_class->setMaximum(ui->lasbw_num_classes->getValue());
 
+        ui->lasbw_repetition->setMaximum(ui->lasbw_num_repetitions->getValue());
+        ui->lasbw_repetition->requestSetValue(1);
+
         frameFormatStatus = 1;
         ui->indicator_format->setState(2);
     }else if(response == -1){
@@ -1107,9 +1134,20 @@ void mainGUI::SaveSynchCaptures()
     int c_sample = ui->lasbw_active_sample->getValue();
     int c_class = ui->lasbw_active_class->getValue();
 
-    std::string fileDirectory = "data";//captureFileFormatField->getFieldText();
+
+    //"data";//captureFileFormatField->getFieldText();
+    std::string fileDirectory = ui->lafw_synch_capture->getFieldText();
     if(fileDirectory != ""){
         fileDirectory = fileDirectory + "/";
+    }
+
+    if(ui->lasbw_num_repetitions->getValue()>1){
+        fileDirectory = fileDirectory + "/rep" + std::to_string(ui->lasbw_repetition->getValue()) + "/";
+
+        // check if directory exist, otherwise create it
+        if(!std::filesystem::exists(fileDirectory)){
+            std::filesystem::create_directories(fileDirectory);
+        }
     }
 
     std::string filepath = fileDirectory + "class"  + std::to_string(c_class) +

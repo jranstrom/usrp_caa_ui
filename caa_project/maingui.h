@@ -10,6 +10,7 @@
 #include <QTimer>
 #include "mccontrolwidget.h"
 #include "custom/sliderandlineedit.h"
+#include <filesystem>
 
 #include "uhd_clib.h"
 

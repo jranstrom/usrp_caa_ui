@@ -1159,6 +1159,7 @@ bool RadioSysObject::requestCaptureSynchFrame(int captureIndex){
     if(SynchronizationInProgress){
         extractFrameSequence(frameOffset,frameLength);
 
+        if(extracted_synch_data.size() != 0){
         std::vector<std::complex<double>> frame_temp = uhd_clib::cvec_conv_short2double(extracted_synch_data);
         // double xi;
         // double yi;
@@ -1180,6 +1181,9 @@ bool RadioSysObject::requestCaptureSynchFrame(int captureIndex){
         currentFramesCaptured[captureIndex] = true;
 
         return true;
+        }else{
+            return false;
+        }
     }else{
         return false;
     }
