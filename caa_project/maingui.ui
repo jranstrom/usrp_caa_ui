@@ -51,7 +51,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -460,7 +460,7 @@
              <item>
               <widget class="QLineEdit" name="lineEdit_sig_config">
                <property name="text">
-                <string>/home/jr/workspace/caa_project/build-caa_project-Desktop_Qt_5_15_2_GCC_64bit-Debug/sys_last_params.mat</string>
+                <string>/home/jr/workspace/caa_project/build-caa_project-Desktop_Qt_5_15_2_GCC_64bit-Release/sys_last_params.mat</string>
                </property>
               </widget>
              </item>
@@ -1062,7 +1062,7 @@
                   <string>save capture</string>
                  </property>
                  <property name="checked">
-                  <bool>false</bool>
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -1137,7 +1137,7 @@
                   <string>Auto switch</string>
                  </property>
                  <property name="checked">
-                  <bool>true</bool>
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>
@@ -1147,7 +1147,7 @@
                   <string>Auto Save</string>
                  </property>
                  <property name="checked">
-                  <bool>true</bool>
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>

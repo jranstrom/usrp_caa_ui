@@ -75,8 +75,8 @@ mainGUI::mainGUI(QWidget *parent)
     ui->indicator_synchronization->setState(1);
 
     ui->lafw_synch_capture->setLabelText("Capture filepath:");
-    ui->lafw_synch_capture->setFieldText("data");
-    //ui->lafw_synch_capture->setFieldText("data/new/test_data.dat");
+    //ui->lafw_synch_capture->setFieldText("data");
+    ui->lafw_synch_capture->setFieldText("data/new/test_data.dat");
     ui->lafw_synch_capture->setEditable(true);
 
     ui->indicator_format->setState(1);
@@ -94,20 +94,20 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_active_sample->setMaximum(3000);
     ui->lasbw_active_sample->setLabelText("Current sample:");
 
-    //ui->lasbw_num_elements->requestSetValue(1,true);
-    ui->lasbw_num_elements->requestSetValue(4,true);
+    ui->lasbw_num_elements->requestSetValue(1,true);
+    //ui->lasbw_num_elements->requestSetValue(4,true);
     ui->lasbw_num_elements->setMinimum(1);
     ui->lasbw_num_elements->setLabelText("Number of Elements:");
 
-    //ui->lasbw_num_classes->requestSetValue(1,true);
-    ui->lasbw_num_classes->requestSetValue(4,true);
+    ui->lasbw_num_classes->requestSetValue(1,true);
+    //ui->lasbw_num_classes->requestSetValue(4,true);
     ui->lasbw_num_classes->setMinimum(1);
     ui->lasbw_num_classes->setLabelText("Number of Classes:");
 
     ui->lasbw_synchCaptureOffset->setLabelText("Capture Offset:");
     ui->lasbw_synchCaptureOffset->setMaximum(500000);
-    ui->lasbw_synchCaptureOffset->requestSetValue(2176);
-    //ui->lasbw_synchCaptureOffset->requestSetValue(256);
+    //ui->lasbw_synchCaptureOffset->requestSetValue(2176);
+    ui->lasbw_synchCaptureOffset->requestSetValue(256);
 
 
 
