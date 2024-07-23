@@ -3,6 +3,7 @@
 
 #include <matio.h>
 #include <exception>
+#include <filesystem>
 
 // Declare the custom namespace "matHF"
 namespace matHF {
@@ -21,10 +22,15 @@ static std::vector<std::string> separate_string(const std::string & str){
 
 static mat_t* open_mat_file(const std::string & filename){
 	mat_t *matfile;
-
-	matfile = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
+	matfile = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);    
 	if(NULL == matfile){
-		throw std::runtime_error("Error opening MAT file!");
+        if(!std::filesystem::exists(filename.c_str())){
+            std::string filen = filename.c_str();
+            throw std::runtime_error("Error1: file " + filen + " does not exist!");
+        }else{
+            throw std::runtime_error("Error2: opening MAT file!");
+        }
+
 	}
 	return matfile;
 }

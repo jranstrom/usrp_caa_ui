@@ -11,6 +11,7 @@
 #include "mccontrolwidget.h"
 #include "custom/sliderandlineedit.h"
 #include <filesystem>
+#include <vector>
 
 #include "uhd_clib.h"
 
@@ -204,6 +205,8 @@ private:
     void SetWidgetColorState(QWidget *widg, int state);
 
     void addStatusUpdate(QString entry,QTableWidget *table, int type=0);
+
+    void plotPhaseComparison(bool timePlot=false, bool relative=false);
 
     void hideLayout(QLayout* layout);
     void unhideLayout(QLayout* layout);

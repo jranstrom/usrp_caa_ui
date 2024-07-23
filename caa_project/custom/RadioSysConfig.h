@@ -91,6 +91,7 @@ class RadioSysConfig {
 		void SetSynchCorrelationPattern(std::vector<int> value);
 
 		void SetIndexGrid(std::vector<std::vector<int>> value);
+        void SetNumActiveSubcarrier(std::vector<int> value);
 
 		void SetTransmitSignal(std::vector<std::complex<double>> value);
 		void SetSynchSignal(std::vector<std::complex<double>>  value);
@@ -216,6 +217,7 @@ class RadioSysConfig {
 		RSC::FileConfig rx;
 
 		std::vector<std::vector<int>> iGrid;
+        std::vector<int> numActiveSubcarriers;
 
 		std::vector<char> signalPattern;
 		std::vector<std::complex<double>> txSignal;

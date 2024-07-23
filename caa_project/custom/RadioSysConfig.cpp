@@ -23,6 +23,8 @@ void RadioSysConfig::SetSynchCorrelationPattern(std::vector<int> value){ this->s
 
 void RadioSysConfig::SetIndexGrid(std::vector<std::vector<int>> value){ this->iGrid = value; }
 
+void RadioSysConfig::SetNumActiveSubcarrier(std::vector<int> value){this->numActiveSubcarriers = value; }
+
 void RadioSysConfig::SetTransmitSignal(std::vector<std::complex<double>> value){ this->txSignal = value; }
 void RadioSysConfig::SetSynchSignal(std::vector<std::complex<double>>  value){ this->synchSignal = value; }
 

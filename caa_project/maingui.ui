@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>853</width>
+    <width>1066</width>
     <height>903</height>
    </rect>
   </property>
@@ -51,7 +51,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -1061,6 +1061,9 @@
                  <property name="text">
                   <string>save capture</string>
                  </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
                 </widget>
                </item>
                <item>
@@ -1097,6 +1100,13 @@
                 <widget class="Line" name="line_5">
                  <property name="orientation">
                   <enum>Qt::Vertical</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="cb_single_auto">
+                 <property name="text">
+                  <string>Single Class</string>
                  </property>
                 </widget>
                </item>
@@ -1325,7 +1335,7 @@
         <item row="1" column="0">
          <widget class="QTabWidget" name="tabWidget_2">
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="tab_5">
            <attribute name="title">
@@ -1377,6 +1387,42 @@
            <layout class="QVBoxLayout" name="verticalLayout_18">
             <item>
              <widget class="QCustomPlot" name="phase_plot" native="true"/>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_8">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>80</height>
+               </size>
+              </property>
+              <property name="title">
+               <string>Plot Configurations</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_19">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_26">
+                 <property name="spacing">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <widget class="QCheckBox" name="cb_time_plot">
+                   <property name="text">
+                    <string>Time plot</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="cb_relative_plot">
+                   <property name="text">
+                    <string>Relative Phase</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -1481,13 +1527,13 @@
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>150</height>
+        <height>100</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>400</height>
+        <height>100</height>
        </size>
       </property>
       <property name="selectionBehavior">
@@ -1521,7 +1567,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>853</width>
+     <width>1066</width>
      <height>22</height>
     </rect>
    </property>
@@ -1556,9 +1602,9 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_rx_ref"/>
   <buttongroup name="buttonGroup_rx_pps"/>
-  <buttongroup name="buttonGroup_tx_ref"/>
+  <buttongroup name="buttonGroup_rx_ref"/>
   <buttongroup name="buttonGroup_tx_pps"/>
+  <buttongroup name="buttonGroup_tx_ref"/>
  </buttongroups>
 </ui>

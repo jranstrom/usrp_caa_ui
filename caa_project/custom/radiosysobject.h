@@ -17,7 +17,7 @@ public:
         StopAll();
     }
     bool readConfigFile(std::string configFilepath ="usrp.cfg");
-    bool readConfigSignalFile(std::string filepath ="sys_last_params.mat");
+    int readConfigSignalFile(std::string filepath ="sys_last_params.mat");
 
     bool writeConfigFile(std::string configFilepath ="usrp.cfg");
 
@@ -78,6 +78,8 @@ public:
 
     int getNumFrameCaptures() {return numFrameCaptures;}
 
+    bool getComplexCaptureFrames(std::vector<std::vector<std::complex<double>>> & output);
+
     RadioSysConfig sysConf = RadioSysConfig();
 
     bool txUSRPSetup = false;
@@ -106,8 +108,15 @@ private:
 
     void extractFrameSequence(int offset=-1,int length=0);
 
+    int getErrorResponse(std::string error_id_msg, std::string & error_message);
+    int getErrorResponse(std::string error_id_msg);
+    int getErrorResponse(int error_code,std::string & error_message);
+    int getErrorResponse(int error_code);
+
     bool txSetupInProgress = false;
     bool rxSetupInProgress = false;
+
+    std::complex<short> dc_offset = std::complex(0,0);
 
     std::string rxCaptureFilepath = "rx_capture_buffer.dat";
 

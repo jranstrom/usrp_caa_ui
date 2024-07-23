@@ -8,6 +8,7 @@
 #include <bitset>
 #include <fftw3.h>
 #include <cmath>
+#include <numbers>
 
 class uhd_clib{
 public:
@@ -44,6 +45,48 @@ static bool checkValidCRC(std::vector<bool> enc_data, const std::vector<bool> & 
 static std::vector<double> fft_correlation_w_ref(std::vector<std::complex<double>> &reference, std::vector<std::complex<double>> &signal);
 
 static std::vector<std::complex<double>> fft_w_zpadd(std::vector<std::complex<double>> &signal, size_t N,bool conjugate=false);
+
+template<typename T, typename A>
+static void fft_shift(std::vector<T,A> & signal){
+    std::vector<T,A> res_vec = signal;
+    size_t N = signal.size();
+    int N2 = std::ceil(N/2);
+
+    for(int i=0;i<static_cast<int>(N);i++){
+        int k = ((i+N2) % N);
+        signal[i] = res_vec[k];
+    }
+}
+
+template<typename T, typename A>
+static std::vector<T,A> extractByIndex(std::vector<T,A> const& input,std::vector<int> index_vec){
+    std::vector<T,A> result_vec(index_vec.size());
+    for(size_t i=0;i<index_vec.size();i++){
+        result_vec[i] = input[index_vec[i]];
+    }
+}
+
+static double angle(std::complex<double> const& iq_value);
+static std::vector<double> angle(std::vector<std::complex<double>> const& iq_values);
+static double rad2deg(double const& phase);
+static std::vector<double> rad2deg(std::vector<double> const& phases);
+
+static std::complex<short> CalculateComplexMean(std::vector<std::complex<short>> input);
+
+template<typename T,typename A>
+static void scalarAddition(std::vector<T,A> & input,T & scalar){
+    size_t N = input.size();
+    for(size_t i=0;i<N;i++){
+        input[i] = input[i]+scalar;
+    }
+}
+template<typename T,typename A>
+static void scalarSubtraction(std::vector<T,A> & input,T & scalar){
+    size_t N = input.size();
+    for(size_t i=0;i<N;i++){
+        input[i] = input[i]-scalar;
+    }
+}
 
 private :
 

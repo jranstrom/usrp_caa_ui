@@ -188,6 +188,7 @@ public:
             }
         }else{
             //throw std::runtime_error("Trying to access entry outside range");
+            return res_v;
         }
         return res_v;
     }

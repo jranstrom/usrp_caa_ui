@@ -215,6 +215,49 @@ std::vector<std::complex<double>> uhd_clib::fft_w_zpadd(std::vector<std::complex
 
 }
 
+double uhd_clib::angle(std::complex<double> const& iq_value)
+{
+    return std::imag(std::log(iq_value));
+}
+
+std::vector<double> uhd_clib::angle(const std::vector<std::complex<double> > &iq_values)
+{
+    std::vector<double> result_vec(iq_values.size());
+
+    for(size_t i =0;i<iq_values.size();i++){
+        result_vec[i] = angle(iq_values[i]);
+    }
+
+    return result_vec;
+}
+
+double uhd_clib::rad2deg(const double &phase)
+{
+    return phase / std::numbers::pi *180;
+}
+
+std::vector<double> uhd_clib::rad2deg(const std::vector<double> &phases)
+{
+    std::vector<double> result_vec(phases.size());
+    for(size_t i=0;i<phases.size();i++){
+        result_vec[i] = rad2deg(phases[i]);
+    }
+
+    return result_vec;
+}
+
+std::complex<short> uhd_clib::CalculateComplexMean(std::vector<std::complex<short>> input)
+{
+    std::complex<short> result =std::complex(0,0);
+    for(size_t i=0;i<input.size();i++){
+            result = result+input[i];
+    }
+
+    short K = static_cast<short>(input.size());
+
+    return std::complex(std::real(result)/K,std::imag(result)/K);
+}
+
 std::vector<double> uhd_clib::fft_correlation_w_ref(std::vector<std::complex<double> > &reference, std::vector<std::complex<double> > &signal)
 {
     // It is expected that reference is already zero-padded, fft and complex conjugate
@@ -401,4 +444,5 @@ std::vector<double> uhd_clib::find_peaks(std::vector<double> & in,
         }
     }
 
-    return res_vec_val;}
+    return res_vec_val;
+}

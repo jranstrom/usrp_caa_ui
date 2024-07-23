@@ -28,6 +28,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
+#include<regex>
+#include<filesystem>
+
 using namespace std::chrono_literals;
 
 RadioSysObject::RadioSysObject() : syncPointBuffer(1e3),frequencyOffsetBuffer(1e3) {
@@ -141,9 +144,10 @@ bool RadioSysObject::readConfigFile(std::string configFilepath)
     return success;
 
 }
-bool RadioSysObject::readConfigSignalFile(std::string filepath)
+int RadioSysObject::readConfigSignalFile(std::string filepath)
 {
-    bool success = true;
+    std::cout << "This is what its named: " << filepath << std::endl;
+    int response = 0; // success
     try{
         sysConf.SetNfft(matHF::read_double(filepath,"sys.Nfft"));
         sysConf.SetSamplingRate(matHF::read_double(filepath,"sys.fs"));
@@ -154,6 +158,7 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
         sysConf.SetSynchCorrelationPattern(matHF::read_as_int_vec(filepath,"sys.synchCorrFormat"));
 
         sysConf.SetIndexGrid(matHF::read_as_int_mat(filepath,"sys.iGrid"));
+        sysConf.SetNumActiveSubcarrier(matHF::read_as_int_vec(filepath,"sys.activeSC"));
 
         sysConf.SetTransmitSignal(matHF::read_complex_double_vec(filepath,"sys.txSignal"));
         sysConf.SetSynchSignal(matHF::read_complex_double_vec(filepath,"sys.tSynch"));
@@ -162,15 +167,15 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
         sysConf.SetSynchTolerance(matHF::read_as_int(filepath,"sys.synchCorrTolerance"));
 
 
-        sysConf.csvPattern = matHF::read_as_int_mat("csv_last_params.mat","sys.csvPattern");
-        sysConf.csvPattern = uhd_clib::transpose_int_mat(sysConf.csvPattern);
+        //sysConf.csvPattern = matHF::read_as_int_mat("csv_last_params.mat","sys.csvPattern");
+        //sysConf.csvPattern = uhd_clib::transpose_int_mat(sysConf.csvPattern);
 
         //CircBuffer<std::complex<short>> tx_signal_buff = uhd_clib::cvec_conv_double2short(sysConf.txSignal);
         txSignalBuffer.from_vector(uhd_clib::cvec_conv_double2short(sysConf.txSignal));
         txSynchSignalBuffer.from_vector(uhd_clib::cvec_conv_double2short(sysConf.synchSignal));
         //txSignalBuffer = &tx_signal_buff;
-    }catch(...){
-        success = false;
+    }catch(const std::runtime_error & error){
+        response = getErrorResponse(error.what());
     }
 
     try{
@@ -198,7 +203,7 @@ bool RadioSysObject::readConfigSignalFile(std::string filepath)
 
     }
 
-    return success;
+    return response;
 }
 
 void RadioSysObject::StopAll()
@@ -552,36 +557,7 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
     bool synchPoint_exist = syncPointBuffer.back(&rx_index,1);
     bool isOverwritten = false;
     bool isStale = false;
-
-    size_t signal_length = sysConf.txSignal.size();
-    size_t synchTolerance = 50; // measured in frames
-    if(synchPoint_exist){
-        size_t dist_in_frames = (rxSignalBuffer.get_push_count() - rx_index) /  signal_length;
-        // Check if stale
-        if(dist_in_frames > synchTolerance){
-            isStale = true;
-        }else{
-            rx_index + dist_in_frames*signal_length;
-        }
-     isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
-    }
-    while(!synchPoint_exist || isOverwritten || isStale){
-        //frequencyOffsetBuffer.back(&foc,1);
-        std::this_thread::sleep_for(duration);
-        synchPoint_exist = syncPointBuffer.back(&rx_index);
-        isOverwritten = false;
-        if(synchPoint_exist){
-            size_t dist_in_frames = (rxSignalBuffer.get_push_count() - rx_index) /  signal_length;
-            // Check if stale
-            if(dist_in_frames > synchTolerance){
-                isStale = true;
-            }else{
-                isStale = false;
-                rx_index + dist_in_frames*signal_length;
-            }
-            isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
-        }
-    }
+    bool isAvailable = true;
 
     int frame_length = 0;
 
@@ -594,15 +570,75 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
         }
     }
 
-    // size_t synchOffset = sysConf.synchOffset;
+    size_t signal_length = sysConf.txSignal.size();
+    size_t synchTolerance = 50; // measured in frames
+    size_t last_sum = 0;
+    size_t last_push_count = 0;
 
+    if(synchPoint_exist){
+        size_t dist_in_frames = (rxSignalBuffer.get_push_count() - rx_index) /  signal_length;
+        // Check if stale
+        if(dist_in_frames > synchTolerance){
+            isStale = true;
+        }else{
+            rx_index + dist_in_frames*signal_length;
+        }
+        isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
+        last_push_count = rxSignalBuffer.get_push_count();
+        isAvailable = (last_push_count > rx_index+offset+frame_length);
+    }
+    size_t invalid_count = 0;
+
+    while((!synchPoint_exist || isOverwritten || isStale || !isAvailable) && invalid_count < 2500){
+        //frequencyOffsetBuffer.back(&foc,1);
+        std::this_thread::sleep_for(duration);
+
+        isOverwritten = false;
+        isAvailable = true;
+        if(synchPoint_exist){
+            size_t dist_in_frames = (rxSignalBuffer.get_push_count() - rx_index) /  signal_length;
+            // Check if stale
+            if(dist_in_frames > synchTolerance){
+                isStale = true;
+                // If synch point is stale, get new synch point
+                synchPoint_exist = syncPointBuffer.back(&rx_index);
+            }else{
+                isStale = false;
+                //rx_index + dist_in_frames*signal_length;
+            }
+            isOverwritten = rxSignalBuffer.check_overwritten(rx_index);
+            last_push_count = rxSignalBuffer.get_push_count();
+            last_sum = rx_index+offset+frame_length;
+            isAvailable = (last_push_count > rx_index+offset+frame_length);
+
+        }else{
+            // If synch point does not exist, try again
+            synchPoint_exist = syncPointBuffer.back(&rx_index);
+        }
+        ++invalid_count;
+    }
+
+    if(invalid_count >= 500){
+        std::cout << "Too many invalid attempts:" << invalid_count <<  std::endl;
+    }
+
+
+
+    // size_t synchOffset = sysConf.synchOffset;
+    size_t mod_rx_index = rx_index;
     //rx_index -= synchOffset;        // adjust for synch point not being start of frame
     if(offset > -1){
-        rx_index += offset;
+        mod_rx_index += offset;
     }
     // int fart = rxSignalBuffer.get_internal_buff_index(rx_index);
     // std::cout << " :: " << fart << "(internal)" << std::endl;
-    extracted_synch_data =  rxSignalBuffer.extract_range(rx_index,frame_length);
+    extracted_synch_data =  rxSignalBuffer.extract_range(mod_rx_index,frame_length);
+    if(extracted_synch_data.size() > 0){
+        uhd_clib::scalarSubtraction(extracted_synch_data,dc_offset);
+    }else{
+        bool is_it_true = (rxSignalBuffer.get_push_count() < mod_rx_index+frame_length);
+        std::cout << "extracted_sync_data is empty" <<std::endl;
+    }
     // double dt = 1/sysConf.rx.SamplingRate;
     // double pi = M_PI;
     // std::complex<double> j(0.0,1.0);
@@ -613,6 +649,48 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
     // }
 
     //extracted_synch_data = uhd_clib::cvec_conv_double2short(tmp_cvec);
+}
+
+int RadioSysObject::getErrorResponse(std::string error_id_msg, std::string &error_message)
+{
+    int error_code = 0;
+    std::regex pattern(R"(Error(\d+))");
+    std::smatch matches;
+    if(std::regex_search(error_id_msg, matches, pattern)){
+        std::string numberStr = matches[1];
+        error_code = std::stoi(numberStr);
+    }
+
+    return getErrorResponse(error_code,error_message);
+}
+
+int RadioSysObject::getErrorResponse(std::string error_id_msg)
+{
+    std::string dummy_message = "";
+    return getErrorResponse(error_id_msg,dummy_message);
+}
+
+int RadioSysObject::getErrorResponse(int error_code, std::string &error_message)
+{
+    int response = -1;
+    error_message = "unknown error";
+    switch(error_code){
+    case 1:
+        error_message = "file does not exist";
+        response = -2;
+        break;
+    case 2:
+        error_message = "unknown file error";
+        response = -3;
+    }
+
+    return response;
+}
+
+int RadioSysObject::getErrorResponse(int error_code)
+{
+    std::string dummy_message = "";
+    return getErrorResponse(error_code,dummy_message);
 }
 
 void RadioSysObject::runTransmissionThread()
@@ -1064,6 +1142,10 @@ void RadioSysObject::runSynchronizationThread()
 
                 if(synch_point[curr_corr_max_ix] != -1){
                    syncPointBuffer.push(ref_rx_indx + synch_point[curr_corr_max_ix]); // put synch point in buffer;
+
+                   // calculate DC-offset
+                   dc_offset = uhd_clib::CalculateComplexMean(v_frame);
+
                    //frequencyOffsetBuffer.push(half_scs*shift_vec(curr_corr_max_ix));
                    frequencyOffsetBuffer.push(0.0);
                 }
@@ -1311,6 +1393,31 @@ bool RadioSysObject::requestResetSynchPoints()
     return true;
 }
 
+bool RadioSysObject::getComplexCaptureFrames(std::vector<std::vector<std::complex<double>>> &output)
+{
+
+    if(isCapturedFramesReadyToSave()){
+        std::complex<double> j = std::complex(0.0,1.0);
+        size_t samples = capturedFrames.size();
+        size_t elements = capturedFrames[0].size()/2;
+        std::vector<std::vector<std::complex<double>>> temp_holder(elements,std::vector<std::complex<double>>(samples));
+
+        for(size_t r=0;r<samples;r++){
+            for(size_t c=0;c<elements;c++){
+                size_t c1 = c*2;
+                size_t c2 = c*2+1;
+                temp_holder[c][r] = capturedFrames[r][c1] + j*capturedFrames[r][c2];
+            }
+        }
+
+        output = temp_holder;
+    }else{
+        return false;
+    }
+
+    return true;
+}
+
 int RadioSysObject::requestResetTransmitter()
 {
     if(tx_usrp != nullptr){
@@ -1323,5 +1430,5 @@ int RadioSysObject::requestResetTransmitter()
 
         setTxUSRPConfigured(false);
     }
-
+    return 0;
 }

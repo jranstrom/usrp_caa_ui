@@ -74,8 +74,9 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->indicator_synchronization->setState(1);
 
-    ui->lafw_synch_capture->setLabelText("Capture directory:");
+    ui->lafw_synch_capture->setLabelText("Capture filepath:");
     ui->lafw_synch_capture->setFieldText("data");
+    //ui->lafw_synch_capture->setFieldText("data/new/test_data.dat");
     ui->lafw_synch_capture->setEditable(true);
 
     ui->indicator_format->setState(1);
@@ -93,10 +94,12 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_active_sample->setMaximum(3000);
     ui->lasbw_active_sample->setLabelText("Current sample:");
 
+    //ui->lasbw_num_elements->requestSetValue(1,true);
     ui->lasbw_num_elements->requestSetValue(4,true);
     ui->lasbw_num_elements->setMinimum(1);
     ui->lasbw_num_elements->setLabelText("Number of Elements:");
 
+    //ui->lasbw_num_classes->requestSetValue(1,true);
     ui->lasbw_num_classes->requestSetValue(4,true);
     ui->lasbw_num_classes->setMinimum(1);
     ui->lasbw_num_classes->setLabelText("Number of Classes:");
@@ -104,6 +107,10 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_synchCaptureOffset->setLabelText("Capture Offset:");
     ui->lasbw_synchCaptureOffset->setMaximum(500000);
     ui->lasbw_synchCaptureOffset->requestSetValue(2176);
+    //ui->lasbw_synchCaptureOffset->requestSetValue(256);
+
+
+
 
     ui->lasbw_synchCaptureLength->setLabelText("Capture Length:");
     ui->lasbw_synchCaptureLength->setMaximum(500000);
@@ -118,7 +125,6 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_repetition->setLabelText("Repetition:");
     ui->lasbw_repetition->setMaximum(ui->lasbw_num_repetitions->getValue());
     ui->lasbw_repetition->setMinimum(1);
-
 
     connect(ui->lasbw_antenna_elements,
             &LabelandSpinBoxWidget::componentValueChanged,this,
@@ -155,7 +161,7 @@ mainGUI::mainGUI(QWidget *parent)
     hideLayout(ui->layout_frs);
 
 
-    processingTimer.setInterval(300);
+    processingTimer.setInterval(600);
     processingTimer.setSingleShot(false);
     processingTimer.start();
 
@@ -348,6 +354,79 @@ void mainGUI::addStatusUpdate(QString entry, QTableWidget *table,int type)
 
     //table->selectRow(0);
 
+}
+
+void mainGUI::plotPhaseComparison(bool timePlot,bool relative)
+{
+
+    QVector<QPen> line_colors;
+    line_colors.push_back(QPen(Qt::blue));
+    line_colors.push_back(QPen(Qt::red));
+    line_colors.push_back(QPen(Qt::green));
+    line_colors.push_back(QPen(Qt::magenta));
+
+    // get the captures
+    using cmtrx = std::vector<std::vector<std::complex<double>>>;
+    using mtrx = std::vector<std::vector<double>>;
+
+    cmtrx capturedFrames;
+    if(radObj->getComplexCaptureFrames(capturedFrames)){
+        size_t cols = capturedFrames[0].size();
+        size_t rows = capturedFrames.size();
+
+        mtrx phase_angle(rows,std::vector<double>(cols));
+
+        //std::cout << radObj->sysConf.
+
+        std::vector<std::complex<double>> ref_s = capturedFrames[0];
+        std::vector<double> sample_ix(cols);
+        int Lc = ref_s.size();
+
+        if(!timePlot){
+            ref_s = uhd_clib::fft_w_zpadd(ref_s,cols);
+            Lc = radObj->sysConf.numActiveSubcarriers[2];
+        }
+
+        std::vector<int> index_vec(Lc);
+
+        for(int ic=0;ic<Lc;ic++){
+            index_vec[ic] = ic;
+            if(!timePlot){
+                index_vec[ic] = radObj->sysConf.iGrid[2][ic];
+            }
+        }
+
+        for(size_t r=0;r<rows;r++){
+
+            std::vector<std::complex<double>>t_cvec = capturedFrames[r];
+            if(!timePlot){
+                t_cvec = uhd_clib::fft_w_zpadd(t_cvec,cols);
+            }
+            QVector<double> sample_ix;
+            QVector<double> phase_sample;
+
+            for(size_t c=0;c<Lc;c++){
+                if(relative){
+                    phase_angle[r][c] = uhd_clib::angle(ref_s[index_vec[c]] / t_cvec[index_vec[c]]);
+                }else{
+                    phase_angle[r][c] = uhd_clib::angle(t_cvec[index_vec[c]]);
+                }
+                sample_ix.push_back(c);
+                phase_sample.push_back(phase_angle[r][c]);
+            }
+
+            ui->phase_plot->addGraph();
+            ui->phase_plot->graph(r)->setData(sample_ix, phase_sample);
+            ui->phase_plot->graph(r)->setPen(line_colors[r]);
+            ui->phase_plot->xAxis->setLabel("Sample");
+            ui->phase_plot->yAxis->setLabel("Phase");
+            ui->phase_plot->xAxis->setRange(0, sample_ix.size());
+            ui->phase_plot->yAxis->setRange(-3.14, 3.14);
+            ui->phase_plot->replot();
+
+
+        }
+    }
 }
 
 void mainGUI::hideLayout(QLayout *layout)
@@ -659,37 +738,81 @@ void mainGUI::processing_automatic_capture()
             int currentRepetition = ui->lasbw_repetition->getValue();
             bool useRepetition = (ui->lasbw_num_repetitions->getValue() > 1);
 
+            bool increment_class = false;
+            bool increment_repetition = false;
+            bool increment_sample = false; // Equivalently true if auto capture is finsihed
+            bool increment_element = false;
+            bool plot_capture = false;
+
             int increment = 1;
 
             if(radObj->requestCaptureSynchFrame(currentElement-1)){
 
                 if(radObj->isCapturedFramesReadyToSave()){
+                    // Capture has been made for all elements
                     SaveSynchCaptures();
+                    plotPhaseComparison(ui->cb_time_plot->isChecked(),ui->cb_relative_plot->isChecked());
                     radObj->resetCurrentFramesCaptured();
 
-                    if(currentClass == ui->lasbw_active_class->getMaximum()){
-                        currentClass = ui->lasbw_active_class->getMaximum();
-                        currentElement = ui->lasbw_antenna_elements->getMaximum();
+                    // Indicates if all (maybe single) class is complete
+                    bool finished_classes = false;
 
-                        // Increment repetition, then increment sample
-                        if(currentRepetition == ui->lasbw_num_repetitions->getValue() || !useRepetition){
-                            currentSample = ui->lasbw_active_sample->requestSetValue(currentSample+increment,true); // increment sample
+                    // Change premise
+                    increment_sample = true;
+                    increment_class = true;
+                    increment_repetition = true;
 
-                            automaticCaptureRunning = false;
-                            ui->indicator_auto_capture->setState(2);
-                            disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
-                            addStatusUpdate("Automatic Capture finished...",ui->tableWidget_status,1);
-                        }
-
-                        currentRepetition = ui->lasbw_repetition->requestSetValue(currentRepetition+increment,true); //always increment repetition
-
-
+                    // Check if single class
+                    if(ui->cb_single_auto->isChecked()){
+                        //finished = true;
+                        finished_classes = true;
+                        increment_class = false;
+                    }else if(currentClass == ui->lasbw_active_class->getMaximum()){
+                        // is last class
+                        finished_classes = true;
+                    }else{
+                        // not last class
+                        increment_sample = false; // not finished
                     }
-                    currentClass = ui->lasbw_active_class->requestSetValue(currentClass+increment,true); //increment class
+
+                    if(useRepetition && finished_classes){
+                        if(currentRepetition != ui->lasbw_repetition->getMaximum()){
+                            // not last repetition
+                            increment_sample = false; // not finished
+                        }
+                    }else{
+                        increment_repetition = false; // don't increment repetition
+                    }
+
+                    plot_capture = true;
                 }
+
+                increment_element = true;
+
+            }
+
+            if(increment_repetition){
+                currentRepetition = ui->lasbw_repetition->requestSetValue(currentRepetition+increment,true); //always increment repetition
+            }
+
+            if(increment_sample){
+                currentSample = ui->lasbw_active_sample->requestSetValue(currentSample+increment,true); // increment sample
+                automaticCaptureRunning = false;
+                ui->indicator_auto_capture->setState(2);
+                disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+                addStatusUpdate("Automatic Capture finished...",ui->tableWidget_status,1);
+            }
+
+            if(increment_class){
+                currentClass = ui->lasbw_active_class->requestSetValue(currentClass+increment,true); //increment class
+            }
+
+            if(increment_element){
                 currentElement = ui->lasbw_antenna_elements->requestSetValue(currentElement+increment,true); //increment element
                 radObj->requestResetSynchPoints();
+            }
 
+            if(plot_capture){
                 std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
                 plot_time_and_freq(vc_data);
             }
@@ -715,7 +838,9 @@ void mainGUI::on_button_transmit_released()
 
 void mainGUI::on_button_load_data_released()
 {
-    if(radObj->readConfigSignalFile((ui->lineEdit_sig_config->text()).toStdString())){
+    std::string filepath = (ui->lineEdit_sig_config->text()).toStdString();
+    int response = radObj->readConfigSignalFile(filepath);
+    if(response == 0){
         SetWidgetColor(ui->indicator_sig_config,9433252);
         addStatusUpdate("Signal file succesfully loaded",ui->tableWidget_status,1);
         unhideLayout(ui->layout_frs);
@@ -744,6 +869,9 @@ void mainGUI::on_button_load_data_released()
         ui->lafw_frs_signal_length->setLabelText("Signal length:");
         ui->lafw_frs_signal_length->setFieldText(radObj->sysConf.txSignal.size());
 
+    }else if(response == -2){
+        QString error_message = QString::fromStdString("Error, file " + filepath + " does not exist");
+        addStatusUpdate(error_message,ui->tableWidget_status,-1);
     }else{
         SetWidgetColor(ui->indicator_sig_config,16380011);
         hideLayout(ui->layout_frs);
