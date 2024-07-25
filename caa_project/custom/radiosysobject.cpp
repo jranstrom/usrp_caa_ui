@@ -1,6 +1,5 @@
 #include "radiosysobject.h"
 #include "RadioSysConfig.h"
-#include "config_file.h"
 #include "../circbuffer.h"
 #include "matHF.h"
 #include "uhd_clib.h"
@@ -30,6 +29,8 @@
 
 #include<regex>
 #include<filesystem>
+
+#include "config_file.h"
 
 using namespace std::chrono_literals;
 

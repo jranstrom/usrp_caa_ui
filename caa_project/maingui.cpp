@@ -5,12 +5,18 @@
 #include <iostream>
 #include <QTimer>
 
+#include "custom/config_file.h"
 
 mainGUI::mainGUI(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::mainGUI)
 {
     ui->setupUi(this);
+
+    int gui_conf_response = readGUIConfigFile();
+    if(gui_conf_response != 0){
+        std::cout << "An error has occured reading the gui.cfg file" << std::endl;
+    }
 
     connect(&uio, &uiobj::transmissionStatusChanged, this, &mainGUI::updateTransmitStatus);
     connect(&uio, &uiobj::receptionStatusChanged,this,&mainGUI::updateReceiveStatus);
@@ -1433,5 +1439,58 @@ int mainGUI::validateAutomaticCapture()
     }
 
     return response;
+}
+
+int mainGUI::readGUIConfigFile()
+{
+    int response = 0; // success;
+
+    try{
+        std::ifstream iconf_file("gui.cfg");
+        CFG::ReadFile(iconf_file,GUIConf.confEntriesVector,
+                        GUIConf.sdrConfConfigFilepath,
+                        GUIConf.sigConfSignalFilepath,
+                        GUIConf.sigConfNumberOfClasses,
+                        GUIConf.sigConfNumberOfElements,
+                        GUIConf.sigConfNumberOfRepetitions,
+                        GUIConf.sigConfCaptureOffset,
+                        GUIConf.sigConfCaptureLength,
+                        GUIConf.sigConfUseWindowSynchronization,
+                        GUIConf.sigConfCaptureSignalFilepath,
+                        GUIConf.sysConfAutoSwitch,
+                        GUIConf.sysConfAutoSave,
+                        GUIConf.sysConfSaveCapture,
+                        GUIConf.sysConfSingleClass);
+    }catch(...){
+        response = -1;
+    }
+
+
+    return response; //
+}
+
+int mainGUI::writeGUIConfigFile()
+{
+    std::ofstream f_out("gui.cfg");
+
+    std::vector<std::string> ln = {"signal-filepath","save-capture"};
+
+    std::string signal_filepath = "hello_bobby.mat";
+    bool save_capture = false;
+    CFG::WriteFile(f_out,ln,
+                   signal_filepath,
+                   save_capture);
+    f_out.close();
+
+    return 0;
+}
+
+
+void mainGUI::on_button_save_default_format_released()
+{
+    int response = writeGUIConfigFile();
+    if(response == 0){
+        std::cout << "Success writing file!" << std::endl;
+    }
 }
 

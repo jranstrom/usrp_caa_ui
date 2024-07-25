@@ -1,13 +1,17 @@
+#ifndef CONFIG_FILE_H
+#define CONFIG_FILE_H
+
 /**
  * Functions for reading and writing a configuration file.
  * Comments must begin with character '#' in a new line.
  * The actual definition for string only suports a single word.
- * 
+ *
  * WriteLine and Assign can be modified or they can be implemented for new types.
- * 
+ *
  * @file config_file.h
  * @author F. Barber
  */
+
 
 #include<tuple>
 #include<fstream>
@@ -18,12 +22,13 @@
 #include<algorithm>
 #include <iostream>
 
-namespace CFG {
+class CFG {
 
-const std::string DEF_CH = "=";
+public:
+
 
 // Level of debugging. 0 - No message, 1 - Only error, 2 - Show assignments
-int debug_level = 1;
+
 
 /**
  * Set the debugging level
@@ -31,7 +36,7 @@ int debug_level = 1;
  */
 void SetDebugLevel(int level)
 {
-    debug_level = level;
+   int debug_level = level;
 }
 
 //----------------------------------------------------------------------
@@ -49,14 +54,16 @@ void SetDebugLevel(int level)
  * @param var Variable with the value to store
  */
 template<typename T>
-void WriteLine(std::ostream & out, const std::string & name, T var)
+static void WriteLine(std::ostream & out, const std::string & name, T var)
 {
+    const std::string DEF_CH = "=";
     out << name << DEF_CH << var << std::endl;
 }
 
 template<typename T>
-void WriteLine(std::ostream & out, const std::string & name, const std::vector<T> & var)
+static void WriteLine(std::ostream & out, const std::string & name, const std::vector<T> & var)
 {
+    const std::string DEF_CH = "=";
     if(var.size() == 0)
     {
         out << "[]";
@@ -75,7 +82,7 @@ void WriteLine(std::ostream & out, const std::string & name, const std::vector<T
  * Recursive function for traversing the list of variadic templates.
  * Direct case.
  */
-void WriteFileRec(std::ostream & out, const std::vector<std::string> & names, size_t i)
+static void WriteFileRec(std::ostream & out, const std::vector<std::string> & names, size_t i)
 {
 }
 
@@ -83,7 +90,7 @@ void WriteFileRec(std::ostream & out, const std::vector<std::string> & names, si
  * Recursive function for traversing the list of variadic templates
  */
 template<typename T, typename... TypeList>
-void WriteFileRec(std::ostream & out, const std::vector<std::string> & names, size_t i, T & var, TypeList & ...tl)
+static void WriteFileRec(std::ostream & out, const std::vector<std::string> & names, size_t i, T & var, TypeList & ...tl)
 {
     WriteLine(out, names.at(i), var);
     WriteFileRec(out, names, i+1, tl...);
@@ -96,9 +103,11 @@ void WriteFileRec(std::ostream & out, const std::vector<std::string> & names, si
  * @param names Vector with the names of the parameters
  * @param tl parameters to be stored
  */
+
 template<typename... TypeList>
-void WriteFile(std::ostream & out, const std::vector<std::string> & names, TypeList & ...tl)
+static void WriteFile(std::ostream & out, const std::vector<std::string> & names, TypeList & ...tl)
 {
+    int debug_level=1;
     if(sizeof...(tl) == names.size() )
         WriteFileRec(out, names, 0, tl...);
     else
@@ -118,52 +127,53 @@ void WriteFile(std::ostream & out, const std::vector<std::string> & names, TypeL
  * @param value Value to assign
  */
 template<typename T>
-void Assign(T & var, const std::string & name, const std::string & value)
+static void Assign(T & var, const std::string & name, const std::string & value,int debug_level=1)
 {
     if(debug_level > 0)
         std::cout << "Assignment not defined for " << name << std::endl;
 }
 
-void Assign(int & var, const std::string & name, const std::string & value)
+static void Assign(int & var, const std::string & name, const std::string & value)
 {
     var = std::stoi(value);
 }
 
-void Assign(unsigned & var, const std::string & name, const std::string & value)
+static void Assign(unsigned & var, const std::string & name, const std::string & value)
 {
     var = std::stoul(value);
 }
 
-void Assign(size_t & var, const std::string & name, const std::string & value)
+static void Assign(size_t & var, const std::string & name, const std::string & value)
 {
     var = std::stoul(value);
 }
 
-void Assign(bool & var, const std::string & name, const std::string & value)
+static void Assign(bool & var, const std::string & name, const std::string & value)
 {
     std::string value2(value);
     std::transform(value2.begin(), value2.end(), value2.begin(), ::tolower);
     var = ( (value2 == "true") ? true : false);
 }
 
-void Assign(float & var, const std::string & name, const std::string & value)
+static void Assign(float & var, const std::string & name, const std::string & value)
 {
     var = std::stof(value);
 }
 
-void Assign(double & var, const std::string & name, const std::string & value)
+static void Assign(double & var, const std::string & name, const std::string & value)
 {
     var = std::stod(value);
 }
 
-void Assign(std::string & var, const std::string & name, const std::string & value)
+static void Assign(std::string & var, const std::string & name, const std::string & value)
 {
     var = value;
 }
 
 template<typename T>
-void Assign(std::vector<T> & var, const std::string & name, const std::string & value)
+static void Assign(std::vector<T> & var, const std::string & name, const std::string & value)
 {
+    const std::string DEF_CH = "=";
     if(value.at(0) != '[')
         throw std::invalid_argument(name + DEF_CH + value);
     // Erase the vector
@@ -194,7 +204,7 @@ void Assign(std::vector<T> & var, const std::string & name, const std::string & 
  * @param str Input string
  * @return Returns the string without the blanks (space characters).
  */
-std::string EraseBlanks(const std::string & str)
+static std::string EraseBlanks(const std::string & str)
 {
     std::string res;
     std::copy_if(str.begin(), str.end(), std::back_inserter(res), [](char c) {return c != ' '; });
@@ -206,7 +216,7 @@ std::string EraseBlanks(const std::string & str)
  * Recursive function for assigning the data to the parameters
  * Direct case
  */
-void AssignValues(const std::vector<std::string> & names, std::map<std::string, std::string> & data, size_t i)
+static void AssignValues(const std::vector<std::string> & names, std::map<std::string, std::string> & data, size_t i)
 {
 }
 
@@ -220,8 +230,9 @@ void AssignValues(const std::vector<std::string> & names, std::map<std::string, 
  * @param tl parameters where data must be stored
  */
 template<typename T, typename... TypeList>
-void AssignValues(const std::vector<std::string> & names, std::map<std::string, std::string> & data, size_t i, T & var, TypeList & ...tl)
+static void AssignValues(const std::vector<std::string> & names, std::map<std::string, std::string> & data, size_t i, T & var, TypeList & ...tl)
 {
+    int debug_level=1;
     auto it = data.find(names.at(i) );
     if(it != data.end() )
     {
@@ -245,11 +256,13 @@ void AssignValues(const std::vector<std::string> & names, std::map<std::string, 
  * @param tl parameters where data must be stored
  */
 template<typename... TypeList>
-std::map<std::string, std::string>  ReadFile(std::istream & in, const std::vector<std::string> & names, TypeList & ...tl)
+static std::map<std::string, std::string>  ReadFile(std::istream & in, const std::vector<std::string> & names, TypeList & ...tl)
 {
+    int debug_level=1;
     std::tuple<TypeList...> tuple_list(tl...);
     std::string line;
     std::map<std::string, std::string> data;
+    const std::string DEF_CH = "=";
     
     while(getline(in, line) )
     {
@@ -279,4 +292,6 @@ std::map<std::string, std::string>  ReadFile(std::istream & in, const std::vecto
     return data;
 }
 
-}
+};
+
+#endif

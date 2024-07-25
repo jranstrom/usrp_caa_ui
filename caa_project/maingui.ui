@@ -807,6 +807,13 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="button_save_default_format">
+               <property name="text">
+                <string>Save Default</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
           </layout>

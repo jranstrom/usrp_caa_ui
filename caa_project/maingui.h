@@ -15,11 +15,44 @@
 
 #include "uhd_clib.h"
 
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class mainGUI;
 }
 QT_END_NAMESPACE
+
+struct GUIConfiguation{
+    std::string sdrConfConfigFilepath = "";
+    std::string sigConfSignalFilepath = "";
+    int sigConfNumberOfClasses      = 1;
+    int sigConfNumberOfElements      = 1;
+    int sigConfNumberOfRepetitions  = 1;
+    int sigConfCaptureOffset        = 0;
+    int sigConfCaptureLength        = 1e3;
+    bool sigConfUseWindowSynchronization = false;
+    std::string sigConfCaptureSignalFilepath = "";
+
+    bool sysConfAutoSwitch      = false;
+    bool sysConfAutoSave        = false;
+    bool sysConfSaveCapture     = false;
+    bool sysConfSingleClass     = false;
+
+    std::vector<std::string> confEntriesVector = {"sdr-conf-config-filepath",
+                                   "sig-conf-signal-filepath",
+                                   "sig-conf-number-of-classes",
+                                   "sig-conf-number-of-elements",
+                                   "sig-conf-number-of-repetitions",
+                                   "sig-conf-capture-offset",
+                                   "sig-conf-capture-length",
+                                   "sig-conf-use-window-synchronization",
+                                   "sig-conf-capture-signal-filepath",
+                                   "sys-conf-auto-switch",
+                                   "sys-conf-auto-save",
+                                   "sys-conf-save-capture",
+                                   "sys-conf-single-class"};
+
+};
 
 class mainGUI : public QMainWindow
 {
@@ -155,9 +188,13 @@ private slots:
     void onSynchCaptureLengthSpinBoxChanged(int value);
 
 
+    void on_button_save_default_format_released();
+
 private:
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
+
+    GUIConfiguation GUIConf;
 
     int currentMCControlIdentifier = 0;
     std::vector<MCControlWidget*> mcControlWidgets;
@@ -190,6 +227,9 @@ private:
     SliderAndLineEdit * rxGainSlider;
 
     SliderAndLineEdit * rxLOOffsetSlider;
+
+    int readGUIConfigFile();
+    int writeGUIConfigFile();
 
     void SaveSynchCaptures();
     void SaveSyncCaptures(std::string filepath,std::string message="");
