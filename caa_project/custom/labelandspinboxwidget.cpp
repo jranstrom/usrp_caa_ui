@@ -79,14 +79,25 @@ int LabelandSpinBoxWidget::requestSetValue(int value, bool silent)
         connect(mainSpinBox,QOverload<int>::of(&QSpinBox::valueChanged),this,&LabelandSpinBoxWidget::onSpinBoxChanged);
     }
 
-   return adjusted_value;
+    return adjusted_value;
+}
+
+void LabelandSpinBoxWidget::setDataSource(int *si,bool silent)
+{
+    dataSource = si;
+    updateDataSource = true;
+    requestSetValue(*si,silent);
+
 }
 
 void LabelandSpinBoxWidget::setValue(int value, bool silent)
 {
     if(currentValue != value){
        currentValue = value;
-        emit componentValueChanged(value,silent);
+       if(updateDataSource){
+           *dataSource = currentValue;
+       }
+       emit componentValueChanged(value,silent);
     }
 
 }

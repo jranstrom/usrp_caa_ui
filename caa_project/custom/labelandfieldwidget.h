@@ -25,6 +25,8 @@ public:
     void setFieldText(size_t value);
     void setEditable(bool is_editable);
 
+    void setDataSource(std::string * ss);
+
     std::string getFieldText();
 
 signals:
@@ -50,6 +52,9 @@ private :
 
     bool isEditable = false;
     bool isEditing = false;
+
+    std::string * dataSource;
+    bool updateDataSource = false;
 };
 
 #endif // LABELANDFIELDWIDGET_H

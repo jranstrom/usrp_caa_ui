@@ -65,10 +65,19 @@ void LabelandFieldWidget::setEditable(bool is_editable)
         isEditable = is_editable;
         if(!isEditable){
             connect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextChanged);
+            disconnect(lineEdit,&QLineEdit::editingFinished,this,&LabelandFieldWidget::onFieldTextEditFinished);
         }else{
+            connect(lineEdit,&QLineEdit::editingFinished,this,&LabelandFieldWidget::onFieldTextEditFinished);
             disconnect(lineEdit,&QLineEdit::textEdited,this,&LabelandFieldWidget::onFieldTextChanged);
         }
     }
+}
+
+void LabelandFieldWidget::setDataSource(std::string *ss)
+{
+    dataSource = ss;
+    updateDataSource = true;
+    setFieldText(*ss);
 }
 
 std::string LabelandFieldWidget::getFieldText()
@@ -92,6 +101,9 @@ void LabelandFieldWidget::onFieldTextEditing(QString value)
 void LabelandFieldWidget::onFieldTextEditFinished()
 {
     isEditing = false;
+    if(updateDataSource){
+        *dataSource = (lineEdit->text()).toStdString();
+    }
     emit fieldTexEditFinished((lineEdit->text()).toStdString());
 }
 

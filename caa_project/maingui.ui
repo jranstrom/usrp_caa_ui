@@ -458,9 +458,12 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit_sig_config">
-               <property name="text">
-                <string>/home/jr/workspace/caa_project/build-caa_project-Desktop_Qt_5_15_2_GCC_64bit-Debug/sys_last_params.mat</string>
+              <widget class="LabelandFieldWidget" name="lafw_signal_config" native="true">
+               <property name="minimumSize">
+                <size>
+                 <width>25</width>
+                 <height>25</height>
+                </size>
                </property>
               </widget>
              </item>

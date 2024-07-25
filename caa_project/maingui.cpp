@@ -80,9 +80,12 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->indicator_synchronization->setState(1);
 
-    ui->lafw_synch_capture->setLabelText("Capture filepath:");
-    ui->lafw_synch_capture->setFieldText("data");
-    //ui->lafw_synch_capture->setFieldText("data/new/test_data.dat");
+    ui->lafw_signal_config->setLabelText("");
+    ui->lafw_signal_config->setDataSource((&GUIConf.sigConfSignalFilepath));
+    ui->lafw_signal_config->setEditable(true);
+
+    ui->lafw_synch_capture->setLabelText("Capture filepath:");   
+    ui->lafw_synch_capture->setDataSource(&(GUIConf.sigConfCaptureSignalFilepath));
     ui->lafw_synch_capture->setEditable(true);
 
     ui->indicator_format->setState(1);
@@ -101,18 +104,19 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_active_sample->setLabelText("Current sample:");
 
     //ui->lasbw_num_elements->requestSetValue(1,true);
-    ui->lasbw_num_elements->requestSetValue(4,true);
+    ui->lasbw_num_elements->setDataSource(&(GUIConf.sigConfNumberOfElements),true);
     ui->lasbw_num_elements->setMinimum(1);
     ui->lasbw_num_elements->setLabelText("Number of Elements:");
 
     //ui->lasbw_num_classes->requestSetValue(1,true);
-    ui->lasbw_num_classes->requestSetValue(4,true);
+    //ui->lasbw_num_classes->requestSetValue(4,true);
+    ui->lasbw_num_classes->setDataSource(&(GUIConf.sigConfNumberOfClasses),true);
     ui->lasbw_num_classes->setMinimum(1);
     ui->lasbw_num_classes->setLabelText("Number of Classes:");
 
     ui->lasbw_synchCaptureOffset->setLabelText("Capture Offset:");
     ui->lasbw_synchCaptureOffset->setMaximum(500000);
-    ui->lasbw_synchCaptureOffset->requestSetValue(2176);
+    ui->lasbw_synchCaptureOffset->setDataSource(&(GUIConf.sigConfCaptureOffset),true);
     //ui->lasbw_synchCaptureOffset->requestSetValue(256);
 
 
@@ -120,13 +124,13 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->lasbw_synchCaptureLength->setLabelText("Capture Length:");
     ui->lasbw_synchCaptureLength->setMaximum(500000);
-    ui->lasbw_synchCaptureLength->requestSetValue(1024);
+    ui->lasbw_synchCaptureLength->setDataSource(&(GUIConf.sigConfCaptureLength),true);
 
 
     ui->lasbw_num_repetitions->setLabelText("Repetitions:");
     ui->lasbw_num_repetitions->setMaximum(100);
     ui->lasbw_num_repetitions->setMinimum(1);
-    ui->lasbw_num_repetitions->requestSetValue(1);
+    ui->lasbw_num_repetitions->setDataSource(&(GUIConf.sigConfNumberOfRepetitions),true);
 
     ui->lasbw_repetition->setLabelText("Repetition:");
     ui->lasbw_repetition->setMaximum(ui->lasbw_num_repetitions->getValue());
@@ -844,7 +848,7 @@ void mainGUI::on_button_transmit_released()
 
 void mainGUI::on_button_load_data_released()
 {
-    std::string filepath = (ui->lineEdit_sig_config->text()).toStdString();
+    std::string filepath = ui->lafw_signal_config->getFieldText();
     int response = radObj->readConfigSignalFile(filepath);
     if(response == 0){
         SetWidgetColor(ui->indicator_sig_config,9433252);
@@ -1472,14 +1476,21 @@ int mainGUI::readGUIConfigFile()
 int mainGUI::writeGUIConfigFile()
 {
     std::ofstream f_out("gui.cfg");
-
-    std::vector<std::string> ln = {"signal-filepath","save-capture"};
-
-    std::string signal_filepath = "hello_bobby.mat";
     bool save_capture = false;
-    CFG::WriteFile(f_out,ln,
-                   signal_filepath,
-                   save_capture);
+    CFG::WriteFile(f_out,GUIConf.confEntriesVector,
+                  GUIConf.sdrConfConfigFilepath,
+                  GUIConf.sigConfSignalFilepath,
+                  GUIConf.sigConfNumberOfClasses,
+                  GUIConf.sigConfNumberOfElements,
+                  GUIConf.sigConfNumberOfRepetitions,
+                  GUIConf.sigConfCaptureOffset,
+                  GUIConf.sigConfCaptureLength,
+                  GUIConf.sigConfUseWindowSynchronization,
+                  GUIConf.sigConfCaptureSignalFilepath,
+                  GUIConf.sysConfAutoSwitch,
+                  GUIConf.sysConfAutoSave,
+                  GUIConf.sysConfSaveCapture,
+                  GUIConf.sysConfSingleClass);
     f_out.close();
 
     return 0;

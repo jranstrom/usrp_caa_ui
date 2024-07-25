@@ -31,6 +31,7 @@ public:
     void setIncrement(int value);
 
     int requestSetValue(int value, bool silent=false);
+    void setDataSource(int * si, bool silent=false);
 
     int getValue() { return currentValue;}
     int getMaximum() { return maximum; }
@@ -53,6 +54,8 @@ private:
     int minimum;
     int increment;
 
+    int * dataSource;
+    bool updateDataSource = false;
 
     void setValue(int value, bool silent=false);
 
