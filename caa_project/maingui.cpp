@@ -136,6 +136,25 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_repetition->setMaximum(ui->lasbw_num_repetitions->getValue());
     ui->lasbw_repetition->setMinimum(1);
 
+    ui->lacb_use_wndw_sync->setLabelText("Use window synch.");
+    ui->lacb_use_wndw_sync->setDataSource(&(GUIConf.sigConfUseWindowSynchronization),true);
+
+    ui->lacb_single_class->setLabelText("Single class");
+    ui->lacb_single_class->setDataSource(&(GUIConf.sysConfSingleClass),true);
+
+    ui->lacb_auto_switch->setLabelText("Auto Switch");
+    ui->lacb_auto_switch->setDataSource(&(GUIConf.sysConfAutoSwitch),true);
+
+    ui->lacb_save_capture->setLabelText("Save Capture");
+    ui->lacb_save_capture->setDataSource(&(GUIConf.sysConfSaveCapture),true);
+
+    ui->lacb_auto_save->setLabelText("Auto Save");
+    ui->lacb_auto_save->setDataSource(&(GUIConf.sysConfAutoSave),true);
+
+
+
+
+
     connect(ui->lasbw_antenna_elements,
             &LabelandSpinBoxWidget::componentValueChanged,this,
             &mainGUI::onActiveElementSpinBoxChanged);
@@ -773,7 +792,7 @@ void mainGUI::processing_automatic_capture()
                     increment_repetition = true;
 
                     // Check if single class
-                    if(ui->cb_single_auto->isChecked()){
+                    if(ui->lacb_single_class->getValue()){
                         //finished = true;
                         finished_classes = true;
                         increment_class = false;
@@ -1124,14 +1143,14 @@ void mainGUI::on_button_capture_synch_released()
         ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
 
         int increment = 0;
-        if(ui->checkBox_auto_switch->isChecked()){
+        if(ui->lacb_auto_switch->getValue()){
             increment = 1;
         }
 
         if(radObj->isCapturedFramesReadyToSave()){
 
             // Since it can be saved, it must be the last antenna element
-            if(ui->checkBox_auto_save->isChecked()){
+            if(ui->lacb_auto_save->getValue()){
                 SaveSynchCaptures();
             }
 
@@ -1157,7 +1176,7 @@ void mainGUI::on_button_capture_synch_released()
 
         plot_time_and_freq(vc_data);
 
-        if(ui->checkBox_save_capture->isChecked()){
+        if(ui->lacb_save_capture->getValue()){
             if(radObj->requestWriteLastCapturedFrame()){
                addStatusUpdate("Successfully saved capture...",ui->tableWidget_status,1);
 
@@ -1180,7 +1199,7 @@ void mainGUI::on_button_set_synch_format_released()
                                                      ui->lasbw_synchCaptureLength->getValue(),
                                                      ui->lasbw_num_elements->getValue(),
                                                      ui->lafw_synch_capture->getFieldText(),
-                                                     ui->checkBox_wind_synch->isChecked());
+                                                     ui->lacb_use_wndw_sync->getValue());
     if(response == 1){
         addStatusUpdate("Frame format updated...",ui->tableWidget_status);
 
@@ -1477,6 +1496,8 @@ int mainGUI::writeGUIConfigFile()
 {
     std::ofstream f_out("gui.cfg");
     bool save_capture = false;
+    const std::string str_true = "true";
+    const std::string str_false = "false";
     CFG::WriteFile(f_out,GUIConf.confEntriesVector,
                   GUIConf.sdrConfConfigFilepath,
                   GUIConf.sigConfSignalFilepath,
@@ -1485,12 +1506,12 @@ int mainGUI::writeGUIConfigFile()
                   GUIConf.sigConfNumberOfRepetitions,
                   GUIConf.sigConfCaptureOffset,
                   GUIConf.sigConfCaptureLength,
-                  GUIConf.sigConfUseWindowSynchronization,
+                  GUIConf.sigConfUseWindowSynchronization ? str_true : str_false,
                   GUIConf.sigConfCaptureSignalFilepath,
-                  GUIConf.sysConfAutoSwitch,
-                  GUIConf.sysConfAutoSave,
-                  GUIConf.sysConfSaveCapture,
-                  GUIConf.sysConfSingleClass);
+                  GUIConf.sysConfAutoSwitch ? str_true : str_false,
+                  GUIConf.sysConfAutoSave ? str_true : str_false,
+                  GUIConf.sysConfSaveCapture ? str_true : str_false,
+                  GUIConf.sysConfSingleClass ? str_true : str_false);
     f_out.close();
 
     return 0;

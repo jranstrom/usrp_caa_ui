@@ -51,7 +51,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -630,7 +630,7 @@
           </layout>
          </widget>
         </item>
-        <item row="3" column="0">
+        <item row="4" column="0">
          <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -745,9 +745,18 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox_wind_synch">
-                 <property name="text">
-                  <string>Use window synch.</string>
+                <widget class="LabelandCheckboxWidget" name="lacb_use_wndw_sync" native="true">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>25</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -807,13 +816,6 @@
               <widget class="QPushButton" name="button_set_synch_format">
                <property name="text">
                 <string>Set Format</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="button_save_default_format">
-               <property name="text">
-                <string>Save Default</string>
                </property>
               </widget>
              </item>
@@ -1067,12 +1069,12 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox_save_capture">
-                 <property name="text">
-                  <string>save capture</string>
-                 </property>
-                 <property name="checked">
-                  <bool>false</bool>
+                <widget class="LabelandCheckboxWidget" name="lacb_save_capture" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>25</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -1114,9 +1116,12 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="cb_single_auto">
-                 <property name="text">
-                  <string>Single Class</string>
+                <widget class="LabelandCheckboxWidget" name="lacb_single_class" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>25</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -1142,22 +1147,22 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_9">
                <item>
-                <widget class="QCheckBox" name="checkBox_auto_switch">
-                 <property name="text">
-                  <string>Auto switch</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
+                <widget class="LabelandCheckboxWidget" name="lacb_auto_switch" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>25</height>
+                  </size>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox_auto_save">
-                 <property name="text">
-                  <string>Auto Save</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
+                <widget class="LabelandCheckboxWidget" name="lacb_auto_save" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>25</width>
+                   <height>25</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -1527,6 +1532,13 @@
      </widget>
     </item>
     <item>
+     <widget class="QPushButton" name="button_save_default_format">
+      <property name="text">
+       <string>Save Default</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTableWidget" name="tableWidget_status">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1606,6 +1618,12 @@
    <class>LabelandSpinBoxWidget</class>
    <extends>QWidget</extends>
    <header location="global">labelandspinboxwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>LabelandCheckboxWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">labelandcheckboxwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
