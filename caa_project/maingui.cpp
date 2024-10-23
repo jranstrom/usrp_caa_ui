@@ -1348,6 +1348,7 @@ void mainGUI::SetActiveUEForAll(int value)
 
 void mainGUI::on_button_reset_tx_released()
 {
+    addStatusUpdate("Transmitter reset",ui->tableWidget_status,0);
     radObj->requestResetTransmitter();
 }
 
@@ -1522,7 +1523,8 @@ void mainGUI::on_button_save_default_format_released()
 {
     int response = writeGUIConfigFile();
     if(response == 0){
-        std::cout << "Success writing file!" << std::endl;
+       // std::cout << "Success writing file!" << std::endl;
+        addStatusUpdate("Saved default settings",ui->tableWidget_status,1);
     }
 }
 
