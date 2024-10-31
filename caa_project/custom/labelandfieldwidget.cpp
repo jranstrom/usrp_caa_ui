@@ -8,7 +8,7 @@ LabelandFieldWidget::LabelandFieldWidget(QWidget *parent,
 {
 
     main_layout = new QHBoxLayout(this);
-    main_layout->setMargin(2);
+    main_layout->setContentsMargins(2,2,2,2);
 
     label = new QLabel(this);
     label->setText(QString::fromStdString(labelText));

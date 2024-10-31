@@ -5,7 +5,7 @@ LabelandCheckboxWidget::LabelandCheckboxWidget(QWidget *parent, std::string labe
     : QWidget{parent}
 {
     main_layout = new QHBoxLayout(this);
-    main_layout->setMargin(2);
+    main_layout->setContentsMargins(2,2,2,2);
 
     mainCheckBox = new QCheckBox(this);
     setLabelText(labelText);

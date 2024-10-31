@@ -94,7 +94,7 @@ void SliderAndLineEdit::InitializeSliderAndLineEdit(std::string title,
     outerContainer->addWidget(mainGroupBox);
 
     groupVLayout->setSpacing(1);
-    groupVLayout->setMargin(1);
+    groupVLayout->setContentsMargins(1,1,1,1);
 
     connect(mainSlider,&QSlider::valueChanged,this,&SliderAndLineEdit::onSliderChange);
     connect(lineEdit,&QLineEdit::textEdited,this,&SliderAndLineEdit::onLineEditChange);

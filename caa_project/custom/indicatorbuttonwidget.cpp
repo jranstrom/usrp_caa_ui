@@ -15,7 +15,7 @@ void IndicatorButtonWidget::InitializeIndicatorButtonWidget(int initalState, int
 {
     identifier = id;
     mainLayout = new QHBoxLayout(this);
-    mainLayout->setMargin(2);
+    mainLayout->setContentsMargins(2,2,2,2);
     indicator = new QPushButton("");
     indicator->setMaximumWidth(25);
     mainLayout->addWidget(indicator);
