@@ -58,7 +58,7 @@ signals:
 
 private:
 
-    TeensyCOM tcom = TeensyCOM(115200);
+    TeensyCOM tcom = TeensyCOM();
 
     std::vector<std::string> DeviceList;
     int mcCurrentType = -1; // UE Switch = 0; Element Switch = 1
