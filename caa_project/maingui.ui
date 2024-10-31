@@ -51,7 +51,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -1630,9 +1630,9 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_rx_pps"/>
-  <buttongroup name="buttonGroup_rx_ref"/>
   <buttongroup name="buttonGroup_tx_pps"/>
   <buttongroup name="buttonGroup_tx_ref"/>
+  <buttongroup name="buttonGroup_rx_ref"/>
+  <buttongroup name="buttonGroup_rx_pps"/>
  </buttongroups>
 </ui>
