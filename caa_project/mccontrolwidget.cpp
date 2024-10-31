@@ -23,10 +23,10 @@ void MCControlWidget::InitializeMCControlWidget(int id, std::string mcType, std:
     QWidget *widget_control = new QWidget;
 
     infoLayout = new QHBoxLayout(widget_info);
-    infoLayout->setMargin(2);
+    infoLayout->setContentsMargins(2,2,2,2);
 
     controlLayout = new QGridLayout(widget_control);
-    controlLayout->setMargin(2);
+    controlLayout->setContentsMargins(2,2,2,2);
 
     response_w = new LabelandFieldWidget(this,"Response:","");
 
