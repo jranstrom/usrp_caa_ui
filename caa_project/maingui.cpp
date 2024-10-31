@@ -1298,6 +1298,11 @@ void mainGUI::SaveSynchCaptures()
         fileDirectory = fileDirectory + "/";
     }
 
+    // Check if directory exist first
+    if(!std::filesystem::exists(fileDirectory)){
+        std::filesystem::create_directories(fileDirectory);
+    }
+
     if(ui->lasbw_num_repetitions->getValue()>1){
         fileDirectory = fileDirectory + "/rep" + std::to_string(ui->lasbw_repetition->getValue()) + "/";
 
@@ -1315,6 +1320,8 @@ void mainGUI::SaveSynchCaptures()
 
 void mainGUI::SaveSyncCaptures(std::string filepath, std::string message)
 {
+    // Check if directory exist first
+
     int response = radObj->requestWriteFramesToFile(filepath,"csv");
     if(response == 1){
         addStatusUpdate(QString::fromStdString(message),ui->tableWidget_status,0);
