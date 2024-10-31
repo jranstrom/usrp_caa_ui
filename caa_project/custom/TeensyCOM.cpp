@@ -96,7 +96,8 @@ bool TeensyCOM::Connect(std::string device_port,int timeout_duration){
 
 	bool valid_device = false;
 	for(int i = 0;i < DeviceList.size();i++){
-		if(device_port.compare(DeviceList[i])){
+        bool comparison = (DeviceList[i] == device_port);
+        if(comparison){
 			valid_device = true;
 		}
 	}
