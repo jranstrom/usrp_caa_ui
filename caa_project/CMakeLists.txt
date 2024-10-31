@@ -53,53 +53,34 @@ list(APPEND serial_SRCS third-party/impl/unix.cc)
 
 add_library(serial ${serial_SRCS})
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(caa_project
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET caa_project APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else()
-    if(ANDROID)
-        add_library(caa_project SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(caa_project
-            ${PROJECT_SOURCES}
-            qcustomplot.h qcustomplot.cpp
-            custom/RadioSysConfig.h custom/RadioSysConfig.cpp
-            custom/matHF.h
-            custom/radiosysobject.h custom/radiosysobject.cpp
-            third-party/config_file.h
-            circbuffer.h
-            custom/uhd_clib.h custom/uhd_clib.cpp
-            uiobj.h uiobj.cpp
-            custom/TeensyCOM.h custom/TeensyCOM.cpp
-            tcom_ui.h tcom_ui.cpp
-            mccontrolwidget.h mccontrolwidget.cpp
-            custom/labelandfieldwidget.h custom/labelandfieldwidget.cpp
-            custom/indicatorbuttonwidget.h custom/indicatorbuttonwidget.cpp
-            custom/indicatorgroupwidget.h custom/indicatorgroupwidget.cpp
-            custom/sliderandlineedit.h custom/sliderandlineedit.cpp
-            custom/labelandspinboxwidget.h custom/labelandspinboxwidget.cpp
-            custom/labelandcheckboxwidget.h custom/labelandcheckboxwidget.cpp
+add_executable(caa_project
+    ${PROJECT_SOURCES}
+    qcustomplot.h qcustomplot.cpp
+    custom/RadioSysConfig.h custom/RadioSysConfig.cpp
+    custom/matHF.h
+    custom/radiosysobject.h custom/radiosysobject.cpp
+    third-party/config_file.h
+    circbuffer.h
+    custom/uhd_clib.h custom/uhd_clib.cpp
+    uiobj.h uiobj.cpp
+    custom/TeensyCOM.h custom/TeensyCOM.cpp
+    tcom_ui.h tcom_ui.cpp
+    mccontrolwidget.h mccontrolwidget.cpp
+    custom/labelandfieldwidget.h custom/labelandfieldwidget.cpp
+    custom/indicatorbuttonwidget.h custom/indicatorbuttonwidget.cpp
+    custom/indicatorgroupwidget.h custom/indicatorgroupwidget.cpp
+    custom/sliderandlineedit.h custom/sliderandlineedit.cpp
+    custom/labelandspinboxwidget.h custom/labelandspinboxwidget.cpp
+    custom/labelandcheckboxwidget.h custom/labelandcheckboxwidget.cpp
 
-        )
-    endif()
-endif()
+)
 
-set(QT_LIB Qt5::PrintSupport)
+set(QT_LIB Qt6::PrintSupport)
 
 target_link_libraries(caa_project
     PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     ${QT_LIB}
-    "/usr/local/lib/libmatio.so"
+    "/usr/lib/x86_64-linux-gnu/libmatio.so"
     ${UHD_LIBRARIES}
     ${Boost_LIBRARIES}
     "serial"
