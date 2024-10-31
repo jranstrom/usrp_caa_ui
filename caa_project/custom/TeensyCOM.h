@@ -23,7 +23,7 @@ class TeensyCOM {
 
 	private:
 		std::vector<std::string> DeviceList;
-		int BaudRate;
+        int BaudRate =9600;
 		bool Connected = false;
         serial::Serial CurrentCOM = serial::Serial("");
         std::string CurrentPort = "";
