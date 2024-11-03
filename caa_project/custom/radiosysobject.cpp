@@ -341,20 +341,49 @@ void RadioSysObject::requestRxUSRPSetup()
     }
 }
 
+std::vector<std::complex<short>> RadioSysObject::writeBufferEndToFile(std::string completeFilepath,int count){
+    size_t last_push_count = rxSignalBuffer.get_push_count();
+    std::vector<std::complex<short>> extracted_data =  rxSignalBuffer.extract_range(last_push_count-count,count);
+    std::vector<std::complex<double>> extracted_data_double = uhd_clib::cvec_conv_short2double(extracted_data);
+    std::ofstream outfile;
+    outfile.open(completeFilepath);
+    if(outfile.is_open()){ // make sure file is open
+        for(int i=0;i<count;i++){
+            outfile << std::real(extracted_data_double[i]) << "," << std::imag(extracted_data_double[i]) << "\n";
+        }
+        outfile.close();
+    }
+
+    return extracted_data;
+}
+
 void RadioSysObject::requestWriteBufferToFile(std::string completeFilepath,int count)
 {
-    size_t idx_value;
-    if(syncPointBuffer.back(&idx_value) > 0){
-        std::cout << "Last synch index: " << idx_value << std::endl;
+    size_t last_push_count = rxSignalBuffer.get_push_count();
+    std::vector<std::complex<short>> extracted_data =  rxSignalBuffer.extract_range(last_push_count-count,count);
+    std::vector<std::complex<double>> extracted_data_double = uhd_clib::cvec_conv_short2double(extracted_data);
+    std::ofstream outfile;
+    outfile.open(completeFilepath);
+    if(outfile.is_open()){ // make sure file is open
+        for(int i=0;i<count;i++){
+            outfile << std::real(extracted_data_double[i]) << "," << std::imag(extracted_data_double[i]) << "\n";
+        }
+        outfile.close();
     }
-    if(stopReception() && not writingBufferInProgress){
-        writingBufferInProgress = true;
-        rxCaptureFilepath = completeFilepath;
-        std::thread writeBufferThread(&RadioSysObject::writeBufferToFile,this, count);
-        writeBufferThread.detach();
-    }else{
-        return;
-    }
+
+
+    // size_t idx_value;
+    // if(syncPointBuffer.back(&idx_value) > 0){
+    //     std::cout << "Last synch index: " << idx_value << std::endl;
+    // }
+    // if(stopReception() && not writingBufferInProgress){
+    //     writingBufferInProgress = true;
+    //     rxCaptureFilepath = completeFilepath;
+    //     std::thread writeBufferThread(&RadioSysObject::writeBufferToFile,this, count);
+    //     writeBufferThread.detach();
+    // }else{
+    //     return;
+    // }
 }
 
 void RadioSysObject::setupTxUSRP()
@@ -887,6 +916,8 @@ void RadioSysObject::runSynchronizationThread()
 {
     using samp_type = std::complex<short>;
 
+
+
     using namespace arma;
 
     std::complex<double> j               = std::complex<double>(0,1);
@@ -902,7 +933,9 @@ void RadioSysObject::runSynchronizationThread()
     int synch_tolerance             = sysConf.synchTolerance;
     bool external_freq_ref          = false;                            // use carrier offset compensation
 
-
+    // setup fft
+    cfft_o.define_fft_w_size(L,false);
+    cfft_o.define_fft_w_size(L,true);
 
 
     // Calculate half of subcarrier spacing
@@ -931,6 +964,7 @@ void RadioSysObject::runSynchronizationThread()
     std::vector<std::complex<double>> txSynch_alt;
     std::vector<std::complex<double>> txSynch_base(L_tx);
     std::vector<std::complex<double>> txSynch_base_f(L_tx);
+    std::vector<std::complex<double>> txSynch_base_f_copy(L_tx);
 
     // Convert syncrhonization signal
     samp_type c_smpl;
@@ -940,6 +974,8 @@ void RadioSysObject::runSynchronizationThread()
     }
 
     txSynch_base_f = uhd_clib::fft_w_zpadd(txSynch_base,L,true);
+
+    txSynch_base_f_copy = cfft_o.fft_w_zpadd(txSynch_base,L,true);
 
     size_t ref_rx_indx = rxSignalBuffer.get_pop_count(); // current sample index being processed
     size_t current_rx_indx;

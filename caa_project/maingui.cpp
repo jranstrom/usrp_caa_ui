@@ -119,8 +119,43 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_synchCaptureOffset->setDataSource(&(GUIConf.sigConfCaptureOffset),true);
     //ui->lasbw_synchCaptureOffset->requestSetValue(256);
 
+    // ------------------- Independent Capture Controls -------------------
+    ui->lasbw_class_indep_capture->setLabelText("Class");
+    ui->lasbw_class_indep_capture->setMinimum(1);
+    ui->lasbw_class_indep_capture->requestSetValue(1);
 
+    ui->lasbw_indep_capture_sample->setLabelText("Sample");
+    ui->lasbw_indep_capture_sample->setMinimum(1);
+    ui->lasbw_indep_capture_sample->requestSetValue(1);
 
+    ui->lasbw_class_indep_max->setLabelText("Max classes");
+    ui->lasbw_class_indep_max->setMinimum(1);
+    ui->lasbw_class_indep_max->setMaximum(50000);
+    connect(ui->lasbw_class_indep_max,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onIndependentCaptureMaxClassChanged);
+    ui->lasbw_class_indep_max->setDataSource(&(GUIConf.sigConfIndependentCaptureMaxClasses),true);
+
+    ui->lasbw_indep_cap_smpl_max->setLabelText("Max sample");
+    ui->lasbw_indep_cap_smpl_max->setMinimum(1);
+    ui->lasbw_indep_cap_smpl_max->setMaximum(50000);
+    connect(ui->lasbw_indep_cap_smpl_max,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onIndependentCaptureMaxSampleChanged);
+
+    ui->lacb_indep_capture_auto->setLabelText("Auto Increment");
+    ui->lacb_indep_capture_auto->setDataSource(&(GUIConf.sigConfIndependentCaptureAutoIncrement));
+
+    ui->lafw_indep_cap_filepath->setLabelText("Directory path:");
+    ui->lafw_indep_cap_filepath->setEditable(true);
+    ui->lafw_indep_cap_filepath->setDataSource(&(GUIConf.sigConfIndependentCaptureFilepath));
+
+    // ---------------------------------------------------------
+
+    ui->lasbw_indep_capture_length->setLabelText("Capture length");
+    ui->lasbw_indep_capture_length->setMinimum(1);
+    ui->lasbw_indep_capture_length->setMaximum(1e6);
+    ui->lasbw_indep_capture_length->setDataSource(&(GUIConf.sigConfIndependentCaptureLength));
 
     ui->lasbw_synchCaptureLength->setLabelText("Capture Length:");
     ui->lasbw_synchCaptureLength->setMaximum(500000);
@@ -260,8 +295,8 @@ void mainGUI::updateReceiveStatus(bool status)
 void mainGUI::updateTxSetupStatus(bool status)
 {
     //if(status){
-        bool txSetupStatus = radObj->txUSRPSetup;
-        ui->button_transmit->setEnabled(txSetupStatus);
+    bool txSetupStatus = radObj->txUSRPSetup;
+    ui->button_transmit->setEnabled(txSetupStatus);
     //}
 }
 
@@ -339,7 +374,7 @@ void mainGUI::SetWidgetColorState(QWidget *widg, bool state)
     if(state){
         SetWidgetColor(widg,9433252);
     }else{
-       SetWidgetColor(widg,16146769);
+        SetWidgetColor(widg,16146769);
     }
 }
 
@@ -485,18 +520,18 @@ void mainGUI::unhideLayout(QLayout *layout)
 void mainGUI::trackTransmissionProcess()
 {
     if(radObj->isTransmitting()){
-    QDateTime currentDateTime = QDateTime::currentDateTime();
-    int diff_seconds = transmissionStartTime.secsTo(currentDateTime);
+        QDateTime currentDateTime = QDateTime::currentDateTime();
+        int diff_seconds = transmissionStartTime.secsTo(currentDateTime);
 
-    int hours = diff_seconds / 3600;
-    int minutes = (diff_seconds % 3600) / 60;
-    int seconds = diff_seconds % 60;
+        int hours = diff_seconds / 3600;
+        int minutes = (diff_seconds % 3600) / 60;
+        int seconds = diff_seconds % 60;
 
-    QString hours_ = QString("%1").arg(hours, 2, 10, QChar('0'));
-    QString minutes_ = QString("%1").arg(minutes, 2, 10, QChar('0'));
-    QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
+        QString hours_ = QString("%1").arg(hours, 2, 10, QChar('0'));
+        QString minutes_ = QString("%1").arg(minutes, 2, 10, QChar('0'));
+        QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
 
-    ui->label_tx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
+        ui->label_tx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
     }else{
         uio.setTransmissionInProgress(false);
     }
@@ -505,20 +540,20 @@ void mainGUI::trackTransmissionProcess()
 void mainGUI::trackReceptionProcess()
 {
     if(radObj->isReceiving()){
-    QDateTime currentDateTime = QDateTime::currentDateTime();
-    int diff_seconds = receptionStartTime.secsTo(currentDateTime);
+        QDateTime currentDateTime = QDateTime::currentDateTime();
+        int diff_seconds = receptionStartTime.secsTo(currentDateTime);
 
-    int hours = diff_seconds / 3600;
-    int minutes = (diff_seconds % 3600) / 60;
-    int seconds = diff_seconds % 60;
+        int hours = diff_seconds / 3600;
+        int minutes = (diff_seconds % 3600) / 60;
+        int seconds = diff_seconds % 60;
 
-    QString hours_ = QString("%1").arg(hours, 2, 10, QChar('0'));
-    QString minutes_ = QString("%1").arg(minutes, 2, 10, QChar('0'));
-    QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
+        QString hours_ = QString("%1").arg(hours, 2, 10, QChar('0'));
+        QString minutes_ = QString("%1").arg(minutes, 2, 10, QChar('0'));
+        QString seconds_ = QString("%1").arg(seconds, 2, 10, QChar('0'));
 
-    ui->label_rx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
+        ui->label_rx_duration->setText(hours_ +":"+minutes_+":"+seconds_);
 
-    ui->lineEdit_rx_sample_count->setText(QString("%L1").arg(radObj->getRxSampleCount()));
+        ui->lineEdit_rx_sample_count->setText(QString("%L1").arg(radObj->getRxSampleCount()));
     }else{
         uio.setReceptionInProgress(false);
     }
@@ -532,8 +567,8 @@ void mainGUI::trackSynchronizationProcess()
             ui->indicator_synchronization->setState(2);
             ui->button_capture_synch->setEnabled(true);
         }else{
-           ui->indicator_synchronization->setState(3);
-           ui->button_capture_synch->setEnabled(false);
+            ui->indicator_synchronization->setState(3);
+            ui->button_capture_synch->setEnabled(false);
         }
 
     }else{
@@ -681,7 +716,7 @@ void mainGUI::applyTxConfig()
 
 void mainGUI::applyRxConfig()
 {
-   // radObj->sysConf.rx.CarrierFrequency = (ui->lineEdit_rx_fc->text()).toDouble()*1e9;
+    // radObj->sysConf.rx.CarrierFrequency = (ui->lineEdit_rx_fc->text()).toDouble()*1e9;
     //radObj->sysConf.rx.Gain = (ui->lineEdit_rx_gain->text()).toDouble();
 }
 
@@ -742,7 +777,7 @@ void mainGUI::processing_USRP_setup()
 
         ui->button_apply_config->setEnabled(true);
     }else{
-       SetWidgetColor(ui->indicator_configuration_set,16380011); // Yellow indicator
+        SetWidgetColor(ui->indicator_configuration_set,16380011); // Yellow indicator
         ui->button_apply_config->setEnabled(false);
     }
 }
@@ -847,7 +882,7 @@ void mainGUI::processing_automatic_capture()
             }
         }
 
-       // std::this_thread::sleep_for(std::chrono::seconds(3));
+        // std::this_thread::sleep_for(std::chrono::seconds(3));
 
     }else{
         ui->indicator_auto_capture->setState(1);
@@ -951,16 +986,54 @@ void mainGUI::on_button_rx_stop_released()
 
 void mainGUI::on_button_write_buffer_to_file_released()
 {
+    int currentSample = ui->lasbw_indep_capture_sample->getValue();
+    int currentClass = ui->lasbw_class_indep_capture->getValue();
+    bool auto_increment = ui->lacb_indep_capture_auto->getValue();
+    int captureLength = ui->lasbw_indep_capture_length->getValue();
+
+    int maxSample = ui->lasbw_indep_cap_smpl_max->getValue();
+    int maxClass = ui->lasbw_class_indep_max->getValue();
+
+    // capture and save code goes here
+    std::string fileDirectory = ui->lafw_indep_cap_filepath->getFieldText();
+
+    // Check if directory exist first
+    if(!std::filesystem::exists(fileDirectory)){
+        std::filesystem::create_directories(fileDirectory);
+    }
+
+    std::string filename = "class" + std::to_string(currentClass) + "_sample" + std::to_string(currentSample) + ".csv";
+
+    std::cout << filename << std::endl;
+
+    std::vector<std::complex<short>> capturedData = radObj->writeBufferEndToFile(fileDirectory + "/" + filename,captureLength);
+
+    plot_time_and_freq(capturedData);
+
+    std::string status = "saved file " + fileDirectory + "/" + filename;
+    addStatusUpdate(QString::fromStdString(status),ui->tableWidget_status,0);
+
+    // Increment?
+    if(auto_increment){
+        // It is the last sample -> increment sample and increment class
+        if(currentSample == maxSample){
+            ui->lasbw_class_indep_capture->requestSetValue(currentClass+1,true);
+        }
+
+        ui->lasbw_indep_capture_sample->requestSetValue(currentSample+1,true);
+    }
 
     //addStatusUpdate("Synchronization started",ui->tableWidget_status);
 
-    ui->button_write_buffer_to_file->setEnabled(false);
-    ui->button_receive->setEnabled(false);
-    SetWidgetColor(ui->indicator_captured_buffer,16380011);
-    connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
-    radObj->stopReception();
-    radObj->requestWriteBufferToFile((ui->lineEdit_buffer_file_capture_path->text()).toStdString(),
-                                     ui->spinBox_capture_samples->value()*1e3);
+    // if(false){
+    //     ui->button_write_buffer_to_file->setEnabled(false);
+    //     ui->button_receive->setEnabled(false);
+    //     SetWidgetColor(ui->indicator_captured_buffer,16380011);
+    //     connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
+    //     radObj->stopReception();
+    //     radObj->requestWriteBufferToFile((ui->lineEdit_buffer_file_capture_path->text()).toStdString(),
+    //                                      ui->spinBox_capture_samples->value()*1e3);
+    // }
 }
 
 void mainGUI::on_pushButton_released()
@@ -1178,10 +1251,10 @@ void mainGUI::on_button_capture_synch_released()
 
         if(ui->lacb_save_capture->getValue()){
             if(radObj->requestWriteLastCapturedFrame()){
-               addStatusUpdate("Successfully saved capture...",ui->tableWidget_status,1);
+                addStatusUpdate("Successfully saved capture...",ui->tableWidget_status,1);
 
             }else{
-               addStatusUpdate("Error, could not save capture...",ui->tableWidget_status,-1);
+                addStatusUpdate("Error, could not save capture...",ui->tableWidget_status,-1);
             }
         }
 
@@ -1426,6 +1499,16 @@ void mainGUI::onSynchCaptureLengthSpinBoxChanged(int value)
     triggerFormatChanged(true);
 }
 
+void mainGUI::onIndependentCaptureMaxClassChanged(int value)
+{
+    ui->lasbw_class_indep_capture->setMaximum(value);
+}
+
+void mainGUI::onIndependentCaptureMaxSampleChanged(int value)
+{
+    ui->lasbw_indep_capture_sample->setMaximum(value);
+}
+
 void mainGUI::triggerFormatChanged(bool value)
 {
     if(value){
@@ -1479,19 +1562,23 @@ int mainGUI::readGUIConfigFile()
     try{
         std::ifstream iconf_file("gui.cfg");
         CFG::ReadFile(iconf_file,GUIConf.confEntriesVector,
-                        GUIConf.sdrConfConfigFilepath,
-                        GUIConf.sigConfSignalFilepath,
-                        GUIConf.sigConfNumberOfClasses,
-                        GUIConf.sigConfNumberOfElements,
-                        GUIConf.sigConfNumberOfRepetitions,
-                        GUIConf.sigConfCaptureOffset,
-                        GUIConf.sigConfCaptureLength,
-                        GUIConf.sigConfUseWindowSynchronization,
-                        GUIConf.sigConfCaptureSignalFilepath,
-                        GUIConf.sysConfAutoSwitch,
-                        GUIConf.sysConfAutoSave,
-                        GUIConf.sysConfSaveCapture,
-                        GUIConf.sysConfSingleClass);
+                      GUIConf.sdrConfConfigFilepath,
+                      GUIConf.sigConfSignalFilepath,
+                      GUIConf.sigConfNumberOfClasses,
+                      GUIConf.sigConfNumberOfElements,
+                      GUIConf.sigConfNumberOfRepetitions,
+                      GUIConf.sigConfCaptureOffset,
+                      GUIConf.sigConfCaptureLength,
+                      GUIConf.sigConfUseWindowSynchronization,
+                      GUIConf.sigConfIndependentCaptureMaxClasses,
+                      GUIConf.sigConfIndependentCaptureFilepath,
+                      GUIConf.sigConfIndependentCaptureLength,
+                      GUIConf.sigConfIndependentCaptureAutoIncrement,
+                      GUIConf.sigConfCaptureSignalFilepath,
+                      GUIConf.sysConfAutoSwitch,
+                      GUIConf.sysConfAutoSave,
+                      GUIConf.sysConfSaveCapture,
+                      GUIConf.sysConfSingleClass);
     }catch(...){
         response = -1;
     }
@@ -1507,19 +1594,23 @@ int mainGUI::writeGUIConfigFile()
     const std::string str_true = "true";
     const std::string str_false = "false";
     CFG::WriteFile(f_out,GUIConf.confEntriesVector,
-                  GUIConf.sdrConfConfigFilepath,
-                  GUIConf.sigConfSignalFilepath,
-                  GUIConf.sigConfNumberOfClasses,
-                  GUIConf.sigConfNumberOfElements,
-                  GUIConf.sigConfNumberOfRepetitions,
-                  GUIConf.sigConfCaptureOffset,
-                  GUIConf.sigConfCaptureLength,
-                  GUIConf.sigConfUseWindowSynchronization ? str_true : str_false,
-                  GUIConf.sigConfCaptureSignalFilepath,
-                  GUIConf.sysConfAutoSwitch ? str_true : str_false,
-                  GUIConf.sysConfAutoSave ? str_true : str_false,
-                  GUIConf.sysConfSaveCapture ? str_true : str_false,
-                  GUIConf.sysConfSingleClass ? str_true : str_false);
+                   GUIConf.sdrConfConfigFilepath,
+                   GUIConf.sigConfSignalFilepath,
+                   GUIConf.sigConfNumberOfClasses,
+                   GUIConf.sigConfNumberOfElements,
+                   GUIConf.sigConfNumberOfRepetitions,
+                   GUIConf.sigConfCaptureOffset,
+                   GUIConf.sigConfCaptureLength,
+                   GUIConf.sigConfUseWindowSynchronization ? str_true : str_false,
+                   GUIConf.sigConfIndependentCaptureMaxClasses,
+                   GUIConf.sigConfIndependentCaptureFilepath,
+                   GUIConf.sigConfIndependentCaptureLength,
+                   GUIConf.sigConfIndependentCaptureAutoIncrement ? str_true : str_false,
+                   GUIConf.sigConfCaptureSignalFilepath,
+                   GUIConf.sysConfAutoSwitch ? str_true : str_false,
+                   GUIConf.sysConfAutoSave ? str_true : str_false,
+                   GUIConf.sysConfSaveCapture ? str_true : str_false,
+                   GUIConf.sysConfSingleClass ? str_true : str_false);
     f_out.close();
 
     return 0;
@@ -1530,7 +1621,7 @@ void mainGUI::on_button_save_default_format_released()
 {
     int response = writeGUIConfigFile();
     if(response == 0){
-       // std::cout << "Success writing file!" << std::endl;
+        // std::cout << "Success writing file!" << std::endl;
         addStatusUpdate("Saved default settings",ui->tableWidget_status,1);
     }
 }

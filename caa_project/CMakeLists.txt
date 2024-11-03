@@ -72,6 +72,7 @@ add_executable(caa_project
     custom/sliderandlineedit.h custom/sliderandlineedit.cpp
     custom/labelandspinboxwidget.h custom/labelandspinboxwidget.cpp
     custom/labelandcheckboxwidget.h custom/labelandcheckboxwidget.cpp
+    custom/customfftwobject.h custom/customfftwobject.cpp
 
 )
 

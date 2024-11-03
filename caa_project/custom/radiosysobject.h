@@ -8,6 +8,7 @@
 #include <cmath>
 #include <armadillo>
 #include <fftw3.h>
+#include "customfftwobject.h"
 
 class RadioSysObject
 {
@@ -88,6 +89,7 @@ public:
     std::vector<std::complex<short>> getCapturedData(){ return captured_data;}
     std::vector<std::complex<short>> getExtractedSynchData(){return extracted_synch_data;}
 
+    std::vector<std::complex<short>> writeBufferEndToFile(std::string completeFilepath,int count);
     bool getAllCSVDataCaptured() {return allCSVDataCaptured;}
 
     int requestResetTransmitter();
@@ -171,6 +173,8 @@ private:
     bool stop_synchronization_signal_called = false;
 
     bool pendingSynchPointReset = false;
+
+    customFFTWObject cfft_o;
 
 };
 

@@ -13,6 +13,7 @@ LabelandSpinBoxWidget::LabelandSpinBoxWidget(QWidget *parent,
 
     label = new QLabel(this);
     setLabelText(labelText);
+    label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     mainSpinBox = new QSpinBox(this);
     setMaximum(maximumValue);
