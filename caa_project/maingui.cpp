@@ -1166,13 +1166,13 @@ void mainGUI::userChangedLOOffset(double value)
 void mainGUI::userChangedRxIPAddress(std::string value)
 {
     radObj->sysConf.setRxIPAddress(value);
-    ui->verticalLayout_12->addWidget(rxIPAddressField);
+    //ui->verticalLayout_12->addWidget(rxIPAddressField);
 }
 
 void mainGUI::userChangedTxIPAddress(std::string value)
 {
     radObj->sysConf.setTxIPAddress(value);
-    ui->verticalLayout_12->addWidget(txIPAddressField);
+    //ui->verticalLayout_12->addWidget(txIPAddressField);
 }
 
 
