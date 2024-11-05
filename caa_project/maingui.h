@@ -13,6 +13,8 @@
 #include <filesystem>
 #include <vector>
 
+#include "MatlabEngine.hpp"
+
 #include "uhd_clib.h"
 
 
@@ -33,10 +35,16 @@ struct GUIConfiguation{
     bool sigConfUseWindowSynchronization = false;
     std::string sigConfCaptureSignalFilepath = "";
 
+    bool sigConfUseSynchronization = false;
+
     int sigConfIndependentCaptureMaxClasses = 100;
     std::string sigConfIndependentCaptureFilepath = "data/independent_captures";
     int sigConfIndependentCaptureLength = 1e3;
     bool sigConfIndependentCaptureAutoIncrement = false;
+
+    bool sigConfUseMatlabScript = false;
+    std::string sigConfMatlabScript = "";
+    std::string sigConfMatlabEngineName = "";
 
     bool sysConfAutoSwitch      = false;
     bool sysConfAutoSave        = false;
@@ -45,12 +53,16 @@ struct GUIConfiguation{
 
     std::vector<std::string> confEntriesVector = {"sdr-conf-config-filepath",
                                                   "sig-conf-signal-filepath",
+                                                  "sig-conf-use-synchronization",
                                                   "sig-conf-number-of-classes",
                                                   "sig-conf-number-of-elements",
                                                   "sig-conf-number-of-repetitions",
                                                   "sig-conf-capture-offset",
                                                   "sig-conf-capture-length",
                                                   "sig-conf-use-window-synchronization",
+                                                  "sig-conf-use-matlab-script",
+                                                  "sig-conf-matlab-script",
+                                                  "sig-conf-matlab-engine-name",
                                                   "sig-conf-independent-capture-max-classes",
                                                   "sig-conf-independent-capture-filepath",
                                                   "sig-conf-independent-capture-length",
@@ -196,13 +208,26 @@ private slots:
     void onSynchCaptureOffsetSpinBoxChanged(int value);
     void onSynchCaptureLengthSpinBoxChanged(int value);
 
+    void onUseSynchronizationChanged(bool value);
+    void onUseCAAChanged(bool value);
+
     void onIndependentCaptureMaxClassChanged(int value);
     void onIndependentCaptureMaxSampleChanged(int value);
+
+    void onUseMatlabScript(bool value);
 
 
     void on_button_save_default_format_released();
 
+    void on_btn_run_script_released();
+
 private:
+
+    //std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;
+    //Engine *matEng;
+    std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;
+    bool matlabEngineStatus = 0; // 0 - Stopped, 1 - Running, 2 - Starting up
+
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
 
@@ -263,9 +288,15 @@ private:
     void hideLayout(QLayout* layout);
     void unhideLayout(QLayout* layout);
 
+    int runMATLABScript();
+
     void applyTxConfig();
     void applyRxConfig();
 
     void removeAllMCControlWidgets();
+
+    void runMATLABEngine();
+
+    std::u16string stringToU16String(const std::string& str);
 };
 #endif // MAINGUI_H

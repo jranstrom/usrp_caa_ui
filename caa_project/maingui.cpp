@@ -92,16 +92,52 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->lasbw_antenna_elements->requestSetValue(1,true);
     ui->lasbw_antenna_elements->setMinimum(1);
-    ui->lasbw_antenna_elements->setLabelText("Active Element:");
+    ui->lasbw_antenna_elements->setLabelText("Current CAA Element:");
 
     ui->lasbw_active_class->requestSetValue(1,true);
     ui->lasbw_active_class->setMinimum(1);
-    ui->lasbw_active_class->setLabelText("Active class (UE):");
+    ui->lasbw_active_class->setLabelText("Class (UE):");
 
     ui->lasbw_active_sample->requestSetValue(1,true);
     ui->lasbw_active_sample->setMinimum(1);
     ui->lasbw_active_sample->setMaximum(3000);
-    ui->lasbw_active_sample->setLabelText("Current sample:");
+    ui->lasbw_active_sample->setLabelText("Sample:");
+
+    ui->lacb_use_sync->setLabelText("Use synchronization");
+    connect(ui->lacb_use_sync,&LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onUseSynchronizationChanged);
+    ui->lacb_use_sync->setDataSource(&(GUIConf.sigConfUseSynchronization),false);
+
+    ui->lacb_use_caa->setLabelText("Use CAA");
+    connect(ui->lacb_use_caa,&LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onUseCAAChanged);
+    ui->lacb_use_caa->requestSetValue(false);
+
+    // --------------------------- MATLAB Script Section ---------------------------
+    ui->lafw_matlab_script_name->setLabelText("MATLAB script:");
+    ui->lafw_matlab_script_name->setEditable(true);
+    ui->lafw_matlab_script_name->setDataSource(&(GUIConf.sigConfMatlabScript));
+
+    ui->lafw_matlab_engine_name->setLabelText("Engine Name:");
+    ui->lafw_matlab_engine_name->setEditable(true);
+    ui->lafw_matlab_engine_name->setDataSource(&(GUIConf.sigConfMatlabEngineName));
+
+    ui->lacbw_use_matlab_script->setLabelText("Use MATLAB script");
+    ui->lacbw_use_matlab_script->requestSetValue(false);
+    connect(ui->lacbw_use_matlab_script,&LabelandCheckboxWidget::componentValueChanged,this,
+                    &mainGUI::onUseMatlabScript);
+
+    ui->lasbw_auto_capture_max_samples->setLabelText("Max Samples:");
+    ui->lasbw_auto_capture_max_samples->setMinimum(1);
+    ui->lasbw_auto_capture_max_samples->setMaximum(50000);
+
+
+    ui->lacbw_use_class->setLabelText("Pass 'class' to script");
+    ui->lacbw_use_class->requestSetValue(false);
+
+    //ui->lacbw_use_matlab_script->setDataSource(&(GUIConf.sigConfUseMatlabScript),false);
+
+    // ---------------------------
 
     //ui->lasbw_num_elements->requestSetValue(1,true);
     ui->lasbw_num_elements->setDataSource(&(GUIConf.sigConfNumberOfElements),true);
@@ -118,6 +154,7 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_synchCaptureOffset->setMaximum(500000);
     ui->lasbw_synchCaptureOffset->setDataSource(&(GUIConf.sigConfCaptureOffset),true);
     //ui->lasbw_synchCaptureOffset->requestSetValue(256);
+
 
     // ------------------- Independent Capture Controls -------------------
     ui->lasbw_class_indep_capture->setLabelText("Class");
@@ -307,6 +344,9 @@ void mainGUI::updateRxSetupStatus(bool status)
 
 mainGUI::~mainGUI()
 {
+    if(matlabEngineStatus == 1){
+       // int response = engClose(matEng);
+    }
     delete ui;
 }
 
@@ -503,6 +543,7 @@ void mainGUI::hideLayout(QLayout *layout)
             item->widget()->hide();
         }
     }
+
 }
 
 void mainGUI::unhideLayout(QLayout *layout)
@@ -514,6 +555,27 @@ void mainGUI::unhideLayout(QLayout *layout)
         }else if(item->widget()){
             item->widget()->show();
         }
+    }
+}
+
+int mainGUI::runMATLABScript()
+{
+    if(matlabEngineStatus == 1){
+        bool setClassParam = ui->lacbw_use_class->getValue();
+
+        if(setClassParam){
+            std::string class_command = "param_class = " + std::to_string(ui->lasbw_active_class->getValue()) + ";";
+            matlabPtr->eval(stringToU16String(class_command));
+        }
+
+        std::string script_name = ui->lafw_matlab_script_name->getFieldText();
+
+        matlabPtr->eval(stringToU16String(script_name));
+
+        addStatusUpdate("Succes running MATLAB script",ui->tableWidget_status,1);
+
+    }else{
+        addStatusUpdate("Error running MATLAB script...",ui->tableWidget_status,-1);
     }
 }
 
@@ -729,6 +791,30 @@ void mainGUI::removeAllMCControlWidgets()
     }
 
     mcControlWidgets.clear();
+}
+
+void mainGUI::runMATLABEngine()
+{    
+
+    // matlabEngineStatus = 2; // starting up
+
+    // matEng = engOpen("Engine_1");
+    // if(matEng == nullptr){
+    //     std::cout<< "Error starting/connection to Matlab engine..." << std::endl;
+    //     addStatusUpdate("Error starting/connection to Matlab engine...",ui->tableWidget_status,-1);
+    // }else{
+    //     matlabEngineStatus = 1; // running
+    //     addStatusUpdate("MATLAB engine running...",ui->tableWidget_status,1);
+    // }
+}
+
+std::u16string mainGUI::stringToU16String(const std::string &str)
+{
+    std::wstring_convert<std::codecvt_utf8<char32_t>,char32_t> convert32;
+
+    auto u32string = convert32.from_bytes(str);
+    std::u16string u16str(u32string.begin(),u32string.end());
+    return u16str;
 }
 
 void mainGUI::on_button_apply_config_released()
@@ -1213,7 +1299,7 @@ void mainGUI::on_button_capture_synch_released()
 
     if(radObj->requestCaptureSynchFrame(currentElement-1)){
 
-        ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
+        //ui->button_save_synch_capture->setEnabled(radObj->isCapturedFramesReadyToSave());
 
         int increment = 0;
         if(ui->lacb_auto_switch->getValue()){
@@ -1499,6 +1585,41 @@ void mainGUI::onSynchCaptureLengthSpinBoxChanged(int value)
     triggerFormatChanged(true);
 }
 
+void mainGUI::onUseSynchronizationChanged(bool value)
+{
+    // ui->lasbw_num_elements->setLabelText(value ? "Number of Elements:" : "Number of Samples:");
+    if(value){
+        //hideLayout(ui->vl_matlab_script);
+        ui->synch_container_auto_capture->show();
+        ui->synch_container_auto_capture_settings->show();
+    }else{
+       //unhideLayout(ui->vl_matlab_script);
+        ui->synch_container_auto_capture->hide();
+       ui->synch_container_auto_capture_settings->hide();
+    }
+}
+
+void mainGUI::onUseCAAChanged(bool value)
+{
+    if(value){
+        //hideLayout(ui->vl_matlab_script);
+        ui->matlab_script_container->hide();
+        ui->caa_auto_capture_settings_container->show();
+        ui->lasbw_auto_capture_max_samples->hide();
+        ui->lasbw_num_elements->show();
+        ui->caa_container_auto_capture->show();
+        ui->script_container_auto_capture->hide();
+    }else{
+        //unhideLayout(ui->vl_matlab_script);
+        ui->matlab_script_container->show();
+        ui->caa_auto_capture_settings_container->hide();
+        ui->lasbw_auto_capture_max_samples->show();
+        ui->lasbw_num_elements->hide();
+        ui->caa_container_auto_capture->hide();
+        ui->script_container_auto_capture->show();
+    }
+}
+
 void mainGUI::onIndependentCaptureMaxClassChanged(int value)
 {
     ui->lasbw_class_indep_capture->setMaximum(value);
@@ -1507,6 +1628,54 @@ void mainGUI::onIndependentCaptureMaxClassChanged(int value)
 void mainGUI::onIndependentCaptureMaxSampleChanged(int value)
 {
     ui->lasbw_indep_capture_sample->setMaximum(value);
+}
+
+void mainGUI::onUseMatlabScript(bool value)
+{
+    if(value){
+        // start matlab engine
+        addStatusUpdate("Connecting to MATLAB engine...",ui->tableWidget_status,0);
+        
+        std::vector<std::u16string> names = matlab::engine::findMATLAB();
+
+        std::vector<std::u16string>::iterator it;
+
+        std::string engineName_t = ui->lafw_matlab_engine_name->getFieldText();
+
+
+        it = std::find(names.begin(),names.end(),stringToU16String(engineName_t));
+        if(it != names.end()){
+            matlabPtr = matlab::engine::connectMATLAB(*it);
+        }
+
+        std::string response_c = "";
+
+        if(matlabPtr){
+            matlab::data::ArrayFactory factory;
+            matlab::data::CharArray arg = factory.createCharArray("-release");
+            matlab::data::CharArray version = matlabPtr->feval(u"version",arg);
+            std::cout << "Connected to: " << version.toAscii() << std::endl;
+
+            //matlabPtr->eval(u"adalm_pluto_tx");
+            response_c = "Connected to MATLAB engine '" + engineName_t + "'";
+            addStatusUpdate(QString::fromStdString(response_c),ui->tableWidget_status,1);
+            matlabEngineStatus = 1;
+
+        }else{
+            std::cout << engineName_t << " not found" << std::endl;
+            response_c = "MATLAB engine '" + engineName_t + "' not found";
+            matlabEngineStatus = 0;
+            addStatusUpdate(QString::fromStdString(response_c),ui->tableWidget_status,-1);
+        }
+
+    }else{
+        // stop matlab engine
+        //int response = engClose(matEng);
+        matlabEngineStatus = 0;
+        matlabPtr.reset(nullptr);
+
+        addStatusUpdate("Stopped MATLAB engine",ui->tableWidget_status,-1);
+    }
 }
 
 void mainGUI::triggerFormatChanged(bool value)
@@ -1557,23 +1726,28 @@ int mainGUI::validateAutomaticCapture()
 
 int mainGUI::readGUIConfigFile()
 {
-    int response = 0; // success;
+    int response = 0; // success;    //     std::string script_name = ui->lafw_matlab_script_name->getFieldText();
+    //     matlabPtr->eval(stringToU16String(script_name));
 
     try{
         std::ifstream iconf_file("gui.cfg");
         CFG::ReadFile(iconf_file,GUIConf.confEntriesVector,
                       GUIConf.sdrConfConfigFilepath,
                       GUIConf.sigConfSignalFilepath,
+GUIConf.sigConfUseSynchronization,
                       GUIConf.sigConfNumberOfClasses,
                       GUIConf.sigConfNumberOfElements,
                       GUIConf.sigConfNumberOfRepetitions,
                       GUIConf.sigConfCaptureOffset,
                       GUIConf.sigConfCaptureLength,
                       GUIConf.sigConfUseWindowSynchronization,
+GUIConf.sigConfUseMatlabScript,
+GUIConf.sigConfMatlabScript,
+GUIConf.sigConfMatlabEngineName,
                       GUIConf.sigConfIndependentCaptureMaxClasses,
                       GUIConf.sigConfIndependentCaptureFilepath,
                       GUIConf.sigConfIndependentCaptureLength,
-                      GUIConf.sigConfIndependentCaptureAutoIncrement,
+GUIConf.sigConfIndependentCaptureAutoIncrement,
                       GUIConf.sigConfCaptureSignalFilepath,
                       GUIConf.sysConfAutoSwitch,
                       GUIConf.sysConfAutoSave,
@@ -1596,12 +1770,17 @@ int mainGUI::writeGUIConfigFile()
     CFG::WriteFile(f_out,GUIConf.confEntriesVector,
                    GUIConf.sdrConfConfigFilepath,
                    GUIConf.sigConfSignalFilepath,
-                   GUIConf.sigConfNumberOfClasses,
+GUIConf.sigConfUseSynchronization ? str_true : str_false,
+                   GUIConf.sigConfNumberOfClasses,    //     std::string script_name = ui->lafw_matlab_script_name->getFieldText();
+                   //     matlabPtr->eval(stringToU16String(script_name));
                    GUIConf.sigConfNumberOfElements,
                    GUIConf.sigConfNumberOfRepetitions,
                    GUIConf.sigConfCaptureOffset,
                    GUIConf.sigConfCaptureLength,
                    GUIConf.sigConfUseWindowSynchronization ? str_true : str_false,
+GUIConf.sigConfUseMatlabScript ? str_true : str_false,
+GUIConf.sigConfMatlabScript,
+GUIConf.sigConfMatlabEngineName,
                    GUIConf.sigConfIndependentCaptureMaxClasses,
                    GUIConf.sigConfIndependentCaptureFilepath,
                    GUIConf.sigConfIndependentCaptureLength,
@@ -1624,5 +1803,15 @@ void mainGUI::on_button_save_default_format_released()
         // std::cout << "Success writing file!" << std::endl;
         addStatusUpdate("Saved default settings",ui->tableWidget_status,1);
     }
+}
+
+
+void mainGUI::on_btn_run_script_released()
+{
+    int response = runMATLABScript();
+    // if(matlabEngineStatus == 1){
+    //     std::string script_name = ui->lafw_matlab_script_name->getFieldText();
+    //     matlabPtr->eval(stringToU16String(script_name));
+    // }
 }
 

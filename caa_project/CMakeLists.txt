@@ -9,11 +9,19 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+
+set(MATLAB_ROOT "/usr/local/MATLAB/R2024b")
+
 # Used :: UHD_4.4.0.0-124-g8a670958
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets PrintSupport)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
 find_package(UHD 4.4.0 REQUIRED)
 find_package(Armadillo REQUIRED)
+
+find_package(CURL REQUIRED)
+
+find_package(Threads)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(FFTW REQUIRED fftw3 IMPORTED_TARGET)
@@ -44,6 +52,7 @@ include_directories(
     "/usr/local/include"
     "third-party"
     "custom"
+    "/usr/local/MATLAB/R2024b/extern/include"
 )
 
 set(serial_SRCS third-party/serial.cc third-party/serial/serial.h
@@ -73,7 +82,6 @@ add_executable(caa_project
     custom/labelandspinboxwidget.h custom/labelandspinboxwidget.cpp
     custom/labelandcheckboxwidget.h custom/labelandcheckboxwidget.cpp
     custom/customfftwobject.h custom/customfftwobject.cpp
-
 )
 
 set(QT_LIB Qt6::PrintSupport)
@@ -84,6 +92,12 @@ target_link_libraries(caa_project
     "/usr/lib/x86_64-linux-gnu/libmatio.so"
     ${UHD_LIBRARIES}
     ${Boost_LIBRARIES}
+    ${CURL_LIBRARIES}
+    "/usr/local/MATLAB/R2024b/bin/glnxa64/libmx.so"
+    "/usr/local/MATLAB/R2024b/bin/glnxa64/libeng.so"
+    "/usr/local/MATLAB/R2024b/extern/bin/glnxa64/libMatlabEngine.so"
+    "/usr/local/MATLAB/R2024b/extern/bin/glnxa64/libMatlabDataArray.so"
+    ${CMAKE_THREAD_LIBS_INIT}
     "serial"
     ${ARMADILLO_LIBRARIES}
     PkgConfig::FFTW)
