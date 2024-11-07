@@ -1,0 +1,4 @@
+# To share MATLAB engine use the following command in the MATLAB command window:
+matlab.engine.shareEngine('Engine_1'); % share engine using the specific name
+matlab.engine.engineName % confirm engine name
+matlab.engine.isEngineShared % confirm engine is shared
