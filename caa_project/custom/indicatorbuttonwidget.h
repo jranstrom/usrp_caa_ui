@@ -15,7 +15,7 @@ public:
 
     void InitializeIndicatorButtonWidget(int initalState,int id,QWidget * parent);
 
-    void setState(int state);
+    void setState(int state); // 0 - gray (disabled); 1 - red; 2 - green; 3 - yellow
     int getState() {return currentState;}
     std::string getStateName();
 

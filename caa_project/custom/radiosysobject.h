@@ -59,6 +59,7 @@ public:
 
     void requestWriteBufferToFile(std::string completeFilepath,int count=-1);
     bool requestCaptureSynchFrame(int captureIndex=0);
+    bool requestCaptureFrame(int captureIndex=0);
     bool isWritingBufferToFile() {return writingBufferInProgress;}
 
 

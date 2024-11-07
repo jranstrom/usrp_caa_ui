@@ -33,9 +33,15 @@ public:
     int requestSetValue(int value, bool silent=false);
     void setDataSource(int * si, bool silent=false);
 
+    void saveCurrentValue();
+
+    void setEnabled(bool enabled);
+
     int getValue() { return currentValue;}
     int getMaximum() { return maximum; }
     int getMinimum() { return minimum; }
+
+    bool isSaved();
 
 
 signals:
@@ -49,10 +55,12 @@ private:
     QHBoxLayout * main_layout;
     QSpinBox * mainSpinBox;
 
+    int savedValue;
     int currentValue;
     int maximum;
     int minimum;
     int increment;
+    bool saved = false;
 
     int * dataSource;
     bool updateDataSource = false;

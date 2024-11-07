@@ -27,6 +27,9 @@ public:
 
     void setDataSource(std::string * ss);
 
+    void saveCurrentValue();
+    bool isSaved();
+
     std::string getFieldText();
 
 signals:
@@ -48,7 +51,9 @@ private :
     QHBoxLayout * main_layout;
     QLineEdit * lineEdit;
 
+    std::string savedValue = "";
     std::string fieldText = "";
+    bool saved = false;
 
     bool isEditable = false;
     bool isEditing = false;

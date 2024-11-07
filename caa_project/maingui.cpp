@@ -75,7 +75,7 @@ mainGUI::mainGUI(QWidget *parent)
     connect(&tcom,&Tcom_ui::availableDevicesChanged,this,&mainGUI::updateAvailableDevices);
     connect(&tcom,&Tcom_ui::connectionChanged,this,&mainGUI::updateConnection);
 
-    SetWidgetColor(ui->indicator_captured_buffer,16146769);
+    //SetWidgetColor(ui->indicator_captured_buffer,16146769);
     ui->indicator_synchronization->setState(1);
 
     ui->indicator_synchronization->setState(1);
@@ -87,6 +87,9 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lafw_synch_capture->setLabelText("Capture filepath:");   
     ui->lafw_synch_capture->setDataSource(&(GUIConf.sigConfCaptureSignalFilepath));
     ui->lafw_synch_capture->setEditable(true);
+    connect(ui->lafw_synch_capture,
+            &LabelandFieldWidget::fieldTextEditing,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->indicator_format->setState(1);
 
@@ -107,33 +110,71 @@ mainGUI::mainGUI(QWidget *parent)
     connect(ui->lacb_use_sync,&LabelandCheckboxWidget::componentValueChanged,this,
             &mainGUI::onUseSynchronizationChanged);
     ui->lacb_use_sync->setDataSource(&(GUIConf.sigConfUseSynchronization),false);
+    connect(ui->lacb_use_sync,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lacb_use_caa->setLabelText("Use CAA");
     connect(ui->lacb_use_caa,&LabelandCheckboxWidget::componentValueChanged,this,
-            &mainGUI::onUseCAAChanged);
-    ui->lacb_use_caa->requestSetValue(false);
+            &mainGUI::onUseCAAChanged);   
+    connect(ui->lacb_use_caa,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
+     ui->lacb_use_caa->requestSetValue(true);
+     ui->lacb_use_caa->requestSetValue(false); // toggle
+     ui->lacb_use_caa->setDataSource(&(GUIConf.autoCaptureUseCAA));
 
     // --------------------------- MATLAB Script Section ---------------------------
     ui->lafw_matlab_script_name->setLabelText("MATLAB script:");
     ui->lafw_matlab_script_name->setEditable(true);
     ui->lafw_matlab_script_name->setDataSource(&(GUIConf.sigConfMatlabScript));
+    connect(ui->lafw_matlab_script_name,
+            &LabelandFieldWidget::fieldTextEditing,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lafw_matlab_engine_name->setLabelText("Engine Name:");
     ui->lafw_matlab_engine_name->setEditable(true);
     ui->lafw_matlab_engine_name->setDataSource(&(GUIConf.sigConfMatlabEngineName));
+    connect(ui->lafw_matlab_engine_name,
+            &LabelandFieldWidget::fieldTextEditing,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lacbw_use_matlab_script->setLabelText("Use MATLAB script");
     ui->lacbw_use_matlab_script->requestSetValue(false);
+    ui->lacbw_use_matlab_script->setEnabled(false);
+    ui->lacbw_use_matlab_script->setToolTip("MATLAB engine must be connected");
+    ui->script_container_auto_capture->hide();
     connect(ui->lacbw_use_matlab_script,&LabelandCheckboxWidget::componentValueChanged,this,
                     &mainGUI::onUseMatlabScript);
+    connect(ui->lacbw_use_matlab_script,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lasbw_auto_capture_max_samples->setLabelText("Max Samples:");
     ui->lasbw_auto_capture_max_samples->setMinimum(1);
     ui->lasbw_auto_capture_max_samples->setMaximum(50000);
+    ui->lasbw_auto_capture_max_samples->setDataSource(&(GUIConf.autoCaptureScriptMaxSamples));
+    connect(ui->lasbw_auto_capture_max_samples,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
+
+    ui->ibtn_connect_matlab_engine->setState(1);
 
     ui->lacbw_use_class->setLabelText("Pass 'class' to script");
     ui->lacbw_use_class->requestSetValue(false);
+    ui->lacbw_use_class->setDataSource(&(GUIConf.autoCaptureScriptPassClass));
+    connect(ui->lacbw_use_class,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
+
+    ui->lasbw_script_delay->setLabelText("Capture Delay (ms)");
+    ui->lasbw_script_delay->setMinimum(0);
+    ui->lasbw_script_delay->setMaximum(10000);
+    ui->lasbw_script_delay->setDataSource(&(GUIConf.autoCaptureScriptDelay));
+    connect(ui->lasbw_script_delay,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     //ui->lacbw_use_matlab_script->setDataSource(&(GUIConf.sigConfUseMatlabScript),false);
 
@@ -143,25 +184,35 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_num_elements->setDataSource(&(GUIConf.sigConfNumberOfElements),true);
     ui->lasbw_num_elements->setMinimum(1);
     ui->lasbw_num_elements->setLabelText("Number of Elements:");
+    connect(ui->lasbw_num_elements,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     //ui->lasbw_num_classes->requestSetValue(1,true);
     //ui->lasbw_num_classes->requestSetValue(4,true);
     ui->lasbw_num_classes->setDataSource(&(GUIConf.sigConfNumberOfClasses),true);
     ui->lasbw_num_classes->setMinimum(1);
     ui->lasbw_num_classes->setLabelText("Number of Classes:");
+    connect(ui->lasbw_num_classes,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lasbw_synchCaptureOffset->setLabelText("Capture Offset:");
     ui->lasbw_synchCaptureOffset->setMaximum(500000);
     ui->lasbw_synchCaptureOffset->setDataSource(&(GUIConf.sigConfCaptureOffset),true);
+    connect(ui->lasbw_synchCaptureOffset,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
+
     //ui->lasbw_synchCaptureOffset->requestSetValue(256);
 
 
     // ------------------- Independent Capture Controls -------------------
-    ui->lasbw_class_indep_capture->setLabelText("Class");
+    ui->lasbw_class_indep_capture->setLabelText("Current Class");
     ui->lasbw_class_indep_capture->setMinimum(1);
     ui->lasbw_class_indep_capture->requestSetValue(1);
 
-    ui->lasbw_indep_capture_sample->setLabelText("Sample");
+    ui->lasbw_indep_capture_sample->setLabelText("Current Sample");
     ui->lasbw_indep_capture_sample->setMinimum(1);
     ui->lasbw_indep_capture_sample->requestSetValue(1);
 
@@ -176,6 +227,7 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lasbw_indep_cap_smpl_max->setLabelText("Max sample");
     ui->lasbw_indep_cap_smpl_max->setMinimum(1);
     ui->lasbw_indep_cap_smpl_max->setMaximum(50000);
+    ui->lasbw_indep_cap_smpl_max->setDataSource(&(GUIConf.independentCaptureMaxSamples));
     connect(ui->lasbw_indep_cap_smpl_max,
             &LabelandSpinBoxWidget::componentValueChanged,this,
             &mainGUI::onIndependentCaptureMaxSampleChanged);
@@ -187,22 +239,28 @@ mainGUI::mainGUI(QWidget *parent)
     ui->lafw_indep_cap_filepath->setEditable(true);
     ui->lafw_indep_cap_filepath->setDataSource(&(GUIConf.sigConfIndependentCaptureFilepath));
 
-    // ---------------------------------------------------------
-
     ui->lasbw_indep_capture_length->setLabelText("Capture length");
     ui->lasbw_indep_capture_length->setMinimum(1);
     ui->lasbw_indep_capture_length->setMaximum(1e6);
     ui->lasbw_indep_capture_length->setDataSource(&(GUIConf.sigConfIndependentCaptureLength));
 
+// ---------------------------------------------------------
+
     ui->lasbw_synchCaptureLength->setLabelText("Capture Length:");
     ui->lasbw_synchCaptureLength->setMaximum(500000);
     ui->lasbw_synchCaptureLength->setDataSource(&(GUIConf.sigConfCaptureLength),true);
+    connect(ui->lasbw_synchCaptureLength,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
 
     ui->lasbw_num_repetitions->setLabelText("Repetitions:");
     ui->lasbw_num_repetitions->setMaximum(100);
     ui->lasbw_num_repetitions->setMinimum(1);
     ui->lasbw_num_repetitions->setDataSource(&(GUIConf.sigConfNumberOfRepetitions),true);
+    connect(ui->lasbw_num_repetitions,
+            &LabelandSpinBoxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lasbw_repetition->setLabelText("Repetition:");
     ui->lasbw_repetition->setMaximum(ui->lasbw_num_repetitions->getValue());
@@ -210,21 +268,33 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->lacb_use_wndw_sync->setLabelText("Use window synch.");
     ui->lacb_use_wndw_sync->setDataSource(&(GUIConf.sigConfUseWindowSynchronization),true);
+    connect(ui->lacb_use_wndw_sync,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lacb_single_class->setLabelText("Single class");
     ui->lacb_single_class->setDataSource(&(GUIConf.sysConfSingleClass),true);
+    connect(ui->lacb_single_class,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lacb_auto_switch->setLabelText("Auto Switch");
     ui->lacb_auto_switch->setDataSource(&(GUIConf.sysConfAutoSwitch),true);
+    connect(ui->lacb_auto_switch,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lacb_save_capture->setLabelText("Save Capture");
     ui->lacb_save_capture->setDataSource(&(GUIConf.sysConfSaveCapture),true);
+    connect(ui->lacb_save_capture,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
     ui->lacb_auto_save->setLabelText("Auto Save");
     ui->lacb_auto_save->setDataSource(&(GUIConf.sysConfAutoSave),true);
-
-
-
+    connect(ui->lacb_auto_save,
+            &LabelandCheckboxWidget::componentValueChanged,this,
+            &mainGUI::onAutoCaptureSettingsChanged);
 
 
     connect(ui->lasbw_antenna_elements,
@@ -266,7 +336,11 @@ mainGUI::mainGUI(QWidget *parent)
     processingTimer.setSingleShot(false);
     processingTimer.start();
 
+    autoCaptureTimer.setInterval(600);
+    autoCaptureTimer.setSingleShot(false);
+    autoCaptureTimer.start();
 
+    ui->groupBox_7->adjustSize();
     //uio.ForceUpdateAll();
 
 }
@@ -309,7 +383,7 @@ void mainGUI::updateReceiveStatus(bool status)
         ui->pushButton_2->setEnabled(true); // enable synch start
         addStatusUpdate("Reception Initialized",ui->tableWidget_status);
         SetWidgetColor(ui->indicator_rx_in_progress,9433252);
-        SetWidgetColor(ui->indicator_captured_buffer,16146769); // last capture does not correspond to current
+        //SetWidgetColor(ui->indicator_captured_buffer,16146769); // last capture does not correspond to current
         receptionStartTime = QDateTime::currentDateTime();
         ui->button_write_buffer_to_file->setEnabled(true);
         connect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackReceptionProcess);
@@ -558,13 +632,79 @@ void mainGUI::unhideLayout(QLayout *layout)
     }
 }
 
+void mainGUI::setEnabledAll(QObject* parent, bool enabled) {
+    // If the parent is a QWidget
+    if (QWidget* widget = qobject_cast<QWidget*>(parent)) {
+
+        if (qobject_cast<LabelandCheckboxWidget*>(widget)) {
+            LabelandCheckboxWidget * t_object = qobject_cast<LabelandCheckboxWidget*>(widget);
+            t_object->setEnabled(enabled);
+            return;
+        }else if(qobject_cast<LabelandSpinBoxWidget*>(widget)){
+            LabelandSpinBoxWidget * t_object = qobject_cast<LabelandSpinBoxWidget*>(widget);
+            t_object->setEnabled(enabled);
+            return;
+        }else if(qobject_cast<LabelandFieldWidget*>(widget)){
+            LabelandFieldWidget * t_object = qobject_cast<LabelandFieldWidget*>(widget);
+            t_object->setEnabled(enabled);
+            return;
+        }
+
+        // Set the widget's enabled state (unless it's a button)
+        widget->setEnabled(enabled);
+
+        // Recursively disable/enable all children
+        for (QObject* child : widget->children()) {
+            if (QWidget* childWidget = qobject_cast<QWidget*>(child)) {
+                setEnabledAll(childWidget, enabled);  // Recursively handle child widget
+            }
+        }
+    }
+    // If the parent is a QLayout
+    else if (QLayout* layout = qobject_cast<QLayout*>(parent)) {
+        // Iterate through the layout items and set the enabled state for any widgets
+        for (int i = 0; i < layout->count(); ++i) {
+            QLayoutItem* item = layout->itemAt(i);
+            if (QWidget* childWidget = item->widget()) {
+                // Special check for QPushButton (or subclass of QAbstractButton)
+                if (qobject_cast<LabelandCheckboxWidget*>(widget)) {
+                    LabelandCheckboxWidget * t_object = qobject_cast<LabelandCheckboxWidget*>(widget);
+                    t_object->setEnabled(enabled);
+                    continue;
+                }else if(qobject_cast<LabelandSpinBoxWidget*>(widget)){
+                    LabelandSpinBoxWidget * t_object = qobject_cast<LabelandSpinBoxWidget*>(widget);
+                    t_object->setEnabled(enabled);
+                    continue;
+                }else if(qobject_cast<LabelandFieldWidget*>(widget)){
+                    LabelandFieldWidget * t_object = qobject_cast<LabelandFieldWidget*>(widget);
+                    t_object->setEnabled(enabled);
+                    continue;
+                }
+
+                // Set the enabled state for the widget
+                childWidget->setEnabled(enabled);
+
+                // Recursively check for nested layouts in child widgets
+                setEnabledAll(childWidget, enabled);  // Recursively handle nested layouts/widgets
+            } else if (QLayout* nestedLayout = item->layout()) {
+                // Recursively handle nested layouts
+                setEnabledAll(nestedLayout, enabled);
+            }
+        }
+    }
+    else {
+        qWarning() << "The provided object is neither a QWidget nor a QLayout.";
+    }
+}
+
 int mainGUI::runMATLABScript()
 {
     if(matlabEngineStatus == 1){
         bool setClassParam = ui->lacbw_use_class->getValue();
 
+        std::string class_command = "";
         if(setClassParam){
-            std::string class_command = "param_class = " + std::to_string(ui->lasbw_active_class->getValue()) + ";";
+            class_command = "param_class = " + std::to_string(ui->lasbw_active_class->getValue()) + ";";
             matlabPtr->eval(stringToU16String(class_command));
         }
 
@@ -572,10 +712,17 @@ int mainGUI::runMATLABScript()
 
         matlabPtr->eval(stringToU16String(script_name));
 
-        addStatusUpdate("Succes running MATLAB script",ui->tableWidget_status,1);
+        QString statusStr = QString::fromStdString("Success, script: " + script_name);
+        if(setClassParam){
+            statusStr = QString::fromStdString("Success, script: " + script_name + "; " + class_command);
+        }
 
+        addStatusUpdate(statusStr,ui->tableWidget_status,1);
+
+        return 0;
     }else{
         addStatusUpdate("Error running MATLAB script...",ui->tableWidget_status,-1);
+        return -1;
     }
 }
 
@@ -644,7 +791,7 @@ void mainGUI::trackCaptureBufferProcess()
         disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::trackCaptureBufferProcess);
         addStatusUpdate("Success writing buffer to file",ui->tableWidget_status,1);
         ui->button_receive->setEnabled(true);
-        SetWidgetColor(ui->indicator_captured_buffer,9433252);
+        //SetWidgetColor(ui->indicator_captured_buffer,9433252);
 
         std::vector<std::complex<short>> vc_data = radObj->getCapturedData();
 
@@ -876,8 +1023,16 @@ void mainGUI::processing_automatic_capture()
     // Reception is running
     // Synchronization is running
 
+    bool useCAA = ui->lacb_use_caa->getValue();
+    bool useSynchronization = ui->lacb_use_sync->getValue();
+    bool useScript = ui->lacbw_use_matlab_script->getValue();
 
     int validation_response = validateAutomaticCapture();
+
+    if(validation_response == 1 && useScript == true && useCAA == false && useSynchronization == false){
+        processAutomaticCaptureScriptWOSynch();
+    }
+
     if(validation_response == 1){
         if(!radObj->hasPendingSynchPointReset()){
 
@@ -976,6 +1131,127 @@ void mainGUI::processing_automatic_capture()
         disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
         automaticCaptureRunning = false;
     }
+}
+
+void mainGUI::processAutomaticCaptureCaaWSynch()
+{
+    int currentElement = ui->lasbw_antenna_elements->getValue();
+    int currentClass = ui->lasbw_active_class->getValue();
+    int currentSample = ui->lasbw_active_sample->getValue();
+    int currentRepetition = ui->lasbw_repetition->getValue();
+
+    bool useRepetition = (ui->lasbw_num_repetitions->getValue() > 1);
+
+    bool finished = false;
+    bool plotCapture = true;
+
+    if(radObj->requestCaptureSynchFrame(currentElement-1)){
+        if(radObj->isCapturedFramesReadyToSave()){
+            // Capture is ready (all elements ahve been looped through)
+            SaveSynchCaptures();
+            plotPhaseComparison(ui->cb_time_plot->isChecked(),ui->cb_relative_plot->isChecked());
+            radObj->resetCurrentFramesCaptured();
+        }
+
+        // Increment Element (should always be performed)
+        ui->lasbw_antenna_elements->requestSetValue(currentElement+1);
+        currentElement = ui->lasbw_antenna_elements->getValue();
+
+        // Was the prev. the last element?
+        if(currentElement == 1){
+
+            ui->lasbw_repetition->requestSetValue(currentRepetition+1);
+            currentRepetition = ui->lasbw_repetition->getValue();
+
+            // Was the prev. the last repetition?
+            if(currentRepetition == 1){
+
+                if(ui->lacb_single_class->getValue() == true){
+                    finished = true;
+                }else{
+                    ui->lasbw_active_class->requestSetValue(currentClass+1);
+                    currentClass = ui->lasbw_active_class->getValue();
+
+                    // Was the prev. the last class?
+                    if(currentClass == 1){
+                        ui->lasbw_active_sample->requestSetValue(currentSample+1);
+                        currentSample = ui->lasbw_active_sample->getValue();
+
+                        finished = true;
+                    }
+                }
+            }
+
+        }
+
+        if(plotCapture){
+            std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
+            plot_time_and_freq(vc_data);
+        }
+
+    }
+
+    if(finished == true){
+        disconnect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureCaaWSynch);
+        automaticCaptureStatus = 0;
+        ui->indicator_auto_capture->setState(1);
+    }
+}
+
+void mainGUI::processAutomaticCaptureScriptWOSynch()
+{
+    int currentSample = ui->lasbw_active_sample->getValue();
+    int currentClass = ui->lasbw_active_class->getValue();
+    int maxSample = ui->lasbw_active_sample->getMaximum();
+
+    bool finished = false;
+
+    bool plot_capture = true;
+
+    bool isSingleClass = ui->lacb_single_class->getValue();
+
+    if(radObj->requestCaptureFrame()){
+        if(radObj->isCapturedFramesReadyToSave()){
+            // Capture has been made for current settings
+            SaveSynchCaptures();
+            radObj->resetCurrentFramesCaptured();
+
+            ui->lasbw_active_sample->requestSetValue(currentSample+1);
+
+            currentSample = ui->lasbw_active_sample->getValue();
+
+            if(currentSample == 1){
+                // Processed all samples
+                if(isSingleClass == true){
+                    finished = true;
+                }else{
+                    ui->lasbw_active_class->requestSetValue(currentClass+1);
+                    currentClass = ui->lasbw_active_class->getValue();
+                    if(currentClass == 1){
+                        finished = true;
+                    }
+                }
+            }
+
+            if(finished == true){
+                disconnect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureScriptWOSynch);
+                automaticCaptureStatus = 0;
+                ui->indicator_auto_capture->setState(1);
+            }else{
+                runMATLABScript();
+            }
+
+            if(plot_capture){
+                std::vector<std::complex<short>> vc_data = radObj->getExtractedSynchData();
+                plot_time_and_freq(vc_data);
+            }
+
+        }
+
+    }
+
+
+
 }
 
 // CONTROL SECTION
@@ -1354,16 +1630,55 @@ void mainGUI::on_button_capture_synch_released()
 
 void mainGUI::on_button_set_synch_format_released()
 {
+    bool useCAA = ui->lacb_use_caa->getValue();
+    int numElements = 1;
+    if(useCAA){
+        numElements = ui->lasbw_num_elements->getValue();
+        ui->lasbw_active_sample->setMaximum(5000);
+    }else{
+        ui->lasbw_active_sample->setMaximum(ui->lasbw_auto_capture_max_samples->getValue());
+    }
+
+    ui->lasbw_active_class->setMaximum(ui->lasbw_num_classes->getValue());
     int response = radObj->requestFrameCaptureFormat(ui->lasbw_synchCaptureOffset->getValue(),
                                                      ui->lasbw_synchCaptureLength->getValue(),
-                                                     ui->lasbw_num_elements->getValue(),
+                                                     numElements,
                                                      ui->lafw_synch_capture->getFieldText(),
                                                      ui->lacb_use_wndw_sync->getValue());
+
+    //ui->group_auto_capture->setEnabled(true);
+    setEnabledAll(ui->group_auto_capture,true);
+    ui->indicator_format->setState(2);
+
+    // Save all
+    ui->lafw_signal_config->saveCurrentValue();
+    ui->lafw_synch_capture->saveCurrentValue();
+    ui->lacb_use_sync->saveCurrentValue();
+    ui->lacb_use_caa->saveCurrentValue();
+    ui->lafw_matlab_script_name->saveCurrentValue();
+    ui->lafw_matlab_engine_name->saveCurrentValue();
+    ui->lacbw_use_matlab_script->saveCurrentValue();
+    ui->lasbw_auto_capture_max_samples->saveCurrentValue();
+    ui->lacbw_use_class->saveCurrentValue();
+    ui->lasbw_script_delay->saveCurrentValue();
+    ui->lasbw_num_elements->saveCurrentValue();
+    ui->lasbw_num_classes->saveCurrentValue();
+    ui->lasbw_synchCaptureOffset->saveCurrentValue();
+    ui->lasbw_synchCaptureLength->saveCurrentValue();
+    ui->lasbw_num_repetitions->saveCurrentValue();
+    ui->lacb_use_wndw_sync->saveCurrentValue();
+    ui->lacb_single_class->saveCurrentValue();
+    ui->lacb_auto_switch->saveCurrentValue();
+    ui->lacb_save_capture->saveCurrentValue();
+    ui->lacb_auto_save->saveCurrentValue();
+
     if(response == 1){
         addStatusUpdate("Frame format updated...",ui->tableWidget_status);
 
-        ui->lasbw_antenna_elements->setMaximum(ui->lasbw_num_elements->getValue());
-        ui->lasbw_active_class->setMaximum(ui->lasbw_num_classes->getValue());
+        if(useCAA){
+            ui->lasbw_antenna_elements->setMaximum(ui->lasbw_num_elements->getValue());
+            ui->lasbw_active_class->setMaximum(ui->lasbw_num_classes->getValue());
+        }
 
         ui->lasbw_repetition->setMaximum(ui->lasbw_num_repetitions->getValue());
         ui->lasbw_repetition->requestSetValue(1);
@@ -1522,18 +1837,74 @@ void mainGUI::on_button_reset_tx_released()
 void mainGUI::on_button_auto_capture_released()
 {
     // run auto capture
-    if(!automaticCaptureRunning){
+    if(automaticCaptureStatus == 0){
+
+        bool useCAA = ui->lacb_use_caa->getValue();
+        bool useSynchronization = ui->lacb_use_sync->getValue();
+        bool useScript = ui->lacbw_use_matlab_script->getValue();
+
+        int validation_response = validateAutomaticCapture();
+
+        if(validation_response == 1 && useScript == true && useCAA == false && useSynchronization == false){
+            int delay = ui->lasbw_script_delay->getValue();
+            autoCaptureTimer.setInterval(delay);
+            automaticCaptureStatus = 1;
+            runMATLABScript();
+            connect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureScriptWOSynch);
+        }else if(validation_response == 1 && useCAA == true && useSynchronization == true){
+            autoCaptureTimer.setInterval(600);
+            automaticCaptureStatus = 2;
+            connect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureCaaWSynch);
+        }else{
+            std::string error_response = "";
+            switch(validation_response){
+            case -1:
+                error_response = "Transmission not running";
+                break;
+            case -2:
+                error_response = "Reception not running";
+                break;
+            case -3:
+                error_response = "Synchroniztaion not running";
+                break;
+            case -4:
+                error_response = "Use script not enabled";
+                break;
+
+            }
+
+            addStatusUpdate(QString::fromStdString("Automatic capture not started: '" + error_response + "'"),ui->tableWidget_status,-1);
+        }
+
+        if(automaticCaptureStatus != 0){
+            ui->indicator_auto_capture->setState(2);
+        }
+
         // > Validate that process should run
         // Format is set up
         // Auto switch is on
-        automaticCaptureRunning = true;
-        ui->indicator_auto_capture->setState(3);
-        connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+        // automaticCaptureRunning = true;
+        // ui->indicator_auto_capture->setState(3);
+        // connect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
     }else{
         automaticCaptureRunning = false;
         addStatusUpdate("Automatic Capture terminated...",ui->tableWidget_status,-1);
+
+
+        switch (automaticCaptureStatus) {
+        case 1:
+            disconnect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureScriptWOSynch);
+            break;
+        case 2:
+            disconnect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureCaaWSynch);
+        default:
+            break;
+        }
+
+        automaticCaptureStatus = 0;
         ui->indicator_auto_capture->setState(1);
-        disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
+
+        //disconnect(&processingTimer, &QTimer::timeout, this, &mainGUI::processing_automatic_capture);
     }
 }
 
@@ -1607,8 +1978,7 @@ void mainGUI::onUseCAAChanged(bool value)
         ui->caa_auto_capture_settings_container->show();
         ui->lasbw_auto_capture_max_samples->hide();
         ui->lasbw_num_elements->show();
-        ui->caa_container_auto_capture->show();
-        ui->script_container_auto_capture->hide();
+        ui->caa_container_auto_capture->show();       
     }else{
         //unhideLayout(ui->vl_matlab_script);
         ui->matlab_script_container->show();
@@ -1616,7 +1986,6 @@ void mainGUI::onUseCAAChanged(bool value)
         ui->lasbw_auto_capture_max_samples->show();
         ui->lasbw_num_elements->hide();
         ui->caa_container_auto_capture->hide();
-        ui->script_container_auto_capture->show();
     }
 }
 
@@ -1630,51 +1999,46 @@ void mainGUI::onIndependentCaptureMaxSampleChanged(int value)
     ui->lasbw_indep_capture_sample->setMaximum(value);
 }
 
+void mainGUI::onAutoCaptureSettingsChanged()
+{
+    QObject *senderObj = sender();
+    //std::cout << (senderObj->objectName()).toStdString() << std::endl;
+    std::string senderClass = (senderObj->metaObject()->className());
+
+    bool newConfig = false;
+    if(senderClass == "LabelandCheckboxWidget"){
+        LabelandCheckboxWidget * cObject = qobject_cast<LabelandCheckboxWidget *>(senderObj);
+        newConfig = !(cObject->isSaved());
+    }else if(senderClass == "LabelandSpinBoxWidget"){
+        LabelandSpinBoxWidget * cObject = qobject_cast<LabelandSpinBoxWidget *>(senderObj);
+        newConfig = !(cObject->isSaved());
+    }else if(senderClass == "LabelandFieldWidget"){
+        LabelandFieldWidget * cObject = qobject_cast<LabelandFieldWidget *>(senderObj);
+        newConfig = !(cObject->isSaved());
+    }
+
+    if(newConfig == true){
+        setEnabledAll(ui->group_auto_capture,false);
+        //ui->group_auto_capture->setEnabled(false);
+        ui->indicator_format->setState(1);
+    }else{
+        setEnabledAll(ui->group_auto_capture,true);
+        //ui->group_auto_capture->setEnabled(true);
+        ui->indicator_format->setState(2);
+    }
+}
+
 void mainGUI::onUseMatlabScript(bool value)
 {
     if(value){
-        // start matlab engine
-        addStatusUpdate("Connecting to MATLAB engine...",ui->tableWidget_status,0);
-        
-        std::vector<std::u16string> names = matlab::engine::findMATLAB();
-
-        std::vector<std::u16string>::iterator it;
-
-        std::string engineName_t = ui->lafw_matlab_engine_name->getFieldText();
-
-
-        it = std::find(names.begin(),names.end(),stringToU16String(engineName_t));
-        if(it != names.end()){
-            matlabPtr = matlab::engine::connectMATLAB(*it);
-        }
-
-        std::string response_c = "";
-
-        if(matlabPtr){
-            matlab::data::ArrayFactory factory;
-            matlab::data::CharArray arg = factory.createCharArray("-release");
-            matlab::data::CharArray version = matlabPtr->feval(u"version",arg);
-            std::cout << "Connected to: " << version.toAscii() << std::endl;
-
-            //matlabPtr->eval(u"adalm_pluto_tx");
-            response_c = "Connected to MATLAB engine '" + engineName_t + "'";
-            addStatusUpdate(QString::fromStdString(response_c),ui->tableWidget_status,1);
-            matlabEngineStatus = 1;
-
+        if(matlabEngineStatus == 1){
+             ui->script_container_auto_capture->show();
         }else{
-            std::cout << engineName_t << " not found" << std::endl;
-            response_c = "MATLAB engine '" + engineName_t + "' not found";
-            matlabEngineStatus = 0;
-            addStatusUpdate(QString::fromStdString(response_c),ui->tableWidget_status,-1);
+            ui->lacbw_use_matlab_script->requestSetValue(false,true);
+            addStatusUpdate("Must first connect to MATLAB engine",ui->tableWidget_status,-1);
         }
-
     }else{
-        // stop matlab engine
-        //int response = engClose(matEng);
-        matlabEngineStatus = 0;
-        matlabPtr.reset(nullptr);
-
-        addStatusUpdate("Stopped MATLAB engine",ui->tableWidget_status,-1);
+        ui->script_container_auto_capture->hide();
     }
 }
 
@@ -1695,16 +2059,22 @@ int mainGUI::validateAutomaticCapture()
     // -1   = transmission not running
     // -2   = reception not running
     // -3   = synchronization not running
-    // -4   = synchronization timeout (?) (not implemented)
+    // -4   = Use script not enabled
     // -5   = frame structure not loaded (not implemented)
 
     int response = 1;
     int error_count = 0;
 
-
-    if(!radObj->isTransmitting()){
+    bool useCAA = ui->lacb_use_caa->getValue();
+    if(radObj->isTransmitting() == false && useCAA == true){
         ++error_count;
         response = -1;
+    }
+
+    bool useScript = ui->lacbw_use_matlab_script->getValue();
+    if(useCAA == false && useScript == false){
+        ++error_count;
+        response = -4;
     }
 
     if(!radObj->isReceiving()){
@@ -1712,14 +2082,16 @@ int mainGUI::validateAutomaticCapture()
         response = -2;
     }
 
-    if(!radObj->isSynchronizing()){
+    bool useSynchronization = ui->lacb_use_sync->getValue();
+    if(radObj->isSynchronizing() == false && useSynchronization == true){
         ++error_count;
         response = -3;
-    }
+    }    
 
-    if(error_count > 1){
-        response = 0;
-    }
+
+    // if(error_count > 1){
+    //     response = 0;
+    // }
 
     return response;
 }
@@ -1752,7 +2124,12 @@ GUIConf.sigConfIndependentCaptureAutoIncrement,
                       GUIConf.sysConfAutoSwitch,
                       GUIConf.sysConfAutoSave,
                       GUIConf.sysConfSaveCapture,
-                      GUIConf.sysConfSingleClass);
+                      GUIConf.sysConfSingleClass,
+GUIConf.autoCaptureUseCAA,
+                      GUIConf.autoCaptureScriptMaxSamples,
+                      GUIConf.autoCaptureScriptPassClass,
+                      GUIConf.autoCaptureScriptDelay,
+GUIConf.independentCaptureMaxSamples);
     }catch(...){
         response = -1;
     }
@@ -1789,7 +2166,12 @@ GUIConf.sigConfMatlabEngineName,
                    GUIConf.sysConfAutoSwitch ? str_true : str_false,
                    GUIConf.sysConfAutoSave ? str_true : str_false,
                    GUIConf.sysConfSaveCapture ? str_true : str_false,
-                   GUIConf.sysConfSingleClass ? str_true : str_false);
+                   GUIConf.sysConfSingleClass ? str_true : str_false,
+GUIConf.autoCaptureUseCAA ? str_true : str_false,
+                   GUIConf.autoCaptureScriptMaxSamples,
+                   GUIConf.autoCaptureScriptPassClass ? str_true : str_false,
+                   GUIConf.autoCaptureScriptDelay,
+GUIConf.independentCaptureMaxSamples);
     f_out.close();
 
     return 0;
@@ -1813,5 +2195,105 @@ void mainGUI::on_btn_run_script_released()
     //     std::string script_name = ui->lafw_matlab_script_name->getFieldText();
     //     matlabPtr->eval(stringToU16String(script_name));
     // }
+}
+
+
+void mainGUI::on_btn_connect_matlab_engine_released()
+{
+    if(matlabEngineStatus == 0){
+        std::vector<std::u16string> names = matlab::engine::findMATLAB();
+        std::vector<std::u16string>::iterator it;
+        std::string engineName_t = ui->lafw_matlab_engine_name->getFieldText();
+
+        it = std::find(names.begin(),names.end(),stringToU16String(engineName_t));
+        if(it != names.end()){
+            matlabPtr = matlab::engine::connectMATLAB(*it);
+        }
+
+        std::string response_c = "";
+
+        if(matlabPtr){
+            matlab::data::ArrayFactory factory;
+            matlab::data::CharArray arg = factory.createCharArray("-release");
+            matlab::data::CharArray version = matlabPtr->feval(u"version",arg);
+            std::cout << "Connected to: " << version.toAscii() << std::endl;
+
+            //matlabPtr->eval(u"adalm_pluto_tx");
+            response_c = "Connected to MATLAB engine '" + engineName_t + "'";
+            addStatusUpdate(QString::fromStdString(response_c),ui->tableWidget_status,1);
+            matlabEngineStatus = 1;
+            ui->btn_connect_matlab_engine->setText("Disconnect");
+            ui->ibtn_connect_matlab_engine->setState(2);
+            ui->lacbw_use_matlab_script->setEnabled(true);
+            ui->btn_run_script_indep->setEnabled(true);
+
+        }else{
+            std::cout << engineName_t << " not found" << std::endl;
+            response_c = "MATLAB engine '" + engineName_t + "' not found";
+            matlabEngineStatus = 0;
+            ui->ibtn_connect_matlab_engine->setState(3);
+            addStatusUpdate(QString::fromStdString(response_c),ui->tableWidget_status,-1);
+            ui->lacbw_use_matlab_script->setEnabled(false);
+            ui->btn_run_script_indep->setEnabled(false);
+        }
+
+    }else{
+        // stop matlab engine
+        //int response = engClose(matEng);
+        matlabEngineStatus = 0;
+        matlabPtr.reset(nullptr);
+        ui->btn_connect_matlab_engine->setText("Connect");
+        addStatusUpdate("Stopped MATLAB engine",ui->tableWidget_status,-1);
+        ui->ibtn_connect_matlab_engine->setState(1);
+        ui->lacbw_use_matlab_script->requestSetValue(false);
+        ui->lacbw_use_matlab_script->setEnabled(false);
+        ui->btn_run_script_indep->setEnabled(false);
+    }
+}
+
+
+void mainGUI::on_btn_test_released()
+{
+    //ui->tabWidget_3->setCurrentIndex(0);
+    ui->groupBox_7->adjustSize();
+    ui->group_auto_capture->adjustSize();
+
+   // ui->verticalLayout_7->update()
+    //std::cout << ui->lacbw_use_matlab_script->getCheckBoxState() << std::endl;
+}
+
+
+void mainGUI::on_btn_run_script_indep_released()
+{
+    if(matlabEngineStatus == 1){
+        bool setClassParam = ui->lacbw_use_class->getValue();
+
+        if(setClassParam){
+            std::string class_command = "param_class = " + std::to_string(ui->lasbw_class_indep_capture->getValue()) + ";";
+            matlabPtr->eval(stringToU16String(class_command));
+        }
+
+        std::string script_name = ui->lafw_matlab_script_name->getFieldText();
+
+        matlabPtr->eval(stringToU16String(script_name));
+
+        addStatusUpdate("Succes running MATLAB script",ui->tableWidget_status,1);
+
+    }else{
+        addStatusUpdate("Error running MATLAB script...",ui->tableWidget_status,-1);
+
+    }
+}
+
+
+void mainGUI::on_tabWidget_3_currentChanged(int index)
+{
+    if(index == 1){
+        ui->group_auto_capture->hide();
+        ui->groupBox_7->show();
+    }else{
+        ui->groupBox_7->hide();
+        ui->group_auto_capture->show();
+    }
 }
 

@@ -51,6 +51,13 @@ struct GUIConfiguation{
     bool sysConfSaveCapture     = false;
     bool sysConfSingleClass     = false;
 
+    bool autoCaptureUseCAA      = true;
+    int autoCaptureScriptMaxSamples   = 1000;
+    bool autoCaptureScriptPassClass = false;
+    int autoCaptureScriptDelay = 0;
+
+    int independentCaptureMaxSamples = 1000;
+
     std::vector<std::string> confEntriesVector = {"sdr-conf-config-filepath",
                                                   "sig-conf-signal-filepath",
                                                   "sig-conf-use-synchronization",
@@ -71,7 +78,12 @@ struct GUIConfiguation{
                                                   "sys-conf-auto-switch",
                                                   "sys-conf-auto-save",
                                                   "sys-conf-save-capture",
-                                                  "sys-conf-single-class"};
+                                                  "sys-conf-single-class",
+                                                  "auto-capture-use-caa",
+                                                  "auto-capture-script-max-samples",
+                                                  "auto-capture-script-pass-class",
+                                                  "auto-capture-script-delay",
+                                                  "independent-capture-max-samples"};
 
 };
 
@@ -141,7 +153,6 @@ private slots:
     void on_button_apply_config_released();
 
     void processing_USRP_setup();
-    void processing_automatic_capture();
 
     void on_button_load_data_released();
 
@@ -214,12 +225,23 @@ private slots:
     void onIndependentCaptureMaxClassChanged(int value);
     void onIndependentCaptureMaxSampleChanged(int value);
 
+    void onAutoCaptureSettingsChanged();
+
     void onUseMatlabScript(bool value);
 
 
     void on_button_save_default_format_released();
 
     void on_btn_run_script_released();
+
+
+    void on_btn_connect_matlab_engine_released();
+
+    void on_btn_test_released();
+
+    void on_btn_run_script_indep_released();
+
+    void on_tabWidget_3_currentChanged(int index);
 
 private:
 
@@ -237,6 +259,9 @@ private:
     std::vector<MCControlWidget*> mcControlWidgets;
 
     QTimer processingTimer;
+    QTimer autoCaptureTimer;
+
+    int automaticCaptureStatus = 0; // 0 - none running; 1 - script capture wo synch; 2 - caa capture w sync
 
     bool usrpSetupInterrupted;
     bool pendingConfigurationRequest = false;
@@ -288,6 +313,8 @@ private:
     void hideLayout(QLayout* layout);
     void unhideLayout(QLayout* layout);
 
+    void setEnabledAll(QObject* parent, bool enabled);
+
     int runMATLABScript();
 
     void applyTxConfig();
@@ -296,6 +323,10 @@ private:
     void removeAllMCControlWidgets();
 
     void runMATLABEngine();
+
+    void processing_automatic_capture();
+    void processAutomaticCaptureCaaWSynch();
+    void processAutomaticCaptureScriptWOSynch();
 
     std::u16string stringToU16String(const std::string& str);
 };

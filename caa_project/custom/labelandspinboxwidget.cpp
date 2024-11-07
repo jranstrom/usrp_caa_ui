@@ -16,6 +16,7 @@ LabelandSpinBoxWidget::LabelandSpinBoxWidget(QWidget *parent,
     label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     mainSpinBox = new QSpinBox(this);
+    mainSpinBox->setStyleSheet("QSpinBox:disabled { background-color: #FFFFFF; color: #a0a0a0; }");
     setMaximum(maximumValue);
     setMinimum(minimumValue);
     setIncrement(incrementValue);
@@ -89,6 +90,32 @@ void LabelandSpinBoxWidget::setDataSource(int *si,bool silent)
     updateDataSource = true;
     requestSetValue(*si,silent);
 
+}
+
+void LabelandSpinBoxWidget::saveCurrentValue()
+{
+    savedValue = currentValue;
+    saved = true;
+}
+
+void LabelandSpinBoxWidget::setEnabled(bool enabled)
+{
+    if(enabled){
+        label->setStyleSheet("QLabel { color: #000000; }");
+    }else{
+        label->setStyleSheet("QLabel { color: #D3D3D3; }");
+    }
+    mainSpinBox->setEnabled(enabled);
+    //ainSpinBox->update();
+}
+
+bool LabelandSpinBoxWidget::isSaved()
+{
+    if(saved == false){
+        return false;
+    }
+
+    return (currentValue == savedValue);
 }
 
 void LabelandSpinBoxWidget::setValue(int value, bool silent)

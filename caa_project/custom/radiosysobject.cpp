@@ -652,8 +652,6 @@ void RadioSysObject::extractFrameSequence(int offset,int length)
         std::cout << "Too many invalid attempts:" << invalid_count <<  std::endl;
     }
 
-
-
     // size_t synchOffset = sysConf.synchOffset;
     size_t mod_rx_index = rx_index;
     //rx_index -= synchOffset;        // adjust for synch point not being start of frame
@@ -1303,6 +1301,26 @@ bool RadioSysObject::requestCaptureSynchFrame(int captureIndex){
         }else{
             return false;
         }
+    }else{
+        return false;
+    }
+}
+
+bool RadioSysObject::requestCaptureFrame(int captureIndex)
+{
+    size_t last_push_count = rxSignalBuffer.get_push_count();
+    extracted_synch_data = rxSignalBuffer.extract_range(last_push_count-frameLength,frameLength);
+
+    if(extracted_synch_data.size() != 0){
+        std::vector<std::complex<double>> frame_temp = uhd_clib::cvec_conv_short2double(extracted_synch_data);
+
+    for(int i=0; i<frameLength;i++){
+
+        capturedFrames[i][2*captureIndex] = std::real(frame_temp[i]);
+        capturedFrames[i][2*captureIndex+1] = std::imag(frame_temp[i]);
+    }
+    currentFramesCaptured[captureIndex] = true;
+    return true;
     }else{
         return false;
     }
