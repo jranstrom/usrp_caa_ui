@@ -82,7 +82,8 @@ add_executable(caa_project
     custom/labelandspinboxwidget.h custom/labelandspinboxwidget.cpp
     custom/labelandcheckboxwidget.h custom/labelandcheckboxwidget.cpp
     custom/customfftwobject.h custom/customfftwobject.cpp
-    cradioobject.h cradioobject.cpp
+    custom/cradioobject.h custom/cradioobject.cpp
+
 )
 
 set(QT_LIB Qt6::PrintSupport)
