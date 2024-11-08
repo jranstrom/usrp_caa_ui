@@ -243,6 +243,8 @@ private slots:
 
     void on_tabWidget_3_currentChanged(int index);
 
+    void on_btn_find_radios_released();
+
 private:
 
     //std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;

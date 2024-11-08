@@ -2254,12 +2254,17 @@ void mainGUI::on_btn_connect_matlab_engine_released()
 
 void mainGUI::on_btn_test_released()
 {
-    //ui->tabWidget_3->setCurrentIndex(0);
-    ui->groupBox_7->adjustSize();
-    ui->group_auto_capture->adjustSize();
+    int response_find_radios = radObj->findRadios();
+    int response_connect_radio = radObj->connectRadio("F270FD");
+    switch(response_connect_radio){
+        case -2:
+            std::cout << "Radio already connected" << std::endl;
+        break;
+        case -1:
+            std::cout << "Radio not found" << std::endl;
+            break;
+    }
 
-   // ui->verticalLayout_7->update()
-    //std::cout << ui->lacbw_use_matlab_script->getCheckBoxState() << std::endl;
 }
 
 
@@ -2294,6 +2299,25 @@ void mainGUI::on_tabWidget_3_currentChanged(int index)
     }else{
         ui->groupBox_7->hide();
         ui->group_auto_capture->show();
+    }
+}
+
+
+void mainGUI::on_btn_find_radios_released()
+{
+    int response = radObj->findRadios();
+    if(response ==0 ){
+        ui->listWidget_available_radios->clear();
+
+        std::vector<std::string> availableRadios_t = radObj->getAvailableRadiosStrings(true,false,true,true);
+
+        addStatusUpdate("Success " + QString::number(availableRadios_t.size()) + ", radios found",ui->tableWidget_status,1);
+
+        for(std::string rad_t : availableRadios_t){
+            ui->listWidget_available_radios->addItem(QString::fromStdString(rad_t));
+        }
+    }else{
+       addStatusUpdate("No radios found; Check connections",ui->tableWidget_status,-1);
     }
 }
 

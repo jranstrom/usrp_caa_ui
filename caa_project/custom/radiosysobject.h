@@ -9,6 +9,7 @@
 #include <armadillo>
 #include <fftw3.h>
 #include "customfftwobject.h"
+#include "custom/cradioobject.h"
 
 class RadioSysObject
 {
@@ -97,6 +98,11 @@ public:
 
     bool hasPendingSynchPointReset() {return pendingSynchPointReset; }
 
+    int findRadios(bool suppressPrint=true);
+    int connectRadio(std::string serial, bool suppressPrint=true);
+
+    std::vector<std::string> getAvailableRadiosStrings(bool ip=false,bool name=false,bool serial=false,bool type=false);
+
 private:
     std::mutex recv_mutex;
 
@@ -153,6 +159,9 @@ private:
     std::vector<std::vector<double>> capturedFrames;
 
     std::vector<bool> currentFramesCaptured = {false,false,false,false};
+
+    std::vector<cRadioObject> connectedRadios;
+    std::vector<uhd::device_addr_t> availableRadios;
 
     uhd::usrp::multi_usrp::sptr tx_usrp;
     uhd::usrp::multi_usrp::sptr rx_usrp;
