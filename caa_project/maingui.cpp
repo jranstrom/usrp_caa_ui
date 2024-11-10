@@ -6,6 +6,7 @@
 #include <QTimer>
 
 #include "custom/config_file.h"
+#include "radiocontrolwidget.h"
 
 mainGUI::mainGUI(QWidget *parent)
     : QMainWindow(parent)
@@ -342,6 +343,16 @@ mainGUI::mainGUI(QWidget *parent)
 
     ui->groupBox_7->adjustSize();
     //uio.ForceUpdateAll();
+
+    for(int i =0; i<ui->tabWidget->count();i++){
+        GUITabStruct tab_s;
+        tabSizes.push_back(tab_s);
+    }
+
+    connect(&tabUpdateTimer, &QTimer::timeout, this, &mainGUI::onTabContentChanged);
+    tabUpdateTimer.setSingleShot(true);  // Only run once
+    connect(&winResizeTimer, &QTimer::timeout, this, &mainGUI::onWinResizeTimerEnd);
+    winResizeTimer.setSingleShot(true);  // Only run once
 
 }
 
@@ -964,6 +975,22 @@ std::u16string mainGUI::stringToU16String(const std::string &str)
     return u16str;
 }
 
+void mainGUI::resizeEvent(QResizeEvent *event)
+{
+    QSize newSize = event->size();
+    QSize oldSize = event->oldSize();
+    if(tabResize == false){
+
+        int currentTabIndex = ui->tabWidget->currentIndex();
+        tabSizes[currentTabIndex].set = true;
+        tabSizes[currentTabIndex].width = newSize.width();
+        tabSizes[currentTabIndex].height = newSize.height();
+
+       // std::cout << "old = [" << oldSize.width() << ", " << oldSize.height() << "] :: ";
+       // std::cout << "new = [" << newSize.width() << ", " << newSize.height() << "]" << std::endl;
+    }
+}
+
 void mainGUI::on_button_apply_config_released()
 {
     addStatusUpdate("Initalized USRP Configuration",ui->tableWidget_status);
@@ -1435,6 +1462,7 @@ void mainGUI::on_button_generate_mc_controls_released()
 
     int  L = ui->listWidget_available_devices->count();
     const int rows  = 2;
+    int ik = 0;
 
     for(int i=0;i<L;i++){
         auto item = ui->listWidget_available_devices->item(i);
@@ -1451,12 +1479,14 @@ void mainGUI::on_button_generate_mc_controls_released()
             customWidget->setMAC(MCMAC);
 
             connect(customWidget,&MCControlWidget::cycleButtonReleased,this,&mainGUI::updateMCSCycle);
-            int io = i+1;
+            int io = ik+1;
             ui->gridLayout_mcs->addWidget(customWidget,io % rows,std::floor(io/rows));
 
             mcControlWidgets.push_back(customWidget);
             //ui->verticalLayout_30->addWidget(customWidget);
             customWidget->show();
+
+            ++ik;
         }
     }
 
@@ -2338,17 +2368,20 @@ void mainGUI::on_btn_connect_radio_released()
         for(const QModelIndex &index : selectedIndecies){
             int i = index.row();
             int response = radObj->connectRadio(serials_v[i],false);
-            int confResponse = radObj->configureRadio(serials_v[i]);
+            //int confResponse = radObj->configureRadio(serials_v[i]);
             if(response == 0){
                 addStatusUpdate("Success connecting to " + QString::fromStdString(serials_v[i]) + "",ui->tableWidget_status,1);
+                RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(serials_v[i]));
+                ui->vl_radio_controls->addWidget(rcWidget);
             }else if(response == -2){
                 addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[i]) + " already connected",ui->tableWidget_status,-1);
             }
-            if(confResponse == 0){
-                addStatusUpdate("Success configurating " + QString::fromStdString(serials_v[i]) + "",ui->tableWidget_status,1);
-            }else if(response == -1){
-                addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[i]) + " could not be configured",ui->tableWidget_status,-1);
-            }
+
+            // if(confResponse == 0){
+            //     addStatusUpdate("Success configurating " + QString::fromStdString(serials_v[i]) + "",ui->tableWidget_status,1);
+            // }else if(response == -1){
+            //     addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[i]) + " could not be configured",ui->tableWidget_status,-1);
+            // }
         }
 
     }else{
@@ -2361,4 +2394,45 @@ void mainGUI::on_btn_configure_radio_released()
 {
 
 }
+
+
+void mainGUI::on_tabWidget_currentChanged(int index)
+{
+    ui->sdr_config_container->hide();
+    ui->signal_conf_container->hide();
+    ui->system_control_container->hide();
+    switch(index){
+    case 1:
+        ui->sdr_config_container->show();
+        break;
+    case 2:
+        ui->signal_conf_container->show();
+        break;
+    case 3:
+        ui->system_control_container->show();
+        break;
+    }
+
+    tabResize = true;
+    tabUpdateTimer.start(100);
+    winResizeTimer.start(200);
+
+}
+
+void mainGUI::onTabContentChanged()
+{
+    int currentTabIndex = ui->tabWidget->currentIndex();
+    if((tabSizes[currentTabIndex]).set == true){
+        QSize size_p(tabSizes[currentTabIndex].width,tabSizes[currentTabIndex].height);
+        this->resize(size_p);
+    }else{
+        this->resize(this->minimumSizeHint());
+    }
+}
+
+void mainGUI::onWinResizeTimerEnd()
+{
+    tabResize = false;
+}
+
 

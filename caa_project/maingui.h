@@ -11,6 +11,7 @@
 #include "mccontrolwidget.h"
 #include "custom/sliderandlineedit.h"
 #include <filesystem>
+#include <qstackedwidget.h>
 #include <vector>
 
 #include "MatlabEngine.hpp"
@@ -23,6 +24,12 @@ namespace Ui {
 class mainGUI;
 }
 QT_END_NAMESPACE
+
+struct GUITabStruct{
+    int width = -1;
+    int height = -1;
+    bool set = false;
+};
 
 struct GUIConfiguation{
     std::string sdrConfConfigFilepath = "";
@@ -249,6 +256,11 @@ private slots:
 
     void on_btn_configure_radio_released();
 
+    void on_tabWidget_currentChanged(int index);
+
+    void onTabContentChanged();
+    void onWinResizeTimerEnd();
+
 private:
 
     //std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;
@@ -258,6 +270,12 @@ private:
 
     Ui::mainGUI *ui;
     RadioSysObject * radObj;
+
+    QTimer tabUpdateTimer;
+    QTimer winResizeTimer;
+    bool tabResize = false;
+    std::vector<GUITabStruct> tabSizes;
+
 
     GUIConfiguation GUIConf;
 
@@ -295,6 +313,8 @@ private:
     SliderAndLineEdit * rxGainSlider;
 
     SliderAndLineEdit * rxLOOffsetSlider;
+
+    QStackedWidget *stackedTabWidget;
 
     int readGUIConfigFile();
     int writeGUIConfigFile();
@@ -335,5 +355,7 @@ private:
     void processAutomaticCaptureScriptWOSynch();
 
     std::u16string stringToU16String(const std::string& str);
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 };
 #endif // MAINGUI_H
