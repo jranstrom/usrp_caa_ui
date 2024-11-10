@@ -14,16 +14,17 @@ void MCControlWidget::InitializeMCControlWidget(int id, std::string mcType, std:
 
     outerContainerLayout = new QHBoxLayout(this);
     mainGroupBox = new QGroupBox("");
-    mainGroupBox->setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding);
+    mainGroupBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
 
     mainGroupBoxLayout = new QVBoxLayout(mainGroupBox);
-    mainGroupBoxLayout->addStretch(1);
+    //mainGroupBoxLayout->addStretch(1);
 
     QWidget *widget_info = new QWidget;
     QWidget *widget_control = new QWidget;
 
     infoLayout = new QHBoxLayout(widget_info);
-    infoLayout->setContentsMargins(2,2,2,2);
+    infoLayout->setContentsMargins(0,0,0,0);
+    infoLayout->setSizeConstraint(QBoxLayout::SizeConstraint::SetMinimumSize);
 
     controlLayout = new QGridLayout(widget_control);
     controlLayout->setContentsMargins(2,2,2,2);
