@@ -1,0 +1,21 @@
+# To share MATLAB engine use the following command in the MATLAB command window:
+matlab.engine.shareEngine('Engine_1'); % share engine using the specific name
+
+# For performance enchancing tips on host, see: https://kb.ettus.com/USRP_Host_Performance_Tuning_Tips_and_Tricks
+
+# The following is a bash file  that sets:
+# - Virtual network
+# - Memory usage
+# - Permissios for COM devices (like Teensy)
+
+#!/bin/bash
+echo "-------------------------------------------------" 
+echo "Setting prerequisites..."
+echo "> Configuring virtual network interface"
+ifconfig enp0s31f6:1 192.168.10.11 netmask 255.255.255.0
+echo "> Configuring buffer"
+sysctl -w net.core.rmem_max=50000000 
+sysctl -w net.core.wmem_max=2500000
+echo "> Setting permissions - COM Devices"
+chmod 666 /dev/ttyACM*
+ls -l /dev/ttyACM*
