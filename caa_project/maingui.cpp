@@ -2309,15 +2309,56 @@ void mainGUI::on_btn_find_radios_released()
     if(response ==0 ){
         ui->listWidget_available_radios->clear();
 
-        std::vector<std::string> availableRadios_t = radObj->getAvailableRadiosStrings(true,false,true,true);
+        std::vector<std::string> addrs_v = radObj->getAvailableRadiosProperty("addr");
+        std::vector<std::string> serials_v = radObj->getAvailableRadiosProperty("serial");
+        std::vector<std::string> types_v = radObj->getAvailableRadiosProperty("type");
 
-        addStatusUpdate("Success " + QString::number(availableRadios_t.size()) + ", radios found",ui->tableWidget_status,1);
 
-        for(std::string rad_t : availableRadios_t){
-            ui->listWidget_available_radios->addItem(QString::fromStdString(rad_t));
+        addStatusUpdate("Success " + QString::number(addrs_v.size()) + ", radios found",ui->tableWidget_status,1);
+
+        for(int i=0; i<addrs_v.size();i++){
+            std::string type_t = types_v[i];
+            transform(type_t.begin(), type_t.end(), type_t.begin(), ::toupper);
+            std::string list_entry = type_t + " :: " + serials_v[i] + " :: " + addrs_v[i];
+            ui->listWidget_available_radios->addItem(QString::fromStdString(list_entry));
         }
     }else{
        addStatusUpdate("No radios found; Check connections",ui->tableWidget_status,-1);
     }
+}
+
+
+void mainGUI::on_btn_connect_radio_released()
+{
+    std::vector<std::string> serials_v = radObj->getAvailableRadiosProperty("serial");
+
+    if(ui->listWidget_available_radios->selectedItems().size() > 0){
+        QList<QModelIndex> selectedIndecies = ui->listWidget_available_radios->selectionModel()->selectedIndexes();
+
+        for(const QModelIndex &index : selectedIndecies){
+            int i = index.row();
+            int response = radObj->connectRadio(serials_v[i],false);
+            int confResponse = radObj->configureRadio(serials_v[i]);
+            if(response == 0){
+                addStatusUpdate("Success connecting to " + QString::fromStdString(serials_v[i]) + "",ui->tableWidget_status,1);
+            }else if(response == -2){
+                addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[i]) + " already connected",ui->tableWidget_status,-1);
+            }
+            if(confResponse == 0){
+                addStatusUpdate("Success configurating " + QString::fromStdString(serials_v[i]) + "",ui->tableWidget_status,1);
+            }else if(response == -1){
+                addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[i]) + " could not be configured",ui->tableWidget_status,-1);
+            }
+        }
+
+    }else{
+        addStatusUpdate("Could not connect, no radio selected",ui->tableWidget_status,-1);
+    }
+}
+
+
+void mainGUI::on_btn_configure_radio_released()
+{
+
 }
 

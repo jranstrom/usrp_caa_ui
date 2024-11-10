@@ -1545,13 +1545,15 @@ int RadioSysObject::connectRadio(std::string serial,bool suppressPrint)
 
     std::string serial_t;
     std::string type_t;
+    std::string addr_t;
 
     for(uhd::device_addr_t addr : availableRadios){
         serial_t = addr.cast<std::string>("serial","");
         if(serial_t == serial){
             // connect
             type_t = addr.cast<std::string>("type","");
-            connectedRadios.push_back(cRadioObject(serial_t,type_t));
+            addr_t = addr.cast<std::string>("addr","");
+            connectedRadios.push_back(cRadioObject(serial_t,type_t,addr_t));
             if(suppressPrint == false){
                 std::cout << "Connected to: " << serial_t << ";" << type_t << std::endl;
             }
@@ -1562,40 +1564,24 @@ int RadioSysObject::connectRadio(std::string serial,bool suppressPrint)
     return -1; // radio not found
 }
 
-std::vector<std::string> RadioSysObject::getAvailableRadiosStrings(bool address, bool name, bool serial, bool type)
+int RadioSysObject::configureRadio(std::string serial, bool def, std::string filepath)
 {
-    std::vector<std::string> radioStrings;
-    std::string delim = " : ";
-
-    int numInclude = static_cast<int>(address) + static_cast<int>(name) + static_cast<int>(serial) + static_cast<int>(type);
-
-
-    for(uhd::device_addr_t addr : availableRadios){
-        std::string cRadioString = "";
-        std::string address_t = addr.cast<std::string>("addr","");
-        std::string name_t = addr.cast<std::string>("name","");
-        std::string serial_t = addr.cast<std::string>("serial","");
-        std::string type_t = addr.cast<std::string>("type","");
-        int cIncude = 0;
-
-        if(address == true){
-            cRadioString = cRadioString + address_t + ((++cIncude < numInclude) ? delim : "");
+    for(cRadioObject cRo_t : connectedRadios){
+        if(cRo_t.getSerial() == serial){
+            cRo_t.configureRadio(def,filepath);
+            return 0;
         }
-
-        if(name == true){
-            cRadioString = cRadioString + name_t + ((++cIncude < numInclude) ? delim : "");
-        }
-
-        if(serial == true){
-            cRadioString = cRadioString + serial_t + ((++cIncude < numInclude) ? delim : "");
-        }
-
-        if(type == true){
-            cRadioString = cRadioString + type_t + ((++cIncude < numInclude) ? delim : "");
-        }
-
-        radioStrings.push_back(cRadioString);
     }
 
+    return -1; // radio not found
+}
+
+std::vector<std::string> RadioSysObject::getAvailableRadiosProperty(std::string propertyName)
+{
+    std::vector<std::string> radioStrings;
+    for(uhd::device_addr_t addr : availableRadios){
+        std::string serial_t = addr.cast<std::string>(propertyName,"");
+        radioStrings.push_back(serial_t);
+    }
     return radioStrings;
 }

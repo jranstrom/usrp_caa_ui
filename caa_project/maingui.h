@@ -245,6 +245,10 @@ private slots:
 
     void on_btn_find_radios_released();
 
+    void on_btn_connect_radio_released();
+
+    void on_btn_configure_radio_released();
+
 private:
 
     //std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;

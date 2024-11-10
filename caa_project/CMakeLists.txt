@@ -83,6 +83,7 @@ add_executable(caa_project
     custom/labelandcheckboxwidget.h custom/labelandcheckboxwidget.cpp
     custom/customfftwobject.h custom/customfftwobject.cpp
     custom/cradioobject.h custom/cradioobject.cpp
+    custom/radiocontrolwidget.h custom/radiocontrolwidget.cpp
 
 )
 

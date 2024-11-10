@@ -100,8 +100,9 @@ public:
 
     int findRadios(bool suppressPrint=true);
     int connectRadio(std::string serial, bool suppressPrint=true);
+    int configureRadio(std::string serial,bool def=true,std::string filepath="");
 
-    std::vector<std::string> getAvailableRadiosStrings(bool ip=false,bool name=false,bool serial=false,bool type=false);
+    std::vector<std::string> getAvailableRadiosProperty(std::string propertyName);
 
 private:
     std::mutex recv_mutex;
