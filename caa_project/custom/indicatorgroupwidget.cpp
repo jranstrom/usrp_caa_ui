@@ -24,7 +24,7 @@ void IndicatorGroupWidget::IndicatorGroupWidgetSetup(QWidget *parent, std::strin
 
     const QString name_ = QString::fromStdString(name);
     mainGroupBox = new QGroupBox(name_);
-    mainGroupBox->setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding);
+    mainGroupBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
 
     groupLayout = new QHBoxLayout(mainGroupBox);
     //groupLayout->addStretch(1);
