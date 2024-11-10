@@ -2401,6 +2401,7 @@ void mainGUI::on_tabWidget_currentChanged(int index)
     ui->sdr_config_container->hide();
     ui->signal_conf_container->hide();
     ui->system_control_container->hide();
+    ui->mc_container->hide();
     switch(index){
     case 1:
         ui->sdr_config_container->show();
@@ -2410,6 +2411,9 @@ void mainGUI::on_tabWidget_currentChanged(int index)
         break;
     case 3:
         ui->system_control_container->show();
+        break;
+    case 4:
+        ui->mc_container->show();
         break;
     }
 
