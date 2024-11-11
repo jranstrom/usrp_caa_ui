@@ -49,9 +49,10 @@ class cRadioObject
 public:
     cRadioObject(std::string serial_p,std::string type_p,std::string addr_p);
 
-    cRadioResponse configureRadio(bool def=true,std::string filepath="");
-
+    cRadioResponse configureRadio();
+    cRadioResponse loadRadioConfigurationFile(bool def=true,std::string filepath="");
     bool isConfigured();
+    cRadioConfiguration getConfiguration() {return rConf;}
 
     std::string getSerial() {return serial;}
     std::string getType() {return type;}
@@ -64,6 +65,7 @@ private:
     std::string address;
 
     cRadioConfiguration rConf;
+    bool isLoadedConfiguration= false;
 
     uhd::usrp::multi_usrp::sptr usrp;
 

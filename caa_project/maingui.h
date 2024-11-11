@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "custom/radiosysobject.h"
+#include "radiocontrolwidget.h"
 #include "uiobj.h"
 #include "tcom_ui.h"
 #include <QDateTime>
@@ -135,6 +136,9 @@ public:
     Tcom_ui tcom = Tcom_ui(this);
 
 private slots:
+
+    void onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p,bool silent);
+
     void trackTransmissionProcess();
     void trackReceptionProcess();
     void trackSynchronizationProcess();
@@ -261,6 +265,8 @@ private slots:
     void onTabContentChanged();
     void onWinResizeTimerEnd();
 
+    void on_listWidget_available_radios_itemSelectionChanged();
+
 private:
 
     //std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;
@@ -276,6 +282,7 @@ private:
     bool tabResize = false;
     std::vector<GUITabStruct> tabSizes;
 
+    std::vector<RadioControlWidget*> radioControls;
 
     GUIConfiguation GUIConf;
 
@@ -313,8 +320,6 @@ private:
     SliderAndLineEdit * rxGainSlider;
 
     SliderAndLineEdit * rxLOOffsetSlider;
-
-    QStackedWidget *stackedTabWidget;
 
     int readGUIConfigFile();
     int writeGUIConfigFile();

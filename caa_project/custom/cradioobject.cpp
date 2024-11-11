@@ -10,22 +10,16 @@ cRadioObject::cRadioObject(std::string serial_p, std::string type_p, std::string
     address = addr_p;
 }
 
-cRadioResponse cRadioObject::configureRadio(bool def,std::string filepath)
+cRadioResponse cRadioObject::configureRadio()
 {
     cRadioResponse response;
     response.code = 0;
     response.message = "success";
 
-    bool useFile = true;
-
-    std::string filepath_p = "";
-    if(def == true){
-        // get default configuration file
-        filepath_p = "usrp_default_configs/" + type + ".cfg";
-    }
-
-    if(useFile == true){
-        response = readConfigurationFile(filepath_p);
+    if(isLoadedConfiguration == false){
+        response.code = -1;
+        response.message = "No configuration has been loaded";
+        return response;
     }
 
     // Set up USRP part
@@ -83,6 +77,27 @@ cRadioResponse cRadioObject::configureRadio(bool def,std::string filepath)
     if(std::find(rxSensorNames.begin(), rxSensorNames.end(),"lo_locked") != rxSensorNames.end()){
         uhd::sensor_value_t lo_locked = usrp->get_rx_sensor("lo_locked",0);
         UHD_ASSERT_THROW(lo_locked.to_bool());
+    }
+
+    return response;
+}
+
+cRadioResponse cRadioObject::loadRadioConfigurationFile(bool def, std::string filepath)
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "success";
+
+    std::string filepath_p = "";
+    if(def == true){
+        // get default configuration file
+        filepath_p = "usrp_default_configs/" + type + ".cfg";
+    }
+
+    response = readConfigurationFile(filepath_p);
+
+    if(response.code == 0){
+        isLoadedConfiguration = true;
     }
 
     return response;

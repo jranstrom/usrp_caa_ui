@@ -354,6 +354,8 @@ mainGUI::mainGUI(QWidget *parent)
     connect(&winResizeTimer, &QTimer::timeout, this, &mainGUI::onWinResizeTimerEnd);
     winResizeTimer.setSingleShot(true);  // Only run once
 
+    on_tabWidget_currentChanged(ui->tabWidget->currentIndex());
+
 }
 
 void mainGUI::updateTransmitStatus(bool status){
@@ -425,6 +427,15 @@ void mainGUI::updateTxSetupStatus(bool status)
 void mainGUI::updateRxSetupStatus(bool status)
 {
 
+}
+
+void mainGUI::onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p, bool silent)
+{
+    std::cout << serial_p << std::endl;
+    radObj->loadRadioConfigurationFile(serial_p,true);
+
+    RadioControlWidget *cRCW = qobject_cast<RadioControlWidget *>(sender());
+    cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),0);
 }
 
 mainGUI::~mainGUI()
@@ -2361,32 +2372,54 @@ void mainGUI::on_btn_find_radios_released()
 void mainGUI::on_btn_connect_radio_released()
 {
     std::vector<std::string> serials_v = radObj->getAvailableRadiosProperty("serial");
+    QListWidgetItem *currentItem = ui->listWidget_available_radios->currentItem();
+    int index = ui->listWidget_available_radios->row(currentItem);
 
-    if(ui->listWidget_available_radios->selectedItems().size() > 0){
-        QList<QModelIndex> selectedIndecies = ui->listWidget_available_radios->selectionModel()->selectedIndexes();
+    if(index == -1){
+        return; // no index selected
+    }
 
-        for(const QModelIndex &index : selectedIndecies){
-            int i = index.row();
-            int response = radObj->connectRadio(serials_v[i],false);
-            //int confResponse = radObj->configureRadio(serials_v[i]);
-            if(response == 0){
-                addStatusUpdate("Success connecting to " + QString::fromStdString(serials_v[i]) + "",ui->tableWidget_status,1);
-                RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(serials_v[i]));
-                ui->vl_radio_controls->addWidget(rcWidget);
-            }else if(response == -2){
-                addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[i]) + " already connected",ui->tableWidget_status,-1);
+    bool isConnectMode = (ui->btn_connect_radio->text() == "Connect");
+
+    if(isConnectMode){
+        int response = radObj->connectRadio(serials_v[index],false);
+        if(response == 0){
+            addStatusUpdate("Success connecting to " + QString::fromStdString(serials_v[index]) + "",ui->tableWidget_status,1);
+            RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(serials_v[index]));
+            connect(rcWidget,&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
+            radioControls.push_back(rcWidget);
+
+            //ui->vl_radio_controls->addWidget(rcWidget);
+            ui->vl_radio_controls->insertWidget(ui->vl_radio_controls->indexOf(ui->vspacer_vl_radio_controls),rcWidget);
+            ui->btn_connect_radio->setText("Disconnect");
+        }else{
+            addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[index]) + " could not connect",ui->tableWidget_status,-1);
+        }
+    }else{
+
+        int foundIndex = -1;
+        for(int i=0;i<radioControls.size();i++){
+            if(radioControls[i]->getSerial() == serials_v[index]){
+                foundIndex = i;
             }
-
-            // if(confResponse == 0){
-            //     addStatusUpdate("Success configurating " + QString::fromStdString(serials_v[i]) + "",ui->tableWidget_status,1);
-            // }else if(response == -1){
-            //     addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[i]) + " could not be configured",ui->tableWidget_status,-1);
-            // }
+        }
+        int response = 0;
+        if(foundIndex != -1){
+            ui->vl_radio_controls->removeWidget(radioControls[foundIndex]);
+            disconnect(radioControls[foundIndex],&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
+            delete radioControls[foundIndex];
+            radioControls.erase(radioControls.begin()+foundIndex);
+            response = radObj->disconnectRadio(serials_v[index],false);
         }
 
-    }else{
-        addStatusUpdate("Could not connect, no radio selected",ui->tableWidget_status,-1);
+        if(response == 0){
+            addStatusUpdate("Success disconnecting " + QString::fromStdString(serials_v[index]) + "",ui->tableWidget_status,1);
+            ui->btn_connect_radio->setText("Connect");
+        }else{
+            addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[index]) + " could not disconnect",ui->tableWidget_status,-1);
+        }
     }
+
 }
 
 
@@ -2439,4 +2472,33 @@ void mainGUI::onWinResizeTimerEnd()
     tabResize = false;
 }
 
+
+
+void mainGUI::on_listWidget_available_radios_itemSelectionChanged()
+{
+    std::vector<std::string> serials_v = radObj->getAvailableRadiosProperty("serial");
+    QListWidgetItem *currentItem = ui->listWidget_available_radios->currentItem();
+    int index = ui->listWidget_available_radios->row(currentItem);
+
+    bool isConnected = false;
+    for(int i=0;i<radioControls.size();i++){
+        std::string rc_serial = radioControls[i]->getSerial();
+        if(serials_v[index] == rc_serial){
+            radioControls[i]->show();
+            isConnected = true;
+        }else{
+            radioControls[i]->hide();
+        }
+    }
+
+    if(isConnected == true){
+        ui->btn_connect_radio->setText("Disconnect");
+        ui->btn_connect_radio->setEnabled(true);
+    }else{
+        ui->btn_connect_radio->setText("Connect");
+        ui->btn_connect_radio->setEnabled(true);
+    }
+
+
+}
 

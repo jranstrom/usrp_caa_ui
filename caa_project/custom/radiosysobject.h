@@ -100,7 +100,12 @@ public:
 
     int findRadios(bool suppressPrint=true);
     int connectRadio(std::string serial, bool suppressPrint=true);
-    int configureRadio(std::string serial,bool def=true,std::string filepath="");
+    int disconnectRadio(std::string serial, bool suppressPrint=true);
+    int loadRadioConfigurationFile(std::string serial,bool def=true,std::string filepath="");
+    int configureRadio(std::string serial,bool suppressPrint=true);
+    cRadioConfiguration getRadioConfiguration(std::string serial);
+
+    cRadioObject * getRadio(std::string serial);
 
     std::vector<std::string> getAvailableRadiosProperty(std::string propertyName);
 

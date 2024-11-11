@@ -1564,16 +1564,80 @@ int RadioSysObject::connectRadio(std::string serial,bool suppressPrint)
     return -1; // radio not found
 }
 
-int RadioSysObject::configureRadio(std::string serial, bool def, std::string filepath)
+int RadioSysObject::disconnectRadio(std::string serial, bool suppressPrint)
 {
-    for(cRadioObject cRo_t : connectedRadios){
-        if(cRo_t.getSerial() == serial){
-            cRo_t.configureRadio(def,filepath);
-            return 0;
+    int foundIndex = -1;
+    for(int i=0; i<connectedRadios.size();i++){
+        if(connectedRadios[i].getSerial() == serial){
+            foundIndex = i;
         }
     }
 
-    return -1; // radio not found
+    if(foundIndex != -1){
+        connectedRadios.erase(connectedRadios.begin() + foundIndex);
+        return 0;
+    }
+
+    return -1;
+}
+
+int RadioSysObject::loadRadioConfigurationFile(std::string serial, bool def, std::string filepath)
+{
+    cRadioResponse response;
+    response.code = -1;
+
+    for(cRadioObject cRo_t : connectedRadios){
+        if(cRo_t.getSerial() == serial){
+            response = cRo_t.loadRadioConfigurationFile(def,filepath);
+            return response.code;
+        }
+    }
+    return response.code;
+}
+
+int RadioSysObject::configureRadio(std::string serial,bool suppressPrint)
+{
+    cRadioResponse response;
+    response.code = -1;
+    response.message = "Radio with serial " + serial + " not found...";
+
+    for(cRadioObject cRo_t : connectedRadios){
+        if(cRo_t.getSerial() == serial){
+            response = cRo_t.configureRadio();
+            if(response.code != 0 && suppressPrint == false){
+               std::cout << "Error in RadioSysObject::configureRadio: " << response.message << std::endl;
+            }
+            return response.code;
+        }
+    }
+
+    if(suppressPrint == false){
+        std::cout << "Error in RadioSysObject::configureRadio: " << response.message << std::endl;
+    }
+    return response.code;
+}
+
+cRadioConfiguration RadioSysObject::getRadioConfiguration(std::string serial)
+{
+    cRadioConfiguration emptyConf;
+
+    for(cRadioObject cRo_t : connectedRadios){
+        if(cRo_t.getSerial() == serial){
+            return cRo_t.getConfiguration();
+        }
+    }
+
+    return emptyConf;
+}
+
+cRadioObject *RadioSysObject::getRadio(std::string serial)
+{
+    for(int i=0;i<connectedRadios.size();i++){
+        if(connectedRadios[i].getSerial() == serial){
+            return &(connectedRadios[i]);
+        }
+    }
+    return nullptr;
 }
 
 std::vector<std::string> RadioSysObject::getAvailableRadiosProperty(std::string propertyName)
