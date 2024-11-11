@@ -73,6 +73,9 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, cRadioObject *cRad_p)
 
     fileConfigurationField = new LabelandFieldWidget(this,"Filepath:","",true);
     loadFileConfigurationBtn = new QPushButton("Load",this);
+    connect(loadFileConfigurationBtn,&QPushButton::released,this,&RadioControlWidget::onLoadFileConfigurationBtnRelease);
+
+
     configurationFileLayout->addWidget(fileConfigurationField);
     configurationFileLayout->addWidget(loadFileConfigurationBtn);
 
@@ -95,7 +98,7 @@ void RadioControlWidget::pushRadioConfiguration(cRadioConfiguration radConfig_p,
         indicatorState = 2;
         break;
     case 1:
-        configurationStatusString_t = "Configuration from file loaded...";
+        configurationStatusString_t = "File configuration";
         indicatorState = 2;
      break;
     }
@@ -109,4 +112,9 @@ void RadioControlWidget::pushRadioConfiguration(cRadioConfiguration radConfig_p,
 void RadioControlWidget::onLoadDefaultConfigurationBtnRelease()
 {
     emit loadDefaultConfigurationRequest(serial,false);
+}
+
+void RadioControlWidget::onLoadFileConfigurationBtnRelease()
+{
+    emit loadFileConfigurationRequest(serial,fileConfigurationField->getFieldText(),false);
 }

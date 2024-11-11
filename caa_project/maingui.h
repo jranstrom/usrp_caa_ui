@@ -138,6 +138,7 @@ public:
 private slots:
 
     void onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p,bool silent);
+    void onRadioControlWidgetLoadFileConfiguration(std::string serial_p, std::string filepath, bool silent);
 
     void trackTransmissionProcess();
     void trackReceptionProcess();

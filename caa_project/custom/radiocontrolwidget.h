@@ -22,9 +22,11 @@ public:
 
 signals:
     void loadDefaultConfigurationRequest(std::string serial_p,bool silent);
+    void loadFileConfigurationRequest(std::string serial_p,std::string filepath,bool silent);
 
 private slots:
     void onLoadDefaultConfigurationBtnRelease();
+    void onLoadFileConfigurationBtnRelease();
 
 private:
 

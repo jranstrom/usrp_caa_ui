@@ -431,11 +431,24 @@ void mainGUI::updateRxSetupStatus(bool status)
 
 void mainGUI::onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p, bool silent)
 {
-    std::cout << serial_p << std::endl;
     radObj->loadRadioConfigurationFile(serial_p,true);
 
     RadioControlWidget *cRCW = qobject_cast<RadioControlWidget *>(sender());
     cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),0);
+}
+
+void mainGUI::onRadioControlWidgetLoadFileConfiguration(std::string serial_p, std::string filepath, bool silent)
+{
+    // Check if file exist
+    if(std::filesystem::exists(filepath)){
+        int response = radObj->loadRadioConfigurationFile(serial_p,false,filepath);
+        if(response == 0){
+            RadioControlWidget *cRCW = qobject_cast<RadioControlWidget *>(sender());
+            cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),1);
+        }
+    }else{
+        addStatusUpdate(QString::fromStdString("Error; File: " + filepath + " does not exist"),ui->tableWidget_status,-1);
+    }
 }
 
 mainGUI::~mainGUI()
@@ -2387,6 +2400,8 @@ void mainGUI::on_btn_connect_radio_released()
             addStatusUpdate("Success connecting to " + QString::fromStdString(serials_v[index]) + "",ui->tableWidget_status,1);
             RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(serials_v[index]));
             connect(rcWidget,&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
+            connect(rcWidget,&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
+
             radioControls.push_back(rcWidget);
 
             //ui->vl_radio_controls->addWidget(rcWidget);
@@ -2407,6 +2422,8 @@ void mainGUI::on_btn_connect_radio_released()
         if(foundIndex != -1){
             ui->vl_radio_controls->removeWidget(radioControls[foundIndex]);
             disconnect(radioControls[foundIndex],&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
+            disconnect(radioControls[foundIndex],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
+
             delete radioControls[foundIndex];
             radioControls.erase(radioControls.begin()+foundIndex);
             response = radObj->disconnectRadio(serials_v[index],false);
