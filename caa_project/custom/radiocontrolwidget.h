@@ -32,6 +32,7 @@ private:
 
     std::string serial;
     std::string type;
+    std::string uType; // upper case type (for display purposes)
     std::string address;
 
     QGroupBox * mainGroupBox;

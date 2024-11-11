@@ -8,10 +8,13 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, cRadioObject *cRad_p)
     type = cRad_p->getType();
     address = cRad_p->getAddress();
 
+    uType = type;
+    transform(uType.begin(), uType.end(), uType.begin(), ::toupper);
+
     outerContainerLayout = new QHBoxLayout(this);
 
     mainGroupBox = new QGroupBox("");
-    mainGroupBox->setTitle(QString::fromStdString("USRP Radio - " + serial));
+    mainGroupBox->setTitle(QString::fromStdString(uType + " - " + serial));
     mainGroupBox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
 
     mainGroupBoxLayout = new QVBoxLayout(mainGroupBox);
@@ -88,7 +91,7 @@ void RadioControlWidget::pushRadioConfiguration(cRadioConfiguration radConfig_p,
     int indicatorState = 3;
     switch(configType){
     case 0:
-        configurationStatusString_t = "Default configuration loaded...";
+        configurationStatusString_t = "Default " + uType + " configuration";
         indicatorState = 2;
         break;
     case 1:
