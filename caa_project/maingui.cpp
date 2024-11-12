@@ -28,39 +28,66 @@ mainGUI::mainGUI(QWidget *parent)
     rxIPAddressField = new LabelandFieldWidget(this,"RX USRP IP:","192.168.10.3",true);
     txIPAddressField = new LabelandFieldWidget(this,"TX USRP IP:","192.168.10.4",true);
 
-    ui->verticalLayout_12->addWidget(rxIPAddressField);
-    ui->verticalLayout_12->addWidget(txIPAddressField);
+    int rows = 4;
+
+    ui->sdr_config_grid_layout->setContentsMargins(0,0,0,0);
+
+    rxIPAddressField->setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::Fixed);
+
+    addToGridLayout(rxIPAddressField,ui->sdr_config_grid_layout,rows);
+    addToGridLayout(txIPAddressField,ui->sdr_config_grid_layout,rows);
+    //ui->sdr_config_grid_layout->addWidget(rxIPAddressField,io % rows,std::floor(io/rows));
+    //ui->sdr_config_grid_layout->addWidget(txIPAddressField,io % rows,std::floor(io/rows));
 
     connect(rxIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedRxIPAddress);
     connect(txIPAddressField,&LabelandFieldWidget::fieldTextEditing,this,&mainGUI::userChangedTxIPAddress);
 
     txCarrierSlider = new SliderAndLineEdit("Tx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e3,true,this);
-    ui->verticalLayout_12->addWidget(txCarrierSlider);
+    //ui->verticalLayout_12->addWidget(txCarrierSlider);
+    addToGridLayout(txCarrierSlider,ui->sdr_config_grid_layout,rows);
     connect(txCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxCarrierFrequency);
 
     rxCarrierSlider = new SliderAndLineEdit("Rx Carrier Frequency",6e9,1.2e9,"GHz",1e9,1e3,true,this);
-    ui->verticalLayout_10->addWidget(rxCarrierSlider);
+    //ui->verticalLayout_10->addWidget(rxCarrierSlider);
+    addToGridLayout(rxCarrierSlider,ui->sdr_config_grid_layout,rows);
     connect(rxCarrierSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxCarrierFrequency);
 
     txSamplingRateSlider = new SliderAndLineEdit("Tx Sampling Rate",20e6,10e3,"MHz",1e6,1e3,true,this);
-    ui->verticalLayout_10->addWidget(txSamplingRateSlider);
+    //ui->verticalLayout_10->addWidget(txSamplingRateSlider);
+    addToGridLayout(txSamplingRateSlider,ui->sdr_config_grid_layout,rows);
     connect(txSamplingRateSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxSamplingRate);
 
     rxSamplingRateSlider = new SliderAndLineEdit("Rx Sampling Rate",20e6,10e3,"MHz",1e6,1e3,true,this);
-    ui->verticalLayout_10->addWidget(rxSamplingRateSlider);
+    //ui->verticalLayout_10->addWidget(rxSamplingRateSlider);
+     addToGridLayout(rxSamplingRateSlider,ui->sdr_config_grid_layout,rows);
     connect(rxSamplingRateSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxSamplingRate);
 
     rxLOOffsetSlider = new SliderAndLineEdit("LO Offset",25e6,-25e6,"MHz",1e6,5e5,true,this);
-    ui->verticalLayout_12->addWidget(rxLOOffsetSlider);
+    //ui->verticalLayout_12->addWidget(rxLOOffsetSlider);
+    addToGridLayout(rxLOOffsetSlider,ui->sdr_config_grid_layout,rows);
     connect(rxLOOffsetSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedLOOffset);
 
     txGainSlider = new SliderAndLineEdit("Tx Gain",15,-15,"dB",1,1,true,this);
-    ui->verticalLayout_12->addWidget(txGainSlider);
+    addToGridLayout(txGainSlider,ui->sdr_config_grid_layout,rows);
     connect(txGainSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedTxGain);
 
     rxGainSlider = new SliderAndLineEdit("Rx Gain",15,-15,"dB",1,1,true,this);
-    ui->verticalLayout_12->addWidget(rxGainSlider);
+    addToGridLayout(rxGainSlider,ui->sdr_config_grid_layout,rows);
     connect(rxGainSlider,&SliderAndLineEdit::componentValueChanged,this,&mainGUI::userChangedRxGain);
+
+    ui->verticalLayout_10->removeWidget(ui->sdr_tx_source_container);
+    addToGridLayout(ui->sdr_tx_source_container,ui->sdr_config_grid_layout,rows);
+
+    ui->verticalLayout_10->removeWidget(ui->sdr_rx_source_container);
+    addToGridLayout(ui->sdr_rx_source_container,ui->sdr_config_grid_layout,rows);
+
+    ui->verticalLayout_10->removeWidget(ui->group_reset_ursp);
+    addToGridLayout(ui->group_reset_ursp,ui->sdr_config_grid_layout,rows);
+
+    ui->verticalLayout_10->removeWidget(ui->groupBox_sdr_config_button);
+    addToGridLayout(ui->groupBox_sdr_config_button,ui->sdr_config_grid_layout,rows);
+
+    addVerticalSpacersToGridLayout(ui->sdr_config_grid_layout);
 
     connect(&uio,&uiobj::txPPSSourceChanged,this,&mainGUI::updateTxPPSSource);
     connect(&uio,&uiobj::rxPPSSourceChanged,this,&mainGUI::updateRxPPSSource);
@@ -2148,6 +2175,33 @@ int mainGUI::validateAutomaticCapture()
     // }
 
     return response;
+}
+
+void mainGUI::addToGridLayout(QWidget *widget, QGridLayout *gridLayout, int rows)
+{
+    int io = gridLayout->count();
+
+    bool isLastInRow = ((io % rows) == rows-1);
+    gridLayout->addWidget(widget,io % rows,std::floor(io/rows));
+
+}
+
+void mainGUI::addVerticalSpacersToGridLayout(QGridLayout *gridLayout)
+{
+    int rows = gridLayout->rowCount();
+    int cols = gridLayout->columnCount();
+
+    int io = gridLayout->count() % rows;
+
+    for(int i = 0;i<cols;i++){
+        QSpacerItem * vspacer = new QSpacerItem(5,0,QSizePolicy::Minimum,QSizePolicy::MinimumExpanding);
+        gridLayout->addItem(vspacer,rows,i);
+    }
+
+    //QSpacerItem * vspacer = new QSpacerItem(5,0,QSizePolicy::Minimum,QSizePolicy::MinimumExpanding);
+    //gridLayout->addItem(vspacer,io,cols-1,rows,1);
+
+
 }
 
 int mainGUI::readGUIConfigFile()

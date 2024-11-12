@@ -43,6 +43,8 @@ void SliderAndLineEdit::InitializeSliderAndLineEdit(std::string title,
         mainGroupBox->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
     }
 
+    //mainGroupBox->setContentsMargins(0,0,0,0);
+
     sliderAndLabelContainer = new QWidget();
     lineEditAndLabelContainer = new QWidget();
 
@@ -94,7 +96,7 @@ void SliderAndLineEdit::InitializeSliderAndLineEdit(std::string title,
     outerContainer->addWidget(mainGroupBox);
 
     groupVLayout->setSpacing(1);
-    groupVLayout->setContentsMargins(1,1,1,1);
+    groupVLayout->setContentsMargins(1,1,1,0);
 
     connect(mainSlider,&QSlider::valueChanged,this,&SliderAndLineEdit::onSliderChange);
     connect(lineEdit,&QLineEdit::textEdited,this,&SliderAndLineEdit::onLineEditChange);

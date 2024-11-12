@@ -322,6 +322,9 @@ private:
 
     SliderAndLineEdit * rxLOOffsetSlider;
 
+    void addToGridLayout(QWidget * widget, QGridLayout * gridLayout,int rows);
+    void addVerticalSpacersToGridLayout(QGridLayout * gridLayout);
+
     int readGUIConfigFile();
     int writeGUIConfigFile();
 
