@@ -164,3 +164,44 @@ cRadioResponse cRadioObject::writeConfiurationFile(std::string filepath)
 
     return response;
 }
+
+// void cRadioObject::continousReceptionProcess()
+// {
+//     uhd::stream_args_t stream_args("sc16","sc16");
+//     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+
+//     using smplType = std::complex<short>;
+//     size_t smplsPerBuffer = 1472;
+
+//     smplType * rxBuffer;
+//     bool isAllocated = false;
+//     try{
+//         rxBuffer = new smplType[smplsPerBuffer];
+//         isAllocated = true;
+//     }catch(std::bad_alloc& exc){
+//         UHD_LOGGER_ERROR("UHD") << "Bad memory allocation";
+//         std::exit(EXIT_FAILURE);
+//     }
+
+//     uhd::rx_metadata_t md;
+//     md.has_time_spec = false;
+
+//     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
+//     stream_cmd.num_samps = size_t(0);
+//     stream_cmd.stream_now = 1;
+//     //stream_cmd.time_spec = uhd::time_spec_t(1);
+//     rx_stream->issue_stream_cmd(stream_cmd);
+
+//     while(true){
+//         size_t numRxSmpls = rx_stream->recv(rxBuffer,smplsPerBuffer,md,5.1,false);
+
+//         if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT){
+//             std::cout << "Timeout while streaming" << std::endl;
+//             if(isAllocated == true){
+//                 delete [] rxBuffer;
+//                 isAllocated = false;
+//             }
+//         }
+//         break;
+//     }
+// }

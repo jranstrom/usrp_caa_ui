@@ -59,6 +59,7 @@ public:
     std::string getAddress() {return address;}
 
 private:
+
     std::string uhd_findRadioResponse;
     std::string serial;
     std::string type;
@@ -71,6 +72,8 @@ private:
 
     cRadioResponse readConfigurationFile(std::string filepath);
     cRadioResponse writeConfiurationFile(std::string filepath);
+
+    //void continousReceptionProcess();
 };
 
 #endif // CRADIOOBJECT_H
