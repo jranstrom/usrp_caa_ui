@@ -10,6 +10,11 @@ cRadioObject::cRadioObject(std::string serial_p, std::string type_p, std::string
     address = addr_p;
 }
 
+cRadioObject::~cRadioObject()
+{
+    std::cout << "Removing object" << std::endl;
+}
+
 cRadioResponse cRadioObject::configureRadio()
 {
     cRadioResponse response;
@@ -98,7 +103,23 @@ cRadioResponse cRadioObject::loadRadioConfigurationFile(bool def, std::string fi
 
     if(response.code == 0){
         isLoadedConfiguration = true;
+        rxCircBuff = std::make_shared<CircBuffer<std::complex<short>>>(rConf.internalRxBufferSize);
     }
+
+    return response;
+}
+
+cRadioResponse cRadioObject::startConinousReceptionProcess()
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "Success";
+
+    rxCircBuff->reset_buffer();
+
+    std::thread continousReceptionThread(&cRadioObject::continousReceptionProcess,this);
+
+    continousReceptionThread.detach();
 
     return response;
 }
@@ -125,7 +146,8 @@ cRadioResponse cRadioObject::readConfigurationFile(std::string filepath)
                       rConf.rxGain,
                       rConf.rxAntenna,
                       rConf.rxFilterBandwidth,
-                      rConf.rxLOoffset);
+                      rConf.rxLOoffset,
+                      rConf.internalRxBufferSize);
 
     }catch(...){
         response.code = -1;
@@ -159,49 +181,54 @@ cRadioResponse cRadioObject::writeConfiurationFile(std::string filepath)
                    rConf.rxGain,
                    rConf.rxAntenna,
                    rConf.rxFilterBandwidth,
-                   rConf.rxLOoffset);
+                   rConf.rxLOoffset,
+                   rConf.internalRxBufferSize);
     f_out.close();
 
     return response;
 }
 
-// void cRadioObject::continousReceptionProcess()
-// {
-//     uhd::stream_args_t stream_args("sc16","sc16");
-//     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+void cRadioObject::continousReceptionProcess()
+{
+    uhd::stream_args_t stream_args("sc16","sc16");
+    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
-//     using smplType = std::complex<short>;
-//     size_t smplsPerBuffer = 1472;
+    using smplType = std::complex<short>;
+    size_t smplsPerBuffer = 1472;
 
-//     smplType * rxBuffer;
-//     bool isAllocated = false;
-//     try{
-//         rxBuffer = new smplType[smplsPerBuffer];
-//         isAllocated = true;
-//     }catch(std::bad_alloc& exc){
-//         UHD_LOGGER_ERROR("UHD") << "Bad memory allocation";
-//         std::exit(EXIT_FAILURE);
-//     }
+    smplType * rxBuffer;
+    bool isAllocated = false;
+    try{
+        rxBuffer = new smplType[smplsPerBuffer];
+        isAllocated = true;
+    }catch(std::bad_alloc& exc){
+        UHD_LOGGER_ERROR("UHD") << "Bad memory allocation";
+        std::exit(EXIT_FAILURE);
+    }
 
-//     uhd::rx_metadata_t md;
-//     md.has_time_spec = false;
+    uhd::rx_metadata_t md;
+    md.has_time_spec = false;
 
-//     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
-//     stream_cmd.num_samps = size_t(0);
-//     stream_cmd.stream_now = 1;
-//     //stream_cmd.time_spec = uhd::time_spec_t(1);
-//     rx_stream->issue_stream_cmd(stream_cmd);
+    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
+    stream_cmd.num_samps = size_t(0);
+    stream_cmd.stream_now = 1;
+    //stream_cmd.time_spec = uhd::time_spec_t(1);
+    rx_stream->issue_stream_cmd(stream_cmd);
 
-//     while(true){
-//         size_t numRxSmpls = rx_stream->recv(rxBuffer,smplsPerBuffer,md,5.1,false);
+    while(true){
+        size_t numRxSmpls = rx_stream->recv(rxBuffer,smplsPerBuffer,md,5.1,false);
 
-//         if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT){
-//             std::cout << "Timeout while streaming" << std::endl;
-//             if(isAllocated == true){
-//                 delete [] rxBuffer;
-//                 isAllocated = false;
-//             }
-//         }
-//         break;
-//     }
-// }
+        if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT){
+            std::cout << "Timeout while streaming" << std::endl;
+            if(isAllocated == true){
+                delete [] rxBuffer;
+                isAllocated = false;
+            }
+            break;
+        }
+
+        for(size_t smpl_i =0;smpl_i<smplsPerBuffer;smpl_i++){
+            rxCircBuff->push(rxBuffer[smpl_i]);
+        }
+    }
+}

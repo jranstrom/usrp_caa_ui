@@ -1,6 +1,6 @@
 #include "radiocontrolwidget.h"
 
-RadioControlWidget::RadioControlWidget(QWidget *parent, cRadioObject *cRad_p)
+RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioObject> cRad_p)
 {
     radConfig = cRad_p->getConfiguration(); // copy object
 

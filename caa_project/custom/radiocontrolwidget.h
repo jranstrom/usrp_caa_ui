@@ -14,7 +14,7 @@ class RadioControlWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit RadioControlWidget(QWidget *parent = nullptr, cRadioObject * cRad_p=nullptr);
+    explicit RadioControlWidget(QWidget *parent = nullptr, std::shared_ptr<cRadioObject> cRad_p=nullptr);
 
     std::string getSerial(){return serial;}
 

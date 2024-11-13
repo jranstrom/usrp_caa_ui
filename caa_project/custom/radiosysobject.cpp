@@ -1533,12 +1533,12 @@ int RadioSysObject::findRadios(bool suppressPrint)
 
 int RadioSysObject::connectRadio(std::string serial,bool suppressPrint)
 {
-    // 0 - success
+    // 0 - successd
     // -1 - radio not found
     // -2 - radio already connected/exists
 
-    for(cRadioObject cRo_t : connectedRadios){
-        if(cRo_t.getSerial() == serial){
+    for(std::shared_ptr<cRadioObject> cRo_t : connectedRadios){
+        if(cRo_t->getSerial() == serial){
             return -2; // radio already connected
         }
     }
@@ -1553,7 +1553,10 @@ int RadioSysObject::connectRadio(std::string serial,bool suppressPrint)
             // connect
             type_t = addr.cast<std::string>("type","");
             addr_t = addr.cast<std::string>("addr","");
-            connectedRadios.push_back(cRadioObject(serial_t,type_t,addr_t));
+
+            std::shared_ptr<cRadioObject> tmp_ptr_cRO  = std::make_shared<cRadioObject>(serial_t,type_t,addr_t);
+
+            connectedRadios.push_back(tmp_ptr_cRO);
             if(suppressPrint == false){
                 std::cout << "Connected to: " << serial_t << ";" << type_t << std::endl;
             }
@@ -1568,7 +1571,7 @@ int RadioSysObject::disconnectRadio(std::string serial, bool suppressPrint)
 {
     int foundIndex = -1;
     for(int i=0; i<connectedRadios.size();i++){
-        if(connectedRadios[i].getSerial() == serial){
+        if(connectedRadios[i]->getSerial() == serial){
             foundIndex = i;
         }
     }
@@ -1586,9 +1589,9 @@ int RadioSysObject::loadRadioConfigurationFile(std::string serial, bool def, std
     cRadioResponse response;
     response.code = -1;
 
-    for(cRadioObject cRo_t : connectedRadios){
-        if(cRo_t.getSerial() == serial){
-            response = cRo_t.loadRadioConfigurationFile(def,filepath);
+    for(std::shared_ptr<cRadioObject> cRo_t : connectedRadios){
+        if(cRo_t->getSerial() == serial){
+            response = cRo_t->loadRadioConfigurationFile(def,filepath);
             return response.code;
         }
     }
@@ -1601,9 +1604,9 @@ int RadioSysObject::configureRadio(std::string serial,bool suppressPrint)
     response.code = -1;
     response.message = "Radio with serial " + serial + " not found...";
 
-    for(cRadioObject cRo_t : connectedRadios){
-        if(cRo_t.getSerial() == serial){
-            response = cRo_t.configureRadio();
+    for(std::shared_ptr<cRadioObject> cRo_t : connectedRadios){
+        if(cRo_t->getSerial() == serial){
+            response = cRo_t->configureRadio();
             if(response.code != 0 && suppressPrint == false){
                std::cout << "Error in RadioSysObject::configureRadio: " << response.message << std::endl;
             }
@@ -1621,20 +1624,20 @@ cRadioConfiguration RadioSysObject::getRadioConfiguration(std::string serial)
 {
     cRadioConfiguration emptyConf;
 
-    for(cRadioObject cRo_t : connectedRadios){
-        if(cRo_t.getSerial() == serial){
-            return cRo_t.getConfiguration();
+    for(std::shared_ptr<cRadioObject> cRo_t : connectedRadios){
+        if(cRo_t->getSerial() == serial){
+            return cRo_t->getConfiguration();
         }
     }
 
     return emptyConf;
 }
 
-cRadioObject *RadioSysObject::getRadio(std::string serial)
+std::shared_ptr<cRadioObject> RadioSysObject::getRadio(std::string serial)
 {
     for(int i=0;i<connectedRadios.size();i++){
-        if(connectedRadios[i].getSerial() == serial){
-            return &(connectedRadios[i]);
+        if(connectedRadios[i]->getSerial() == serial){
+            return connectedRadios[i];
         }
     }
     return nullptr;

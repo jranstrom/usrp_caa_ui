@@ -105,7 +105,7 @@ public:
     int configureRadio(std::string serial,bool suppressPrint=true);
     cRadioConfiguration getRadioConfiguration(std::string serial);
 
-    cRadioObject * getRadio(std::string serial);
+    std::shared_ptr<cRadioObject> getRadio(std::string serial);
 
     std::vector<std::string> getAvailableRadiosProperty(std::string propertyName);
 
@@ -166,7 +166,7 @@ private:
 
     std::vector<bool> currentFramesCaptured = {false,false,false,false};
 
-    std::vector<cRadioObject> connectedRadios;
+    std::vector<std::shared_ptr<cRadioObject>> connectedRadios;
     std::vector<uhd::device_addr_t> availableRadios;
 
     uhd::usrp::multi_usrp::sptr tx_usrp;

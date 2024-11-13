@@ -1,6 +1,7 @@
 #ifndef CRADIOOBJECT_H
 #define CRADIOOBJECT_H
 
+#include "circbuffer.h"
 #include <string>
 #include <uhd/usrp/multi_usrp.hpp>
 
@@ -28,6 +29,8 @@ struct cRadioConfiguration{
     std::string txAntenna;
     double txFilterBandwidth;
 
+    size_t internalRxBufferSize = 1e5;
+
     std::vector<std::string> configurationVectorEntries = {"ref-source",
                                                            "pps-source",
                                                            "tx-carrier-frequency",
@@ -41,13 +44,15 @@ struct cRadioConfiguration{
                                                            "rx-gain",
                                                            "rx-ant",
                                                            "rx-filter-bandwidth",
-                                                           "rx-lo-offset"};
+                                                           "rx-lo-offset",
+                                                           "internal-rx-buffer-size"};
 };
 
 class cRadioObject
 {
 public:
     cRadioObject(std::string serial_p,std::string type_p,std::string addr_p);
+    ~cRadioObject();
 
     cRadioResponse configureRadio();
     cRadioResponse loadRadioConfigurationFile(bool def=true,std::string filepath="");
@@ -57,6 +62,8 @@ public:
     std::string getSerial() {return serial;}
     std::string getType() {return type;}
     std::string getAddress() {return address;}
+
+    cRadioResponse startConinousReceptionProcess();
 
 private:
 
@@ -70,10 +77,12 @@ private:
 
     uhd::usrp::multi_usrp::sptr usrp;
 
+    std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuff;
+
     cRadioResponse readConfigurationFile(std::string filepath);
     cRadioResponse writeConfiurationFile(std::string filepath);
 
-    //void continousReceptionProcess();
+    void continousReceptionProcess();
 };
 
 #endif // CRADIOOBJECT_H
