@@ -55,15 +55,26 @@ public:
     ~cRadioObject();
 
     cRadioResponse configureRadio();
+    virtual cRadioResponse runRadioConfigurationProcess();
+
     cRadioResponse loadRadioConfigurationFile(bool def=true,std::string filepath="");
-    bool isConfigured();
+
+    bool isConfigured() {return isRadioConfigured;}
+
     cRadioConfiguration getConfiguration() {return rConf;}
+    void setConfiguration(cRadioConfiguration rConf_p);
 
     std::string getSerial() {return serial;}
     std::string getType() {return type;}
     std::string getAddress() {return address;}
 
-    cRadioResponse startConinousReceptionProcess();
+    cRadioResponse startContinousReception();
+    cRadioResponse stopContinousReception();
+    std::atomic<bool> stop_continous_reception = false;
+    std::atomic<bool> continous_reception_running = false;
+    virtual void runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
+
+    uhd::usrp::multi_usrp::sptr usrp;
 
 private:
 
@@ -74,15 +85,14 @@ private:
 
     cRadioConfiguration rConf;
     bool isLoadedConfiguration= false;
+    bool isRadioConfigured = false;    
 
-    uhd::usrp::multi_usrp::sptr usrp;
-
-    std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuff;
+    std::shared_ptr<CircBuffer<std::complex<short>>> internalRxCircBuffer;
 
     cRadioResponse readConfigurationFile(std::string filepath);
     cRadioResponse writeConfiurationFile(std::string filepath);
 
-    void continousReceptionProcess();
+
 };
 
 #endif // CRADIOOBJECT_H

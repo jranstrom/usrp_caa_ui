@@ -9,6 +9,7 @@
 #include "labelandfieldwidget.h"
 #include <QGroupBox>
 #include <QPushButton>
+#include <qtablewidget.h>
 
 class RadioControlWidget : public QWidget
 {
@@ -19,14 +20,20 @@ public:
     std::string getSerial(){return serial;}
 
     void pushRadioConfiguration(cRadioConfiguration radConfig_p,int configType=2);
+    void pushRadioConfigurationApplyStatus(int statusCode);
 
 signals:
     void loadDefaultConfigurationRequest(std::string serial_p,bool silent);
     void loadFileConfigurationRequest(std::string serial_p,std::string filepath,bool silent);
+    void applyConfigurationRequest(std::string serial_p,cRadioConfiguration radConf_p);
+    void testRequest(std::string serial_p,bool silent);
 
 private slots:
     void onLoadDefaultConfigurationBtnRelease();
+    void onApplyConfigurationBtnRelease();
     void onLoadFileConfigurationBtnRelease();
+    void onTestBtnRelease();
+    void onConfigurationTableItemChanged(const QModelIndex &parent, int first, int last);
 
 private:
 
@@ -40,7 +47,7 @@ private:
     QGroupBox * mainGroupBox;
 
     QVBoxLayout * mainGroupBoxLayout;
-    QHBoxLayout * outerContainerLayout;
+    QVBoxLayout * outerContainerLayout;
 
     QVBoxLayout * basicInfoLayout;
 
@@ -48,10 +55,19 @@ private:
     IndicatorButtonWidget * configurationStatusIndicator;
     QLabel * configurationStatusLabel;
     QPushButton * loadDefaultConfigurationBtn;
+    QPushButton * applyConfigurationBtn;
 
     QHBoxLayout * configurationFileLayout;
     LabelandFieldWidget * fileConfigurationField;
     QPushButton * loadFileConfigurationBtn;
+
+    QHBoxLayout * testSectionLayout;
+    QPushButton * testSectionPushBtn;
+
+    QVBoxLayout * configurationTableLayout;
+    QTableWidget * configurationTableWidget;
+
+    QHBoxLayout * applyUSRPConfigLayout;
 
 
     LabelandFieldWidget * serialField;
@@ -61,6 +77,9 @@ private:
     QFrame *basicInfoDividerLine;
 
     QSpacerItem * vSpacer;
+
+    void addItemToConfigurationTable(std::string name,std::string unit, std::string value);
+    void addItemToConfigurationTable(std::string name,std::string unit, QString value);
 };
 
 #endif // RADIOCONTROLWIDGET_H

@@ -458,10 +458,24 @@ void mainGUI::updateRxSetupStatus(bool status)
 
 void mainGUI::onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p, bool silent)
 {
-    radObj->loadRadioConfigurationFile(serial_p,true);
-
-    RadioControlWidget *cRCW = qobject_cast<RadioControlWidget *>(sender());
-    cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),0);
+    int loadResponseCode = radObj->loadRadioConfigurationFile(serial_p,true);
+    if(loadResponseCode == 0){
+        RadioControlWidget * cRCW= qobject_cast<RadioControlWidget *>(sender());
+        if(cRCW){
+        }else{
+            for(int i=0;radioControls.size();i++){
+                if(radioControls[i]->getSerial() == serial_p){
+                    cRCW = radioControls[i];
+                    break;
+                }
+            }
+        }
+        cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),0);
+    }else if(loadResponseCode == -2){
+        addStatusUpdate("Error; configuration file does not exist",ui->tableWidget_status,-1);
+    }else{
+        addStatusUpdate("Error; could not load configuration file",ui->tableWidget_status,-1);
+    }
 }
 
 void mainGUI::onRadioControlWidgetLoadFileConfiguration(std::string serial_p, std::string filepath, bool silent)
@@ -475,6 +489,40 @@ void mainGUI::onRadioControlWidgetLoadFileConfiguration(std::string serial_p, st
         }
     }else{
         addStatusUpdate(QString::fromStdString("Error; File: " + filepath + " does not exist"),ui->tableWidget_status,-1);
+    }
+}
+
+void mainGUI::onRadioControlWidgetTestBtnRelease(std::string serial_p, bool silent)
+{
+    std::cout << "Test button " << serial_p << " was released!" << std::endl;
+    std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
+
+    if(cRad->isConfigured() == false){
+        cRad->configureRadio();
+    }
+
+    if(cRad->continous_reception_running == true){
+        cRadioResponse cr_resp = cRad->stopContinousReception();
+        std::cout << "Stop Reception Response: " << cr_resp.message << std::endl;
+    }else{
+        cRadioResponse cr_resp = cRad->startContinousReception();
+        std::cout << "Start Reception Response: " << cr_resp.message << std::endl;
+    }
+
+}
+
+void mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased(std::string serial_p, cRadioConfiguration radConf_p)
+{
+    std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
+
+    cRadioResponse response = cRad->configureRadio();
+
+    RadioControlWidget * cRCW= qobject_cast<RadioControlWidget *>(sender());
+    if(cRCW){
+        cRCW->pushRadioConfigurationApplyStatus(response.code);
+    }
+    if(response.code != 0){
+        addStatusUpdate(QString::fromStdString(response.message),ui->tableWidget_status,-1);
     }
 }
 
@@ -578,6 +626,15 @@ void mainGUI::addStatusUpdate(QString entry, QTableWidget *table,int type)
     QString currentDateTimeString = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
 
     table->insertRow(0);
+
+    int maximumHeight = table->rowCount()*table->rowHeight(0)+table->horizontalHeader()->height();
+
+    if(table->rowCount() < 4){
+        int minimumHeight = table->rowCount()*table->rowHeight(0)+table->horizontalHeader()->height();
+        table->setMinimumHeight(minimumHeight);
+    }
+
+    table->setMaximumHeight(maximumHeight);
 
     QTableWidgetItem *item1 = new QTableWidgetItem(currentDateTimeString);
     QTableWidgetItem *item2 = new QTableWidgetItem(entry);
@@ -1933,7 +1990,7 @@ void mainGUI::on_button_auto_capture_released()
             runMATLABScript();
             connect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureScriptWOSynch);
         }else if(validation_response == 1 && useCAA == true && useSynchronization == true){
-            autoCaptureTimer.setInterval(600);
+            autoCaptureTimer.setInterval(800);
             automaticCaptureStatus = 2;
             connect(&autoCaptureTimer,&QTimer::timeout,this,&mainGUI::processAutomaticCaptureCaaWSynch);
         }else{
@@ -2452,14 +2509,19 @@ void mainGUI::on_btn_connect_radio_released()
         int response = radObj->connectRadio(serials_v[index],false);
         if(response == 0){
             addStatusUpdate("Success connecting to " + QString::fromStdString(serials_v[index]) + "",ui->tableWidget_status,1);
-            RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(serials_v[index]));
+            RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(serials_v[index]));            
             connect(rcWidget,&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
             connect(rcWidget,&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
+            connect(rcWidget,&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
+            connect(rcWidget,&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
 
             radioControls.push_back(rcWidget);
 
-            //ui->vl_radio_controls->addWidget(rcWidget);
-            ui->vl_radio_controls->insertWidget(ui->vl_radio_controls->indexOf(ui->vspacer_vl_radio_controls),rcWidget);
+            ui->vl_radio_controls->addWidget(rcWidget);
+
+            onRadioControlWidgetLoadDefaultConfiguration(serials_v[index],false); // automatically load default
+
+            //ui->vl_radio_controls->insertWidget(ui->vl_radio_controls->indexOf(ui->vspacer_vl_radio_controls),rcWidget);
             ui->btn_connect_radio->setText("Disconnect");
         }else{
             addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[index]) + " could not connect",ui->tableWidget_status,-1);
@@ -2477,6 +2539,8 @@ void mainGUI::on_btn_connect_radio_released()
             ui->vl_radio_controls->removeWidget(radioControls[foundIndex]);
             disconnect(radioControls[foundIndex],&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
             disconnect(radioControls[foundIndex],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
+            disconnect(radioControls[foundIndex],&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
+            disconnect(radioControls[foundIndex],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
 
             delete radioControls[foundIndex];
             radioControls.erase(radioControls.begin()+foundIndex);

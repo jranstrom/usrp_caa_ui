@@ -1,6 +1,8 @@
 #include "radiosysobject.h"
 #include "RadioSysConfig.h"
 #include "../circbuffer.h"
+#include "cradiob200.h"
+#include "cradiousrp2.h"
 #include "matHF.h"
 #include "uhd_clib.h"
 
@@ -1554,7 +1556,15 @@ int RadioSysObject::connectRadio(std::string serial,bool suppressPrint)
             type_t = addr.cast<std::string>("type","");
             addr_t = addr.cast<std::string>("addr","");
 
-            std::shared_ptr<cRadioObject> tmp_ptr_cRO  = std::make_shared<cRadioObject>(serial_t,type_t,addr_t);
+            std::shared_ptr<cRadioObject> tmp_ptr_cRO;
+
+            if(type_t == "usrp2"){
+                tmp_ptr_cRO = std::make_shared<cRadioUSRP2>(serial_t,type_t,addr_t);
+            }else if(type_t == "b200"){
+                tmp_ptr_cRO = std::make_shared<cRadioB200>(serial_t,type_t,addr_t);
+            }else{
+                tmp_ptr_cRO = std::make_shared<cRadioObject>(serial_t,type_t,addr_t);
+            }
 
             connectedRadios.push_back(tmp_ptr_cRO);
             if(suppressPrint == false){

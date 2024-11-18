@@ -1,4 +1,5 @@
 #include "cradioobject.h"
+#include <filesystem>
 #include <fstream>
 #include "custom/config_file.h"
 
@@ -12,7 +13,10 @@ cRadioObject::cRadioObject(std::string serial_p, std::string type_p, std::string
 
 cRadioObject::~cRadioObject()
 {
-    std::cout << "Removing object" << std::endl;
+    cRadioResponse contRecepResp = stopContinousReception();
+    if(contRecepResp.code != 0){
+        std::cout << "Could not stop continous reception." << std::endl;
+    }
 }
 
 cRadioResponse cRadioObject::configureRadio()
@@ -25,9 +29,22 @@ cRadioResponse cRadioObject::configureRadio()
         response.code = -1;
         response.message = "No configuration has been loaded";
         return response;
+    }else{
+        response = runRadioConfigurationProcess();
     }
 
-    // Set up USRP part
+    if(response.code == 0){
+        isRadioConfigured = true;
+        internalRxCircBuffer = std::make_shared<CircBuffer<std::complex<short>>>(rConf.internalRxBufferSize);
+    }
+    return response;
+}
+
+cRadioResponse cRadioObject::runRadioConfigurationProcess()
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "success";
 
     usrp = uhd::usrp::multi_usrp ::make("addr=" + address);
 
@@ -52,7 +69,7 @@ cRadioResponse cRadioObject::configureRadio()
 
     double txCarrierFrequency = rConf.txCarrierFrequency;
     double txLO_offset = rConf.txLOoffset;
-    uhd::tune_request_t txTuneRequest(rxCarrierFrequency,rxLO_offset);
+    uhd::tune_request_t txTuneRequest(txCarrierFrequency,rxLO_offset);
     usrp->set_tx_freq(txTuneRequest,channel);
 
     double rxGain = rConf.rxGain;
@@ -103,23 +120,59 @@ cRadioResponse cRadioObject::loadRadioConfigurationFile(bool def, std::string fi
 
     if(response.code == 0){
         isLoadedConfiguration = true;
-        rxCircBuff = std::make_shared<CircBuffer<std::complex<short>>>(rConf.internalRxBufferSize);
     }
 
     return response;
 }
 
-cRadioResponse cRadioObject::startConinousReceptionProcess()
+void cRadioObject::setConfiguration(cRadioConfiguration rConf_p)
+{
+    rConf = rConf_p;
+    isLoadedConfiguration = true;
+}
+
+cRadioResponse cRadioObject::stopContinousReception()
 {
     cRadioResponse response;
     response.code = 0;
     response.message = "Success";
 
-    rxCircBuff->reset_buffer();
+    stop_continous_reception = true;
 
-    std::thread continousReceptionThread(&cRadioObject::continousReceptionProcess,this);
+    int m_wait = 10;
+    int i = 0;
+    do{
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        if(i++ > m_wait){
+            response.code = -1;
+            response.message = "Error; Reception not terminating...";
+            return response;
+        }
 
-    continousReceptionThread.detach();
+    }while(continous_reception_running == true);
+
+
+    return response;
+}
+
+cRadioResponse cRadioObject::startContinousReception()
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "Success";
+
+    //rxCircBuff->reset_buffer();
+    if(continous_reception_running == true){
+        response.code = -1;
+        response.message = "Error; Cannot start, continous reception already running";
+    }else if(isConfigured()){
+        stop_continous_reception = false;
+        std::thread continousReceptionThread(&cRadioObject::runContinousReceptionProcess,this,internalRxCircBuffer,usrp);
+        continousReceptionThread.detach();
+    }else{
+        response.code = -2;
+        response.message = "Error; Cannot start reception as radio is not yet configured";
+    }
 
     return response;
 }
@@ -129,6 +182,13 @@ cRadioResponse cRadioObject::readConfigurationFile(std::string filepath)
     cRadioResponse response;
     response.code = 0;
     response.message = "success";
+
+    if(std::filesystem::exists(filepath) == false)
+    {
+        response.code = -2;
+        response.message = "Error; file does not exist";
+        return response;
+    }
 
     try{
         std::ifstream iconf_file(filepath);
@@ -188,10 +248,10 @@ cRadioResponse cRadioObject::writeConfiurationFile(std::string filepath)
     return response;
 }
 
-void cRadioObject::continousReceptionProcess()
+void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp)
 {
     uhd::stream_args_t stream_args("sc16","sc16");
-    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+    uhd::rx_streamer::sptr rx_stream = m_usrp->get_rx_stream(stream_args);
 
     using smplType = std::complex<short>;
     size_t smplsPerBuffer = 1472;
@@ -215,7 +275,9 @@ void cRadioObject::continousReceptionProcess()
     //stream_cmd.time_spec = uhd::time_spec_t(1);
     rx_stream->issue_stream_cmd(stream_cmd);
 
-    while(true){
+    continous_reception_running = true;
+    while(stop_continous_reception == false){
+
         size_t numRxSmpls = rx_stream->recv(rxBuffer,smplsPerBuffer,md,5.1,false);
 
         if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT){
@@ -228,7 +290,8 @@ void cRadioObject::continousReceptionProcess()
         }
 
         for(size_t smpl_i =0;smpl_i<smplsPerBuffer;smpl_i++){
-            rxCircBuff->push(rxBuffer[smpl_i]);
+            rxCircBuffer->push(rxBuffer[smpl_i]);
         }
     }
+    continous_reception_running = false;
 }
