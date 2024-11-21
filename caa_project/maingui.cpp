@@ -459,6 +459,7 @@ void mainGUI::updateRxSetupStatus(bool status)
 void mainGUI::onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p, bool silent)
 {
     int loadResponseCode = radObj->loadRadioConfigurationFile(serial_p,true);
+
     if(loadResponseCode == 0){
         RadioControlWidget * cRCW= qobject_cast<RadioControlWidget *>(sender());
         if(cRCW){
@@ -470,7 +471,9 @@ void mainGUI::onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p,
                 }
             }
         }
-        cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),0);
+
+        cRCW->pushRadioConfiguration(radObj->getRadio(serial_p));
+        //cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),0);
     }else if(loadResponseCode == -2){
         addStatusUpdate("Error; configuration file does not exist",ui->tableWidget_status,-1);
     }else{
@@ -515,11 +518,13 @@ void mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased(std::string seri
 {
     std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
 
+    //cRad->setConfiguration(radConf_p);
+
     cRadioResponse response = cRad->configureRadio();
 
     RadioControlWidget * cRCW= qobject_cast<RadioControlWidget *>(sender());
     if(cRCW){
-        cRCW->pushRadioConfigurationApplyStatus(response.code);
+        cRCW->pushRadioConfigurationApplyStatus(response.code,cRad->getConfiguration());
     }
     if(response.code != 0){
         addStatusUpdate(QString::fromStdString(response.message),ui->tableWidget_status,-1);

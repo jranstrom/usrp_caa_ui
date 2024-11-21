@@ -86,6 +86,8 @@ add_executable(caa_project
     custom/radiocontrolwidget.h custom/radiocontrolwidget.cpp
     custom/cradiousrp2.h custom/cradiousrp2.cpp
     custom/cradiob200.h custom/cradiob200.cpp
+    custom/cradioproperty.h custom/cradioproperty.cpp
+
 
 
 )

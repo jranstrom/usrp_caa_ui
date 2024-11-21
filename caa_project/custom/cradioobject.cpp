@@ -9,6 +9,49 @@ cRadioObject::cRadioObject(std::string serial_p, std::string type_p, std::string
     serial = serial_p;
     type = type_p;
     address = addr_p;
+
+    stagedConfiguration["rx-carrier-frequency"] = std::make_shared<cRadioFrequencyProperty>("Rx Carrier Frequency","GHz",0.0);
+    stagedConfiguration["tx-carrier-frequency"] = std::make_shared<cRadioFrequencyProperty>("Tx Carrier Frequency","GHz",0.0);
+
+    stagedConfiguration["rx-sampling-rate"] = std::make_shared<cRadioFrequencyProperty>("Rx Sampling Rate","MHz",0.0);
+    stagedConfiguration["tx-sampling-rate"] = std::make_shared<cRadioFrequencyProperty>("Tx Sampling Rate","MHz",0.0);
+
+    stagedConfiguration["pps-source"] = std::make_shared<cRadioPPSSourceProperty>("PPS Source","","external");
+    stagedConfiguration["ref-source"] = std::make_shared<cRadioREFSourceProperty>("REF Source","","external");
+    stagedConfiguration["rx-antenna"] = std::make_shared<cRadioAntennaProperty>("Rx antenna","","CAL");
+    stagedConfiguration["tx-antenna"] = std::make_shared<cRadioAntennaProperty>("Tx antenna","","CAL");
+
+    stagedConfiguration["tx-gain"] = std::make_shared<cRadioGainProperty>("Tx Gain","dB",0.0);
+    stagedConfiguration["rx-gain"] = std::make_shared<cRadioGainProperty>("Rx Gain","dB",0.0);
+
+    stagedConfiguration["rx-lo-offset"] = std::make_shared<cRadioFrequencyProperty>("Rx LO-offset","MHz",0.0);
+    stagedConfiguration["tx-lo-offset"] = std::make_shared<cRadioFrequencyProperty>("Tx LO-offset","MHz",0.0);
+
+    stagedConfiguration["tx-filter-bandwidth"] = std::make_shared<cRadioFrequencyProperty>("Tx Filter BW","MHz",0.0);
+    stagedConfiguration["rx-filter-bandwidth"] = std::make_shared<cRadioFrequencyProperty>("Rx Filter BW","MHz",0.0);
+
+    //
+
+    appliedConfiguration["rx-carrier-frequency"] = std::make_shared<cRadioFrequencyProperty>("Rx Carrier Frequency","GHz",0.0);
+    appliedConfiguration["tx-carrier-frequency"] = std::make_shared<cRadioFrequencyProperty>("Tx Carrier Frequency","GHz",0.0);
+
+    appliedConfiguration["rx-sampling-rate"] = std::make_shared<cRadioFrequencyProperty>("Rx Sampling Rate","MHz",0.0);
+    appliedConfiguration["tx-sampling-rate"] = std::make_shared<cRadioFrequencyProperty>("Tx Sampling Rate","MHz",0.0);
+
+    appliedConfiguration["pps-source"] = std::make_shared<cRadioPPSSourceProperty>("PPS Source","","external");
+    appliedConfiguration["ref-source"] = std::make_shared<cRadioREFSourceProperty>("REF Source","","external");
+    appliedConfiguration["rx-antenna"] = std::make_shared<cRadioAntennaProperty>("Rx antenna","","CAL");
+    appliedConfiguration["tx-antenna"] = std::make_shared<cRadioAntennaProperty>("Tx antenna","","CAL");
+
+    appliedConfiguration["tx-gain"] = std::make_shared<cRadioGainProperty>("Tx Gain","dB",0.0);
+    appliedConfiguration["rx-gain"] = std::make_shared<cRadioGainProperty>("Rx Gain","dB",0.0);
+
+    appliedConfiguration["rx-lo-offset"] = std::make_shared<cRadioFrequencyProperty>("Rx LO-offset","MHz",0.0);
+    appliedConfiguration["tx-lo-offset"] = std::make_shared<cRadioFrequencyProperty>("Tx LO-offset","MHz",0.0);
+
+    appliedConfiguration["tx-filter-bandwidth"] = std::make_shared<cRadioFrequencyProperty>("Tx Filter BW","MHz",0.0);
+    appliedConfiguration["rx-filter-bandwidth"] = std::make_shared<cRadioFrequencyProperty>("Rx Filter BW","MHz",0.0);
+
 }
 
 cRadioObject::~cRadioObject()
@@ -25,6 +68,29 @@ cRadioResponse cRadioObject::configureRadio()
     response.code = 0;
     response.message = "success";
 
+    bool ok;
+    appliedConfiguration["pps-source"]->setProperty(stagedConfiguration["pps-source"]->getPropertyValueStr(),ok);
+    appliedConfiguration["ref-source"]->setProperty(stagedConfiguration["ref-source"]->getPropertyValueStr(),ok);
+    appliedConfiguration["rx-antenna"]->setProperty(stagedConfiguration["rx-antenna"]->getPropertyValueStr(),ok);
+    appliedConfiguration["tx-antenna"]->setProperty(stagedConfiguration["tx-antenna"]->getPropertyValueStr(),ok);
+
+    appliedConfiguration["rx-carrier-frequency"]->setProperty(stagedConfiguration["rx-carrier-frequency"]->getPropertyValueDouble(),ok);
+    appliedConfiguration["tx-carrier-frequency"]->setProperty(stagedConfiguration["tx-carrier-frequency"]->getPropertyValueDouble(),ok);
+
+    appliedConfiguration["rx-sampling-rate"]->setProperty(stagedConfiguration["rx-sampling-rate"]->getPropertyValueDouble(),ok);
+    appliedConfiguration["tx-sampling-rate"]->setProperty(stagedConfiguration["tx-sampling-rate"]->getPropertyValueDouble(),ok);
+
+    appliedConfiguration["tx-gain"]->setProperty(stagedConfiguration["tx-gain"]->getPropertyValueDouble(),ok);
+    appliedConfiguration["rx-gain"]->setProperty(stagedConfiguration["rx-gain"]->getPropertyValueDouble(),ok);
+
+    appliedConfiguration["rx-lo-offset"]->setProperty(stagedConfiguration["rx-lo-offset"]->getPropertyValueDouble(),ok);
+
+    appliedConfiguration["tx-lo-offset"]->setProperty(stagedConfiguration["tx-lo-offset"]->getPropertyValueDouble(),ok);
+    appliedConfiguration["rx-filter-bandwidth"]->setProperty(stagedConfiguration["rx-filter-bandwidth"]->getPropertyValueDouble(),ok);
+    appliedConfiguration["tx-filter-bandwidth"]->setProperty(stagedConfiguration["tx-filter-bandwidth"]->getPropertyValueDouble(),ok);
+
+    configurationApplied = true;
+
     if(isLoadedConfiguration == false){
         response.code = -1;
         response.message = "No configuration has been loaded";
@@ -34,6 +100,27 @@ cRadioResponse cRadioObject::configureRadio()
     }
 
     if(response.code == 0){
+
+        stagedConfiguration["pps-source"]->setProperty(appliedConfiguration["pps-source"]->getPropertyValueStr(),ok);
+        stagedConfiguration["ref-source"]->setProperty(appliedConfiguration["ref-source"]->getPropertyValueStr(),ok);
+        stagedConfiguration["rx-antenna"]->setProperty(appliedConfiguration["rx-antenna"]->getPropertyValueStr(),ok);
+        stagedConfiguration["tx-antenna"]->setProperty(appliedConfiguration["tx-antenna"]->getPropertyValueStr(),ok);
+
+        stagedConfiguration["rx-carrier-frequency"]->setProperty(appliedConfiguration["rx-carrier-frequency"]->getPropertyValueDouble(),ok);
+        stagedConfiguration["tx-carrier-frequency"]->setProperty(appliedConfiguration["tx-carrier-frequency"]->getPropertyValueDouble(),ok);
+
+        stagedConfiguration["rx-sampling-rate"]->setProperty(appliedConfiguration["rx-sampling-rate"]->getPropertyValueDouble(),ok);
+        stagedConfiguration["tx-sampling-rate"]->setProperty(appliedConfiguration["tx-sampling-rate"]->getPropertyValueDouble(),ok);
+
+        stagedConfiguration["tx-gain"]->setProperty(appliedConfiguration["tx-gain"]->getPropertyValueDouble(),ok);
+        stagedConfiguration["rx-gain"]->setProperty(appliedConfiguration["rx-gain"]->getPropertyValueDouble(),ok);
+
+        stagedConfiguration["rx-lo-offset"]->setProperty(appliedConfiguration["rx-lo-offset"]->getPropertyValueDouble(),ok);
+
+        stagedConfiguration["tx-lo-offset"]->setProperty(appliedConfiguration["tx-lo-offset"]->getPropertyValueDouble(),ok);
+        stagedConfiguration["rx-filter-bandwidth"]->setProperty(appliedConfiguration["rx-filter-bandwidth"]->getPropertyValueDouble(),ok);
+        stagedConfiguration["tx-filter-bandwidth"]->setProperty(appliedConfiguration["tx-filter-bandwidth"]->getPropertyValueDouble(),ok);
+
         isRadioConfigured = true;
         internalRxCircBuffer = std::make_shared<CircBuffer<std::complex<short>>>(rConf.internalRxBufferSize);
     }
@@ -46,44 +133,56 @@ cRadioResponse cRadioObject::runRadioConfigurationProcess()
     response.code = 0;
     response.message = "success";
 
-    usrp = uhd::usrp::multi_usrp ::make("addr=" + address);
+    std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> appliedConfiguration_t = getAppliedConfiguation();
 
-    std::string REF_source = rConf.refSource;
-    usrp->set_clock_source(REF_source);
-
-    std::string PPS_source = rConf.ppsSource;
-    usrp->set_time_source(PPS_source);
-
-    double rxSamplingRate = rConf.rxSamplingRate;
-    usrp->set_rx_rate(rxSamplingRate);
-
-    double txSamplingRate = rConf.txSamplingRate;
-    usrp->set_tx_rate(txSamplingRate);
+    bool ok;
 
     size_t channel = 0;
+    usrp = uhd::usrp::multi_usrp ::make("addr=" + address);
 
-    double rxCarrierFrequency = rConf.rxCarrierFrequency;
-    double rxLO_offset = rConf.rxLOoffset;
+    std::string REF_source = appliedConfiguration_t["ref-source"]->getPropertyValueStr();
+    usrp->set_clock_source(REF_source);
+
+    std::string PPS_source = appliedConfiguration_t["pps-source"]->getPropertyValueStr();
+    usrp->set_time_source(PPS_source);
+
+    double rxSamplingRate = appliedConfiguration_t["rx-sampling-rate"]->getPropertyValueDouble();
+    usrp->set_rx_rate(rxSamplingRate);
+    rConf.rxSamplingRate = usrp->get_rx_rate(channel);
+
+    double txSamplingRate = appliedConfiguration_t["tx-sampling-rate"]->getPropertyValueDouble();
+    usrp->set_tx_rate(txSamplingRate);
+    rConf.txSamplingRate = usrp->get_tx_rate(channel);
+
+
+    double rxCarrierFrequency = appliedConfiguration_t["rx-carrier-frequency"]->getPropertyValueDouble();
+    double rxLO_offset = appliedConfiguration_t["rx-lo-offset"]->getPropertyValueDouble();
     uhd::tune_request_t rxTuneRequest(rxCarrierFrequency,rxLO_offset);
-    usrp->set_rx_freq(rxTuneRequest,channel);
+    usrp->set_rx_freq(rxTuneRequest,channel);    
+    appliedConfiguration_t["rx-carrier-frequency"]->setProperty(usrp->get_rx_freq(channel),ok);
 
-    double txCarrierFrequency = rConf.txCarrierFrequency;
-    double txLO_offset = rConf.txLOoffset;
+    double txCarrierFrequency = appliedConfiguration_t["tx-carrier-frequency"]->getPropertyValueDouble();
+    double txLO_offset = appliedConfiguration_t["tx-lo-offset"]->getPropertyValueDouble();
     uhd::tune_request_t txTuneRequest(txCarrierFrequency,rxLO_offset);
     usrp->set_tx_freq(txTuneRequest,channel);
 
-    double rxGain = rConf.rxGain;
-    double txGain = rConf.txGain;
-    usrp->set_rx_gain(rxGain);
-    usrp->set_tx_gain(txGain);
+    appliedConfiguration_t["tx-carrier-frequency"]->setProperty(usrp->get_tx_freq(channel),ok);
 
-    std::string rxAntenna = rConf.rxAntenna;
-    std::string txAntenna = rConf.txAntenna;
+    double rxGain = appliedConfiguration_t["rx-gain"]->getPropertyValueDouble();
+    double txGain = appliedConfiguration_t["tx-gain"]->getPropertyValueDouble();
+    usrp->set_rx_gain(rxGain);
+    usrp->set_tx_gain(txGain);    
+
+    appliedConfiguration_t["rx-gain"]->setProperty(usrp->get_rx_gain(channel),ok);
+    appliedConfiguration_t["tx-gain"]->setProperty(usrp->get_tx_gain(channel),ok);
+
+    std::string rxAntenna = appliedConfiguration_t["rx-antenna"]->getPropertyValueStr();
+    std::string txAntenna = appliedConfiguration_t["tx-antenna"]->getPropertyValueStr();
     usrp->set_rx_antenna(rxAntenna,channel);
     usrp->set_tx_antenna(txAntenna,channel);
 
-    double rxFilterBandwidth = rConf.rxFilterBandwidth;
-    double txFilterBandwidth = rConf.txFilterBandwidth;
+    double rxFilterBandwidth = appliedConfiguration_t["rx-filter-bandwidth"]->getPropertyValueDouble();
+    double txFilterBandwidth = appliedConfiguration_t["tx-filter-bandwidth"]->getPropertyValueDouble();
     usrp->set_rx_bandwidth(rxFilterBandwidth,channel);
     usrp->set_tx_bandwidth(txFilterBandwidth,channel);
 
@@ -190,29 +289,84 @@ cRadioResponse cRadioObject::readConfigurationFile(std::string filepath)
         return response;
     }
 
+    double rxCarrierFrequency;
+    double rxSamplingRate;
+    double txCarrierFrequency;
+    double txSamplingRate;
+
+    double txFilterBandwidth;
+    double rxFilterBandwidth;
+
+    double txLOoffset;
+    double rxLOoffset;
+
+    std::string ppsSource;
+    std::string refSource;
+    std::string txAntenna;
+    std::string rxAntenna;
+    double txGain;
+    double rxGain;
+
     try{
         std::ifstream iconf_file(filepath);
         CFG::ReadFile(iconf_file,rConf.configurationVectorEntries,
-                      rConf.refSource,
-                      rConf.ppsSource,
-                      rConf.txCarrierFrequency,
-                      rConf.txSamplingRate,
-                      rConf.txGain,
-                      rConf.txAntenna,
-                      rConf.txFilterBandwidth,
-                      rConf.txLOoffset,
-                      rConf.rxCarrierFrequency,
-                      rConf.rxSamplingRate,
-                      rConf.rxGain,
-                      rConf.rxAntenna,
-                      rConf.rxFilterBandwidth,
-                      rConf.rxLOoffset,
+                      refSource,
+                      ppsSource,
+                      txCarrierFrequency,
+                      txSamplingRate,
+                      txGain,
+                      txAntenna,
+                      txFilterBandwidth,
+                      txLOoffset,
+                      rxCarrierFrequency,
+                      rxSamplingRate,
+                      rxGain,
+                      rxAntenna,
+                      rxFilterBandwidth,
+                      rxLOoffset,
                       rConf.internalRxBufferSize);
 
     }catch(...){
         response.code = -1;
         response.message = "error reading configuration";
     }
+
+    rConf.ppsSource = ppsSource;
+    rConf.refSource = refSource;
+
+    rConf.txAntenna = txAntenna;
+    rConf.rxAntenna = rxAntenna;
+
+    rConf.txGain = txGain;
+    rConf.rxGain = rxGain;
+
+    rConf.txFilterBandwidth = txFilterBandwidth;
+    rConf.txLOoffset = txLOoffset;
+    rConf.rxFilterBandwidth = rxFilterBandwidth;
+    rConf.rxLOoffset = rxLOoffset;
+
+    rConf.txCarrierFrequency = txCarrierFrequency;
+    rConf.txSamplingRate = txSamplingRate;
+
+    rConf.rxCarrierFrequency = rxCarrierFrequency;
+    rConf.rxSamplingRate = rxSamplingRate;
+
+
+    bool ok;
+    stagedConfiguration["rx-carrier-frequency"]->setProperty(rxCarrierFrequency,ok);
+    stagedConfiguration["tx-carrier-frequency"]->setProperty(txCarrierFrequency,ok);
+    stagedConfiguration["rx-sampling-rate"]->setProperty(rxSamplingRate,ok);
+    stagedConfiguration["tx-sampling-rate"]->setProperty(txSamplingRate,ok);
+    stagedConfiguration["pps-source"]->setProperty(ppsSource,ok);
+    stagedConfiguration["ref-source"]->setProperty(refSource,ok);
+    stagedConfiguration["rx-antenna"]->setProperty(rxAntenna,ok);
+    stagedConfiguration["tx-antenna"]->setProperty(txAntenna,ok);
+    stagedConfiguration["tx-gain"]->setProperty(txGain,ok);
+    stagedConfiguration["rx-gain"]->setProperty(rxGain,ok);
+    stagedConfiguration["tx-filter-bandwidth"]->setProperty(txFilterBandwidth,ok);
+    stagedConfiguration["rx-filter-bandwidth"]->setProperty(rxFilterBandwidth,ok);
+    stagedConfiguration["rx-lo-offset"]->setProperty(rxLOoffset,ok);
+    stagedConfiguration["tx-lo-offset"]->setProperty(txLOoffset,ok);
 
     return response;
 }
@@ -294,4 +448,26 @@ void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::
         }
     }
     continous_reception_running = false;
+}
+
+bool cRadioObject::isConfigurationsEqual(cRadioConfiguration radr, cRadioConfiguration radl)
+{
+    bool isEqual = true;
+
+    isEqual = isEqual && (radr.ppsSource == radl.ppsSource);
+    isEqual = isEqual && (radr.refSource == radl.refSource);
+    isEqual = isEqual && (radr.rxSamplingRate == radl.rxSamplingRate);
+    isEqual = isEqual && (radr.rxCarrierFrequency == radl.rxCarrierFrequency);
+    isEqual = isEqual && (radr.rxGain == radl.rxGain);
+    isEqual = isEqual && (radr.rxLOoffset == radl.rxLOoffset);
+    isEqual = isEqual && (radr.rxAntenna == radl.rxAntenna);
+    isEqual = isEqual && (radr.rxFilterBandwidth == radl.rxFilterBandwidth);
+    isEqual = isEqual && (radr.txSamplingRate == radl.txSamplingRate);
+    isEqual = isEqual && (radr.txCarrierFrequency == radl.txCarrierFrequency);
+    isEqual = isEqual && (radr.txGain == radl.txGain);
+    isEqual = isEqual && (radr.txLOoffset == radl.txLOoffset);
+    isEqual = isEqual && (radr.txAntenna == radl.txAntenna);
+    isEqual = isEqual && (radr.txFilterBandwidth == radl.txFilterBandwidth);
+
+    return isEqual;
 }

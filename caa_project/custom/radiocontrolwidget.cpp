@@ -3,11 +3,12 @@
 
 RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioObject> cRad_p)
 {
+    sourceRadio = cRad_p;
     radConfig = cRad_p->getConfiguration(); // copy object
 
-    serial = cRad_p->getSerial();
-    type = cRad_p->getType();
-    address = cRad_p->getAddress();
+    serial = sourceRadio->getSerial();
+    type = sourceRadio->getType();
+    address = sourceRadio->getAddress();
 
     uType = type;
     transform(uType.begin(), uType.end(), uType.begin(), ::toupper);
@@ -117,16 +118,19 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     configurationTableWidget->setFont(font);
 
     QAbstractItemModel* model = configurationTableWidget->model();
-    connect(model,&QAbstractTableModel::rowsInserted,this,&RadioControlWidget::onConfigurationTableItemChanged);
+    connect(model,&QAbstractTableModel::rowsInserted,this,&RadioControlWidget::onConfigurationTableInsertItem);
+    connect(configurationTableWidget,&QTableWidget::itemChanged,this,&RadioControlWidget::onConfigurationTableItemChanged);
 
     vSpacer = new QSpacerItem(5, 5, QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    configurationSectionLabel = new QLabel("USRP Configuration",this);
     //mainGroupBoxLayout->addItem(vSpacer);
     //mainGroupBoxLayout->addStretch(1);
 
     mainGroupBoxLayout->addWidget(basicInfoWidget);
 
     mainGroupBoxLayout->addWidget(basicInfoDividerLine);
+    mainGroupBoxLayout->addWidget(configurationSectionLabel);
     mainGroupBoxLayout->addWidget(configurationTableWidget);
     mainGroupBoxLayout->addWidget(configurationStatusWidget);
 
@@ -137,7 +141,7 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
 
 void RadioControlWidget::pushRadioConfiguration(cRadioConfiguration radConfig_p, int configType)
 {
-    // configType 0 - default; 1 - from file; 2 - not specified
+    // configType 0 - default; 1 - from file; 2 - not specified;
     radConfig = radConfig_p;
     std::string configurationStatusString_t = "Unknown configuration loaded...";
     int indicatorState = 3;
@@ -172,26 +176,63 @@ void RadioControlWidget::pushRadioConfiguration(cRadioConfiguration radConfig_p,
     addItemToConfigurationTable("PPS Source","n/a",radConfig_p.ppsSource);
     addItemToConfigurationTable("Ref Source","n/a",radConfig_p.refSource);
 
-
-    // Update all fields and controls
 }
 
-void RadioControlWidget::pushRadioConfigurationApplyStatus(int statusCode)
+void RadioControlWidget::pushRadioConfiguration(std::shared_ptr<cRadioObject> rad)
 {
-    std::string configurationStatusString_t = "Unknown error applying configuration";
-    int indicatorState = 1;
-    switch(statusCode){
-    case 0:
-        configurationStatusString_t = serial + " configured";
-        indicatorState = 2;
-        break;
-    case -1:
-        configurationStatusString_t = "Error";
-        indicatorState = 1;
+    configurationTableWidget->setRowCount(0);
+    radControlWidgetConfig.clear();
+
+    for(const auto& pair : rad->getStagedConfiguation()){
+        std::string propName = pair.second->getPropertyName();
+        std::string propUnit = pair.second->getPropertyUnit();
+        std::string propValStr = pair.second->getPropertyValueStr(3);
+
+        radControlWidgetConfig[propName] = std::make_shared<cRadioStringProperty>(pair.first,propUnit,propValStr);
+        addItemToConfigurationTable(propName,propUnit,propValStr);
+    }
+}
+
+void RadioControlWidget::pushRadioConfigurationApplyStatus(int statusCode,cRadioConfiguration radConf_p)
+{
+
+    bool equal = true;
+    for(const auto pairs : sourceRadio->getStagedConfiguation()){
+        bool ok;
+        std::string sourceKey = pairs.first;
+        bool equal_t = sourceRadio->getAppliedConfiguation()[sourceKey]->isPropertyEqualToString(pairs.second->getPropertyValueStr(),pairs.second->getPropertyUnit(),ok);
+        if(equal_t == false || ok == false){
+            equal = false;
+            break;
+        }
+
     }
 
-    configurationStatusLabel->setText(QString::fromStdString(configurationStatusString_t));
-    configurationStatusIndicator->setState(indicatorState);
+    if(equal){
+        pushRadioConfiguration(sourceRadio);
+        configurationStatusLabel->setText(QString::fromStdString("Configuration Applied"));
+        configurationStatusIndicator->setState(2);
+    }
+
+    // std::string configurationStatusString_t = "Unknown error applying configuration";
+    // bool equalConf =  cRadioObject::isConfigurationsEqual(radConfig,radConf_p);
+    // int indicatorState = 1;
+    // switch(statusCode){
+    // case 0:
+    //     configurationStatusString_t = serial + " configured";
+    //     indicatorState = 2;
+    //     if(equalConf == false){
+    //         pushRadioConfiguration(radConf_p,2);
+    //     }
+    //     appliedRadConfig = radConf_p;
+    //     break;
+    // case -1:
+    //     configurationStatusString_t = "Error";
+    //     indicatorState = 1;
+    // }
+
+    // configurationStatusLabel->setText(QString::fromStdString(configurationStatusString_t));
+    // configurationStatusIndicator->setState(indicatorState);
 }
 
 void RadioControlWidget::onLoadDefaultConfigurationBtnRelease()
@@ -201,6 +242,20 @@ void RadioControlWidget::onLoadDefaultConfigurationBtnRelease()
 
 void RadioControlWidget::onApplyConfigurationBtnRelease()
 {
+    // Apply
+    /*for(const auto& pair : radControlWidgetConfig){
+        std::string keySource = pair.second->getPropertyName();
+        std::string cUnit = pair.second->getPropertyUnit();
+
+        bool ok;
+        radSourceConfig[keySource]->setPropertyUnit(cUnit,ok);
+        if(ok == true){
+            radSourceConfig[keySource]->setPropertyByStr(pair.second->getPropertyValueStr(),ok);
+            if(ok == false){
+                throw std::runtime_error("Could not set property by string");
+            }
+        }
+    }*/
     emit applyConfigurationRequest(serial,radConfig);
 }
 
@@ -215,7 +270,7 @@ void RadioControlWidget::onTestBtnRelease()
     //emit testRequest(serial,false);
 }
 
-void RadioControlWidget::onConfigurationTableItemChanged(const QModelIndex &parent, int first, int last)
+void RadioControlWidget::onConfigurationTableInsertItem(const QModelIndex &parent, int first, int last)
 {
     int rows = configurationTableWidget->rowCount();
     int rowHeight = configurationTableWidget->rowHeight(0);
@@ -234,14 +289,79 @@ void RadioControlWidget::onConfigurationTableItemChanged(const QModelIndex &pare
     configurationTableWidget->adjustSize();
 }
 
+void RadioControlWidget::onConfigurationTableItemChanged(QTableWidgetItem *item)
+{
+    int row = item->row();
+    int col = item->column();
+
+    bool isApplied = false;
+    bool valid = false;
+    double dValue = 0.0;
+
+    std::string propName =(configurationTableWidget->item(row,0)->text()).toStdString();
+
+    if(col == 1){
+        //unit changed
+        std::string newUnit = (configurationTableWidget->item(row,1)->text()).toStdString();
+        std::string oldUnit = radControlWidgetConfig[propName]->getPropertyUnit();
+        std::string oldValue = radControlWidgetConfig[propName]->getPropertyValueStr(3);
+        std::string sourceKey = radControlWidgetConfig[propName]->getPropertyName();
+
+        bool ok;
+        sourceRadio->getStagedConfiguation()[sourceKey]->setPropertyUnit(newUnit,ok);
+        if(ok == true && newUnit != oldUnit){
+            // valid unit
+            radControlWidgetConfig[propName]->setPropertyUnit(newUnit,ok);
+            std::string newValue = sourceRadio->getStagedConfiguation()[sourceKey]->getPropertyValueStr(3);
+            radControlWidgetConfig[propName]->setProperty(newValue,ok);
+            configurationTableWidget->item(row,2)->setText(QString::fromStdString(newValue));
+        }else{
+            configurationTableWidget->item(row,1)->setText(QString::fromStdString(oldUnit));
+        }
+    }else if(col == 2){
+        // value changed
+
+        std::string desiredValue = (configurationTableWidget->item(row,2)->text()).toStdString();
+        std::string sourceKey = radControlWidgetConfig[propName]->getPropertyName();
+        bool ok;
+        sourceRadio->getStagedConfiguation()[sourceKey]->setPropertyByStr(desiredValue,ok);
+        std::string setValue = sourceRadio->getStagedConfiguation()[sourceKey]->getPropertyValueStr(3);
+        std::string unit =  sourceRadio->getStagedConfiguation()[sourceKey]->getPropertyUnit();
+
+        bool validComp;
+        bool isEqual = sourceRadio->getAppliedConfiguation()[sourceKey]->isPropertyEqualToString(setValue,unit,validComp);
+
+        std::string configurationStatusString_t = "Configuration changed";
+        int indicatorState = 3;
+
+        if(desiredValue != setValue){
+            radControlWidgetConfig[propName]->setProperty(setValue,ok);
+            configurationTableWidget->item(row,2)->setText(QString::fromStdString(setValue));
+        }
+
+        if(isEqual == true){
+            configurationStatusString_t = "Configuration applied";
+            indicatorState = 2;
+        }else{
+            configurationStatusString_t = "Configuration not applied";
+            indicatorState = 3;
+        }
+
+        configurationStatusLabel->setText(QString::fromStdString(configurationStatusString_t));
+        configurationStatusIndicator->setState(indicatorState);
+    }
+}
+
 void RadioControlWidget::addItemToConfigurationTable(std::string name, std::string unit, std::string value)
 {
+
     addItemToConfigurationTable(name,unit,QString::fromStdString(value));
     //std::cout<< "Viewport : " << configurationTableWidget->viewport()->minimumHeight() << std::endl;
 }
 
 void RadioControlWidget::addItemToConfigurationTable(std::string name, std::string unit, QString value)
 {
+    disconnect(configurationTableWidget,&QTableWidget::itemChanged,this,&RadioControlWidget::onConfigurationTableItemChanged);
     QTableWidgetItem *item1 = new QTableWidgetItem(QString::fromStdString(name));
     QTableWidgetItem *item2 = new QTableWidgetItem(QString::fromStdString(unit));
     QTableWidgetItem *item3 = new QTableWidgetItem(value);
@@ -252,5 +372,6 @@ void RadioControlWidget::addItemToConfigurationTable(std::string name, std::stri
     configurationTableWidget->setItem(0, 0, item1); // Row 0, Column 0
     configurationTableWidget->setItem(0, 1, item2); // Row 0, Column 1
     configurationTableWidget->setItem(0, 2, item3); // Row 0, Column 1
+    connect(configurationTableWidget,&QTableWidget::itemChanged,this,&RadioControlWidget::onConfigurationTableItemChanged);
 }
 

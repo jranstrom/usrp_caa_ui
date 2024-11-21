@@ -20,7 +20,8 @@ public:
     std::string getSerial(){return serial;}
 
     void pushRadioConfiguration(cRadioConfiguration radConfig_p,int configType=2);
-    void pushRadioConfigurationApplyStatus(int statusCode);
+    void pushRadioConfiguration(std::shared_ptr<cRadioObject> rad);
+    void pushRadioConfigurationApplyStatus(int statusCode,cRadioConfiguration radConf_p);
 
 signals:
     void loadDefaultConfigurationRequest(std::string serial_p,bool silent);
@@ -33,11 +34,19 @@ private slots:
     void onApplyConfigurationBtnRelease();
     void onLoadFileConfigurationBtnRelease();
     void onTestBtnRelease();
-    void onConfigurationTableItemChanged(const QModelIndex &parent, int first, int last);
+    void onConfigurationTableInsertItem(const QModelIndex &parent, int first, int last);
+    void onConfigurationTableItemChanged(QTableWidgetItem * item);
 
 private:
 
+    std::shared_ptr<cRadioObject> sourceRadio;
     cRadioConfiguration radConfig;
+    cRadioConfiguration appliedRadConfig;
+
+    std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> radSourceConfig;
+    std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> radControlWidgetConfig;
+
+    int configurationStatus = 0; // 1 - loaded; 2 - applied; 3 - changed
 
     std::string serial;
     std::string type;
@@ -66,6 +75,7 @@ private:
 
     QVBoxLayout * configurationTableLayout;
     QTableWidget * configurationTableWidget;
+    QLabel * configurationSectionLabel;
 
     QHBoxLayout * applyUSRPConfigLayout;
 

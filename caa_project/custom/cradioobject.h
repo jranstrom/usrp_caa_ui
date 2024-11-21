@@ -2,6 +2,7 @@
 #define CRADIOOBJECT_H
 
 #include "circbuffer.h"
+#include "cradioproperty.h"
 #include <string>
 #include <uhd/usrp/multi_usrp.hpp>
 
@@ -76,6 +77,13 @@ public:
 
     uhd::usrp::multi_usrp::sptr usrp;
 
+    static bool isConfigurationsEqual(cRadioConfiguration radr,cRadioConfiguration radl);
+
+    std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> getStagedConfiguation() {return stagedConfiguration;}
+    std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> getAppliedConfiguation() {return appliedConfiguration;}
+
+
+
 private:
 
     std::string uhd_findRadioResponse;
@@ -84,15 +92,19 @@ private:
     std::string address;
 
     cRadioConfiguration rConf;
+
     bool isLoadedConfiguration= false;
-    bool isRadioConfigured = false;    
+    bool isRadioConfigured = false;
+
+    bool configurationApplied = false;
 
     std::shared_ptr<CircBuffer<std::complex<short>>> internalRxCircBuffer;
 
     cRadioResponse readConfigurationFile(std::string filepath);
     cRadioResponse writeConfiurationFile(std::string filepath);
 
-
+    std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> stagedConfiguration;
+    std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> appliedConfiguration;
 };
 
 #endif // CRADIOOBJECT_H
