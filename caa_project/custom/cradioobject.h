@@ -75,13 +75,15 @@ public:
     std::atomic<bool> continous_reception_running = false;
     virtual void runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
 
+    std::vector<std::complex<short>> getLastReceivedSamples(size_t N);
+
     uhd::usrp::multi_usrp::sptr usrp;
 
     static bool isConfigurationsEqual(cRadioConfiguration radr,cRadioConfiguration radl);
 
     std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> getStagedConfiguation() {return stagedConfiguration;}
     std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> getAppliedConfiguation() {return appliedConfiguration;}
-
+    void setAppliedConfiguration(std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> configuration_p){appliedConfiguration = configuration_p;}
 
 
 private:

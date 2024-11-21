@@ -127,6 +127,20 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     //mainGroupBoxLayout->addItem(vSpacer);
     //mainGroupBoxLayout->addStretch(1);
 
+    QWidget *radioControlSectionWidget = new QWidget;
+    radioControlLayout = new QGridLayout(radioControlSectionWidget);
+    //radioControlLayout->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
+
+    radioControlDividerLine = new QFrame();
+    radioControlDividerLine->setFrameShape(QFrame::HLine);
+    radioControlDividerLine->setFrameShadow(QFrame::Sunken);
+
+    continousReceptionBtn = new QPushButton("Continous Rx",this);
+    connect(continousReceptionBtn,&QPushButton::released,this,&RadioControlWidget::onContinousReceptionBtnRelease);
+
+    radioControlLayout->addWidget(radioControlDividerLine,0,0,1,2);
+    radioControlLayout->addWidget(continousReceptionBtn,1,0);
+
     mainGroupBoxLayout->addWidget(basicInfoWidget);
 
     mainGroupBoxLayout->addWidget(basicInfoDividerLine);
@@ -136,45 +150,48 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
 
     mainGroupBoxLayout->addWidget(configurationTableContainerWidget);
     mainGroupBoxLayout->addWidget(configurationFileWidget);
+
+    mainGroupBoxLayout->addWidget(radioControlSectionWidget);
+
     outerContainerLayout->addWidget(mainGroupBox);
 }
 
 void RadioControlWidget::pushRadioConfiguration(cRadioConfiguration radConfig_p, int configType)
 {
     // configType 0 - default; 1 - from file; 2 - not specified;
-    radConfig = radConfig_p;
-    std::string configurationStatusString_t = "Unknown configuration loaded...";
-    int indicatorState = 3;
-    switch(configType){
-    case 0:
-        configurationStatusString_t = "Default configuration loaded";
-        indicatorState = 3;
-        break;
-    case 1:
-        configurationStatusString_t = "File configuration loaded";
-        indicatorState = 3;
-     break;
-    }
+   //  radConfig = radConfig_p;
+   //  std::string configurationStatusString_t = "Unknown configuration loaded...";
+   //  int indicatorState = 3;
+   //  switch(configType){
+   //  case 0:
+   //      configurationStatusString_t = "Default configuration loaded";
+   //      indicatorState = 3;
+   //      break;
+   //  case 1:
+   //      configurationStatusString_t = "File configuration loaded";
+   //      indicatorState = 3;
+   //   break;
+   //  }
 
-    configurationStatusLabel->setText(QString::fromStdString(configurationStatusString_t));
-    configurationStatusIndicator->setState(indicatorState);
+   //  configurationStatusLabel->setText(QString::fromStdString(configurationStatusString_t));
+   //  configurationStatusIndicator->setState(indicatorState);
 
-    configurationTableWidget->setRowCount(0);
+   //  configurationTableWidget->setRowCount(0);
 
-    addItemToConfigurationTable("Rx Antenna","n/a",radConfig_p.rxAntenna);
-    addItemToConfigurationTable("Rx Gain","dB",QString::number(radConfig_p.rxGain, 'f', 3));
-    addItemToConfigurationTable("Rx Carrier Frequency","GHz",QString::number(radConfig_p.rxCarrierFrequency/1e9, 'f', 3));
-    //addItemToConfigurationTable("Rx Gain","GHz",std::to_string(radConfig_p.);
-    addItemToConfigurationTable("Rx Sampling rate","MHz",QString::number(radConfig_p.rxSamplingRate/1e6, 'f', 3));
-   // addItemToConfigurationTable("Rx Sampling rate","MHz",QString::number(radConfig_p. 'f', 3));
+   //  addItemToConfigurationTable("Rx Antenna","n/a",radConfig_p.rxAntenna);
+   //  addItemToConfigurationTable("Rx Gain","dB",QString::number(radConfig_p.rxGain, 'f', 3));
+   //  addItemToConfigurationTable("Rx Carrier Frequency","GHz",QString::number(radConfig_p.rxCarrierFrequency/1e9, 'f', 3));
+   //  //addItemToConfigurationTable("Rx Gain","GHz",std::to_string(radConfig_p.);
+   //  addItemToConfigurationTable("Rx Sampling rate","MHz",QString::number(radConfig_p.rxSamplingRate/1e6, 'f', 3));
+   // // addItemToConfigurationTable("Rx Sampling rate","MHz",QString::number(radConfig_p. 'f', 3));
 
-    addItemToConfigurationTable("Tx Antenna","n/a",radConfig_p.txAntenna);
-    addItemToConfigurationTable("Tx Gain","dB",QString::number(radConfig_p.txGain, 'f', 3));
-    addItemToConfigurationTable("Tx Carrier Frequency","GHz",QString::number(radConfig_p.txCarrierFrequency/1e9, 'f', 3));
-    addItemToConfigurationTable("Tx Sampling rate","MHz",QString::number(radConfig_p.txSamplingRate/1e6, 'f', 3));
+   //  addItemToConfigurationTable("Tx Antenna","n/a",radConfig_p.txAntenna);
+   //  addItemToConfigurationTable("Tx Gain","dB",QString::number(radConfig_p.txGain, 'f', 3));
+   //  addItemToConfigurationTable("Tx Carrier Frequency","GHz",QString::number(radConfig_p.txCarrierFrequency/1e9, 'f', 3));
+   //  addItemToConfigurationTable("Tx Sampling rate","MHz",QString::number(radConfig_p.txSamplingRate/1e6, 'f', 3));
 
-    addItemToConfigurationTable("PPS Source","n/a",radConfig_p.ppsSource);
-    addItemToConfigurationTable("Ref Source","n/a",radConfig_p.refSource);
+   //  addItemToConfigurationTable("PPS Source","n/a",radConfig_p.ppsSource);
+   //  addItemToConfigurationTable("Ref Source","n/a",radConfig_p.refSource);
 
 }
 
@@ -214,25 +231,6 @@ void RadioControlWidget::pushRadioConfigurationApplyStatus(int statusCode,cRadio
         configurationStatusIndicator->setState(2);
     }
 
-    // std::string configurationStatusString_t = "Unknown error applying configuration";
-    // bool equalConf =  cRadioObject::isConfigurationsEqual(radConfig,radConf_p);
-    // int indicatorState = 1;
-    // switch(statusCode){
-    // case 0:
-    //     configurationStatusString_t = serial + " configured";
-    //     indicatorState = 2;
-    //     if(equalConf == false){
-    //         pushRadioConfiguration(radConf_p,2);
-    //     }
-    //     appliedRadConfig = radConf_p;
-    //     break;
-    // case -1:
-    //     configurationStatusString_t = "Error";
-    //     indicatorState = 1;
-    // }
-
-    // configurationStatusLabel->setText(QString::fromStdString(configurationStatusString_t));
-    // configurationStatusIndicator->setState(indicatorState);
 }
 
 void RadioControlWidget::onLoadDefaultConfigurationBtnRelease()
@@ -242,26 +240,17 @@ void RadioControlWidget::onLoadDefaultConfigurationBtnRelease()
 
 void RadioControlWidget::onApplyConfigurationBtnRelease()
 {
-    // Apply
-    /*for(const auto& pair : radControlWidgetConfig){
-        std::string keySource = pair.second->getPropertyName();
-        std::string cUnit = pair.second->getPropertyUnit();
-
-        bool ok;
-        radSourceConfig[keySource]->setPropertyUnit(cUnit,ok);
-        if(ok == true){
-            radSourceConfig[keySource]->setPropertyByStr(pair.second->getPropertyValueStr(),ok);
-            if(ok == false){
-                throw std::runtime_error("Could not set property by string");
-            }
-        }
-    }*/
     emit applyConfigurationRequest(serial,radConfig);
 }
 
 void RadioControlWidget::onLoadFileConfigurationBtnRelease()
 {
     emit loadFileConfigurationRequest(serial,fileConfigurationField->getFieldText(),false);
+}
+
+void RadioControlWidget::onContinousReceptionBtnRelease()
+{
+    emit continousReceptionControlRequest(serial,false);
 }
 
 void RadioControlWidget::onTestBtnRelease()

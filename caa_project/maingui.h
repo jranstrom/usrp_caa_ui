@@ -141,6 +141,10 @@ private slots:
     void onRadioControlWidgetLoadFileConfiguration(std::string serial_p, std::string filepath, bool silent);
     void onRadioControlWidgetTestBtnRelease(std::string serial_p, bool silent);
     void onRadioControlWidgetApplyConfigurationBtnReleased(std::string serial_p,cRadioConfiguration radConf_p);
+    void onRadioControlWidgetContinousReceptionBtnReleased(std::string serial_p,bool silent);
+
+    void onContinousReceptionWidgetClosed();
+    void onContinousReceptionWidgetStatusUpdate(std::string message,int code);
 
     void trackTransmissionProcess();
     void trackReceptionProcess();

@@ -7,6 +7,7 @@
 
 #include "custom/config_file.h"
 #include "radiocontrolwidget.h"
+#include "custom/continousreceptionradiocontrol.h"
 
 mainGUI::mainGUI(QWidget *parent)
     : QMainWindow(parent)
@@ -529,6 +530,32 @@ void mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased(std::string seri
     if(response.code != 0){
         addStatusUpdate(QString::fromStdString(response.message),ui->tableWidget_status,-1);
     }
+}
+
+void mainGUI::onRadioControlWidgetContinousReceptionBtnReleased(std::string serial_p, bool silent)
+{
+    std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
+    continousReceptionRadioControl * crRc = new continousReceptionRadioControl(nullptr,cRad);
+    connect(crRc,&continousReceptionRadioControl::controlClosed,this,&mainGUI::onContinousReceptionWidgetClosed);
+    connect(crRc,&continousReceptionRadioControl::statusUpdateRequest,this,&mainGUI::onContinousReceptionWidgetStatusUpdate);
+    crRc->show();
+    crRc->resize(420, 340);
+}
+
+void mainGUI::onContinousReceptionWidgetClosed()
+{
+    continousReceptionRadioControl * crRc = qobject_cast<continousReceptionRadioControl *>(sender());
+    disconnect(crRc,&continousReceptionRadioControl::controlClosed,this,&mainGUI::onContinousReceptionWidgetClosed);
+    disconnect(crRc,&continousReceptionRadioControl::statusUpdateRequest,this,&mainGUI::onContinousReceptionWidgetStatusUpdate);
+    delete crRc;
+}
+
+void mainGUI::onContinousReceptionWidgetStatusUpdate(std::string message, int code)
+{
+    continousReceptionRadioControl * crRc = qobject_cast<continousReceptionRadioControl *>(sender());
+    std::string serial = crRc->getSerial();
+    std::string concat_m = serial + ": " + message;
+    addStatusUpdate(QString::fromStdString(concat_m),ui->tableWidget_status,code);
 }
 
 mainGUI::~mainGUI()
@@ -2424,16 +2451,22 @@ void mainGUI::on_btn_connect_matlab_engine_released()
 
 void mainGUI::on_btn_test_released()
 {
-    int response_find_radios = radObj->findRadios();
-    int response_connect_radio = radObj->connectRadio("F270FD");
-    switch(response_connect_radio){
-        case -2:
-            std::cout << "Radio already connected" << std::endl;
-        break;
-        case -1:
-            std::cout << "Radio not found" << std::endl;
-            break;
+
+    for(auto rCW : radioControls ){
+        std::string serial = rCW->getSerial();
+        int count = radObj->getRadio(serial).use_count();
+        std::cout << serial << ": " << count << std::endl;
     }
+    // int response_find_radios = radObj->findRadios();
+    // int response_connect_radio = radObj->connectRadio("F270FD");
+    // switch(response_connect_radio){
+    //     case -2:
+    //         std::cout << "Radio already connected" << std::endl;
+    //     break;
+    //     case -1:
+    //         std::cout << "Radio not found" << std::endl;
+    //         break;
+    // }
 
 }
 
@@ -2519,6 +2552,7 @@ void mainGUI::on_btn_connect_radio_released()
             connect(rcWidget,&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
             connect(rcWidget,&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
             connect(rcWidget,&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
+            connect(rcWidget,&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
 
             radioControls.push_back(rcWidget);
 
@@ -2546,6 +2580,7 @@ void mainGUI::on_btn_connect_radio_released()
             disconnect(radioControls[foundIndex],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
             disconnect(radioControls[foundIndex],&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
             disconnect(radioControls[foundIndex],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
+            disconnect(radioControls[foundIndex],&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
 
             delete radioControls[foundIndex];
             radioControls.erase(radioControls.begin()+foundIndex);

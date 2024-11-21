@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1010</width>
-    <height>868</height>
+    <height>1066</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -140,7 +140,7 @@
          </widget>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="vl_radio_controls" stretch="">
+         <layout class="QVBoxLayout" name="vl_radio_controls">
           <property name="sizeConstraint">
            <enum>QLayout::SetMinimumSize</enum>
           </property>

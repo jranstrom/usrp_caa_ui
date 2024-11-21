@@ -148,11 +148,11 @@ cRadioResponse cRadioObject::runRadioConfigurationProcess()
 
     double rxSamplingRate = appliedConfiguration_t["rx-sampling-rate"]->getPropertyValueDouble();
     usrp->set_rx_rate(rxSamplingRate);
-    rConf.rxSamplingRate = usrp->get_rx_rate(channel);
+    appliedConfiguration["rx-sampling-rate"]->setProperty(usrp->get_rx_rate(channel),ok);
 
     double txSamplingRate = appliedConfiguration_t["tx-sampling-rate"]->getPropertyValueDouble();
     usrp->set_tx_rate(txSamplingRate);
-    rConf.txSamplingRate = usrp->get_tx_rate(channel);
+    appliedConfiguration["tx-sampling-rate"]->setProperty(usrp->get_tx_rate(channel),ok);
 
 
     double rxCarrierFrequency = appliedConfiguration_t["rx-carrier-frequency"]->getPropertyValueDouble();
@@ -448,6 +448,19 @@ void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::
         }
     }
     continous_reception_running = false;
+}
+
+std::vector<std::complex<short> > cRadioObject::getLastReceivedSamples(size_t N)
+{
+    std::vector<std::complex<short>> result_v;
+
+    size_t pushCount = internalRxCircBuffer->get_push_count();
+
+    if(pushCount > N){
+        result_v = internalRxCircBuffer->extract_range(pushCount-N,N);
+    }
+
+    return result_v;
 }
 
 bool cRadioObject::isConfigurationsEqual(cRadioConfiguration radr, cRadioConfiguration radl)

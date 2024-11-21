@@ -27,12 +27,14 @@ signals:
     void loadDefaultConfigurationRequest(std::string serial_p,bool silent);
     void loadFileConfigurationRequest(std::string serial_p,std::string filepath,bool silent);
     void applyConfigurationRequest(std::string serial_p,cRadioConfiguration radConf_p);
+    void continousReceptionControlRequest(std::string serial_p,bool silent);
     void testRequest(std::string serial_p,bool silent);
 
 private slots:
     void onLoadDefaultConfigurationBtnRelease();
     void onApplyConfigurationBtnRelease();
     void onLoadFileConfigurationBtnRelease();
+    void onContinousReceptionBtnRelease();
     void onTestBtnRelease();
     void onConfigurationTableInsertItem(const QModelIndex &parent, int first, int last);
     void onConfigurationTableItemChanged(QTableWidgetItem * item);
@@ -79,6 +81,9 @@ private:
 
     QHBoxLayout * applyUSRPConfigLayout;
 
+    QGridLayout * radioControlLayout;
+    QFrame *radioControlDividerLine;
+    QPushButton * continousReceptionBtn;
 
     LabelandFieldWidget * serialField;
     LabelandFieldWidget * typeField;
