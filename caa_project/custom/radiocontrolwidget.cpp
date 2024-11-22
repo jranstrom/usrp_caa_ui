@@ -138,8 +138,13 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     continousReceptionBtn = new QPushButton("Continous Rx",this);
     connect(continousReceptionBtn,&QPushButton::released,this,&RadioControlWidget::onContinousReceptionBtnRelease);
 
+    continousTransmissionBtn = new QPushButton("Continous Tx",this);
+    connect(continousTransmissionBtn,&QPushButton::released,this,&RadioControlWidget::onContinousTransmissionBtnRelease);
+
+
     radioControlLayout->addWidget(radioControlDividerLine,0,0,1,2);
     radioControlLayout->addWidget(continousReceptionBtn,1,0);
+    radioControlLayout->addWidget(continousTransmissionBtn,1,1);
 
     mainGroupBoxLayout->addWidget(basicInfoWidget);
 
@@ -251,6 +256,11 @@ void RadioControlWidget::onLoadFileConfigurationBtnRelease()
 void RadioControlWidget::onContinousReceptionBtnRelease()
 {
     emit continousReceptionControlRequest(serial,false);
+}
+
+void RadioControlWidget::onContinousTransmissionBtnRelease()
+{
+    emit continousTransmissionControlRequest(serial,false);
 }
 
 void RadioControlWidget::onTestBtnRelease()
