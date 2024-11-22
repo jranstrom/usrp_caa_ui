@@ -470,7 +470,6 @@ cRadioResponse cRadioObject::startContinousTransmission()
         response.code = -2;
         response.message = "Error; Radio not yet configured";
     }
-
 }
 
 cRadioResponse cRadioObject::stopContinousTransmission()
@@ -493,6 +492,54 @@ cRadioResponse cRadioObject::stopContinousTransmission()
     }while(continous_transmission_running == true);
 
     return response;
+}
+
+void cRadioObject::runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr &m_usrp)
+{
+    int txTimeoutCount = 0;
+    const int txTimeoutMax = 1e3;
+    continous_transmission_running = true;
+
+    const std::vector<size_t> channel_nums = {0};
+    const size_t total_num_channels = 1;
+    size_t smpl_per_buffer = 1472;
+
+    uhd::stream_args_t stream_args("sc16","sc16");
+    stream_args.channels = channel_nums;
+    uhd::tx_streamer::sptr tx_stream = m_usrp->get_tx_stream(stream_args);
+
+    uhd::tx_metadata_t md;
+    md.start_of_burst = true;
+    md.end_of_burst = false;
+    md.has_time_spec = false;
+
+    using smpl_type = std::complex<short>;
+
+    smpl_type c_smpl;
+
+    if(channel_nums.size() == 1){
+        std::vector<std::complex<short>> buffer(smpl_per_buffer);
+        while(stop_continous_transmission == false){
+            for(int ik=0;ik<smpl_per_buffer;ik++){
+                txCircBuffer->circ_pop(&c_smpl);
+                buffer[ik] = c_smpl;
+            }
+            size_t num_tx_smpls = smpl_per_buffer;
+            const size_t smpls_sent = tx_stream->send(&buffer.front(),num_tx_smpls,md,5.3);
+
+            if(smpls_sent != num_tx_smpls && ++txTimeoutCount > txTimeoutMax){
+                UHD_LOG_ERROR("TX-STREAM",
+                              "The tx_stream timed out sending " << num_tx_smpls << " samples ("
+                                                                 << smpls_sent << " sent)");
+                continous_transmission_running = false;
+                std::cout << "Transmission thread terminated..." << std::endl;
+                return;
+            }
+        }
+    }else{
+        throw std::runtime_error("Multiple Tx channels not yet supported");
+    }
+    continous_transmission_running = false;
 }
 
 std::vector<std::complex<short> > cRadioObject::getLastReceivedSamples(size_t N)

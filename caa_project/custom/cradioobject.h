@@ -79,7 +79,7 @@ public:
     cRadioResponse stopContinousTransmission();
     std::atomic<bool> stop_continous_transmission = false;
     std::atomic<bool> continous_transmission_running = false;
-    virtual void runContinousTransmissionProcess(uhd::usrp::multi_usrp::sptr &m_usrp);
+    virtual void runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr &m_usrp);
 
     std::vector<std::complex<short>> getLastReceivedSamples(size_t N);
 
@@ -107,6 +107,7 @@ private:
     bool configurationApplied = false;
 
     std::shared_ptr<CircBuffer<std::complex<short>>> internalRxCircBuffer;
+    std::shared_ptr<CircBuffer<std::complex<short>>> internalTxCircBuffer;
 
     cRadioResponse readConfigurationFile(std::string filepath);
     cRadioResponse writeConfiurationFile(std::string filepath);
