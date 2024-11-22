@@ -73,7 +73,13 @@ public:
     cRadioResponse stopContinousReception();
     std::atomic<bool> stop_continous_reception = false;
     std::atomic<bool> continous_reception_running = false;
-    virtual void runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
+    virtual void runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr &m_usrp);
+
+    cRadioResponse startContinousTransmission();
+    cRadioResponse stopContinousTransmission();
+    std::atomic<bool> stop_continous_transmission = false;
+    std::atomic<bool> continous_transmission_running = false;
+    virtual void runContinousTransmissionProcess(uhd::usrp::multi_usrp::sptr &m_usrp);
 
     std::vector<std::complex<short>> getLastReceivedSamples(size_t N);
 

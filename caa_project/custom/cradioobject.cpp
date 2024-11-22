@@ -263,14 +263,14 @@ cRadioResponse cRadioObject::startContinousReception()
     //rxCircBuff->reset_buffer();
     if(continous_reception_running == true){
         response.code = -1;
-        response.message = "Error; Cannot start, continous reception already running";
+        response.message = "Error; Continous reception already running";
     }else if(isConfigured()){
         stop_continous_reception = false;
         std::thread continousReceptionThread(&cRadioObject::runContinousReceptionProcess,this,internalRxCircBuffer,usrp);
         continousReceptionThread.detach();
     }else{
         response.code = -2;
-        response.message = "Error; Cannot start reception as radio is not yet configured";
+        response.message = "Error; Radio not yet configured";
     }
 
     return response;
@@ -402,10 +402,13 @@ cRadioResponse cRadioObject::writeConfiurationFile(std::string filepath)
     return response;
 }
 
-void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp)
+void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer, uhd::usrp::multi_usrp::sptr &m_usrp)
 {
     uhd::stream_args_t stream_args("sc16","sc16");
+    stream_args.channels = {1};
     uhd::rx_streamer::sptr rx_stream = m_usrp->get_rx_stream(stream_args);
+
+
 
     using smplType = std::complex<short>;
     size_t smplsPerBuffer = 1472;
@@ -448,6 +451,48 @@ void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::
         }
     }
     continous_reception_running = false;
+}
+
+cRadioResponse cRadioObject::startContinousTransmission()
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "Success";
+
+    if(continous_transmission_running == true){
+        response.code = -1;
+        response.message = "Error; Contrinous Transmission already running";
+    }else if(isConfigured()){
+        stop_continous_transmission = false;
+        std::thread continousTransmissionThread(&cRadioObject::runContinousTransmissionProcess,this,usrp);
+        continousTransmissionThread.detach();
+    }else{
+        response.code = -2;
+        response.message = "Error; Radio not yet configured";
+    }
+
+}
+
+cRadioResponse cRadioObject::stopContinousTransmission()
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "Success";
+
+    stop_continous_transmission = true;
+
+    int m_wait = 10;
+    int i =0;
+    do{
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        if(i++ > m_wait){
+            response.code = -1;
+            response.message = "Error, transmission could not be terminated...";
+            return response;
+        }
+    }while(continous_transmission_running == true);
+
+    return response;
 }
 
 std::vector<std::complex<short> > cRadioObject::getLastReceivedSamples(size_t N)
