@@ -3,9 +3,8 @@
 #include "labelandfieldwidget.h"
 
 continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, std::shared_ptr<cRadioObject> rad_p )
-    : QWidget{parent}
+    : RadioControlBaseWidget(parent,rad_p)
 {
-    sourceRadio = rad_p;
 
     std::string windowTitle = sourceRadio->getSerial() + " - Continous Reception";
     setWindowTitle(QString::fromStdString(windowTitle));
@@ -70,6 +69,11 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
 
 }
 
+void continousReceptionRadioControl::onControlClose()
+{
+
+}
+
 void continousReceptionRadioControl::onToggleReceptionBtnRelease()
 {
     cRadioResponse response;
@@ -109,7 +113,15 @@ void continousReceptionRadioControl::onToggleReceptionBtnRelease()
 
 void continousReceptionRadioControl::onCaptureBtnRelease()
 {
-
+    // Terminate reception...
+    if(isReceiving){
+        cRadioResponse response = sourceRadio->stopContinousReception();
+        if(response.code == 0){
+            emit statusUpdateRequest("Transmission stopped",-1);
+        }else{
+            emit statusUpdateRequest(response.message,-1);
+        }
+    }
 }
 
 void continousReceptionRadioControl::onTestBtnRelease()
@@ -153,19 +165,4 @@ void continousReceptionRadioControl::onTestBtnRelease()
         timePlot->xAxis->setRange(0,N);
         timePlot->replot();
     }
-}
-
-void continousReceptionRadioControl::closeEvent(QCloseEvent *event)
-{
-    // Terminate reception...
-    if(isReceiving){
-        cRadioResponse response = sourceRadio->stopContinousReception();
-        if(response.code == 0){
-            emit statusUpdateRequest("Transmission stopped",-1);
-        }else{
-            emit statusUpdateRequest(response.message,-1);
-        }
-    }
-
-    emit controlClosed();
 }

@@ -5,14 +5,15 @@
 #include <QWidget>
 #include "labelandfieldwidget.h"
 #include "qcustomplot.h"
+#include "radiocontrolbasewidget.h"
 
-class continousReceptionRadioControl : public QWidget
+class continousReceptionRadioControl : public RadioControlBaseWidget
 {
     Q_OBJECT
 public:
     explicit continousReceptionRadioControl(QWidget *parent = nullptr, std::shared_ptr<cRadioObject> rad_p=nullptr);
 
-    std::string getSerial(){return sourceRadio->getSerial();}
+    void onControlClose() override;
 
 private slots:
     void onToggleReceptionBtnRelease();
@@ -20,7 +21,6 @@ private slots:
     void onTestBtnRelease();
 
 private:
-    std::shared_ptr<cRadioObject> sourceRadio;
 
     bool isReceiving = false;
 
@@ -46,12 +46,7 @@ private:
 
     QSpacerItem * mainSpacer;
 
-signals:
-    void controlClosed();
-    void statusUpdateRequest(std::string message,int code);
 
-protected:
-    void closeEvent(QCloseEvent *event) override;
 };
 
 #endif // CONTINOUSRECEPTIONRADIOCONTROL_H
