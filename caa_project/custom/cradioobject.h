@@ -73,13 +73,13 @@ public:
     cRadioResponse stopContinousReception();
     std::atomic<bool> stop_continous_reception = false;
     std::atomic<bool> continous_reception_running = false;
-    virtual void runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr &m_usrp);
+    virtual void runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
 
     cRadioResponse startContinousTransmission();
     cRadioResponse stopContinousTransmission();
     std::atomic<bool> stop_continous_transmission = false;
     std::atomic<bool> continous_transmission_running = false;
-    virtual void runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr &m_usrp);
+    virtual void runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
 
     std::vector<std::complex<short>> getLastReceivedSamples(size_t N);
 
@@ -108,6 +108,7 @@ private:
 
     std::shared_ptr<CircBuffer<std::complex<short>>> internalRxCircBuffer;
     std::shared_ptr<CircBuffer<std::complex<short>>> internalTxCircBuffer;
+    bool txSignalLoaded = false;
 
     cRadioResponse readConfigurationFile(std::string filepath);
     cRadioResponse writeConfiurationFile(std::string filepath);

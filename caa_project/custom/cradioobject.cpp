@@ -402,7 +402,7 @@ cRadioResponse cRadioObject::writeConfiurationFile(std::string filepath)
     return response;
 }
 
-void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer, uhd::usrp::multi_usrp::sptr &m_usrp)
+void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer, uhd::usrp::multi_usrp::sptr m_usrp)
 {
     uhd::stream_args_t stream_args("sc16","sc16");
     stream_args.channels = {1};
@@ -461,15 +461,20 @@ cRadioResponse cRadioObject::startContinousTransmission()
 
     if(continous_transmission_running == true){
         response.code = -1;
-        response.message = "Error; Contrinous Transmission already running";
+        response.message = "Error; Continous Transmission already running";
+    }else if(txSignalLoaded == false){
+        response.code = -3;
+        response.message = "Error; No Tx signal specified";
     }else if(isConfigured()){
         stop_continous_transmission = false;
-        std::thread continousTransmissionThread(&cRadioObject::runContinousTransmissionProcess,this,usrp);
+        std::thread continousTransmissionThread(&cRadioObject::runContinousTransmissionProcess,this,internalTxCircBuffer,usrp);
         continousTransmissionThread.detach();
     }else{
         response.code = -2;
         response.message = "Error; Radio not yet configured";
     }
+
+    return response;
 }
 
 cRadioResponse cRadioObject::stopContinousTransmission()
@@ -494,7 +499,7 @@ cRadioResponse cRadioObject::stopContinousTransmission()
     return response;
 }
 
-void cRadioObject::runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr &m_usrp)
+void cRadioObject::runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp)
 {
     int txTimeoutCount = 0;
     const int txTimeoutMax = 1e3;
