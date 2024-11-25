@@ -1,6 +1,8 @@
 #include "continousreceptionradiocontrol.h"
 #include "cradioobject.h"
 #include "labelandfieldwidget.h"
+#include "matHF.h"
+#include "uhd_clib.h"
 
 continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, std::shared_ptr<cRadioObject> rad_p )
     : RadioControlBaseWidget(parent,rad_p)
@@ -67,10 +69,30 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     mainLayout->addWidget(testBtn);
     //mainLayout->addItem(mainSpacer);
 
+    receptionProcessTimer.setInterval(1000);
+    receptionProcessTimer.setSingleShot(false);
+    receptionProcessTimer.start();
+    connect(&receptionProcessTimer,&QTimer::timeout,this,&continousReceptionRadioControl::onProcessTimerTick);
+
 }
 
 void continousReceptionRadioControl::onControlClose()
 {
+    receptionProcessTimer.stop();
+    disconnect(&receptionProcessTimer,&QTimer::timeout,this,&continousReceptionRadioControl::onProcessTimerTick);
+
+    if(isReceiving == false){
+        return;
+    }
+
+    cRadioResponse response = sourceRadio->stopContinousReception();
+
+    if(response.code == 0){
+        isReceiving = false;
+        emit statusUpdateRequest("Reception terminated",-1);
+    }else{
+        emit statusUpdateRequest(response.message,-1);
+    }
 
 }
 
@@ -86,7 +108,7 @@ void continousReceptionRadioControl::onToggleReceptionBtnRelease()
         if(response.code == 0){
             isReceiving = true;
             toggleReceptionBtn->setText("Stop");
-            statusUpdate_m = "Transmission started";
+            statusUpdate_m = "Reception started";
             statusUpdateCode = 0;
         }else{
             statusUpdate_m = response.message;
@@ -98,7 +120,7 @@ void continousReceptionRadioControl::onToggleReceptionBtnRelease()
         if(response.code == 0){
             isReceiving = false;
             toggleReceptionBtn->setText("Start");
-            statusUpdate_m = "Transmission stopped";
+            statusUpdate_m = "Reception stopped";
             statusUpdateCode = 0;
         }else{
             statusUpdate_m = response.message;
@@ -126,12 +148,31 @@ void continousReceptionRadioControl::onCaptureBtnRelease()
 
 void continousReceptionRadioControl::onTestBtnRelease()
 {
+
+}
+
+void continousReceptionRadioControl::onProcessTimerTick()
+{
+    bool cStatus = sourceRadio->continous_reception_running;
+    if(cStatus != isReceiving){
+        isReceiving = cStatus;
+        return;
+    }
+
+    if(isReceiving == true){
+        plotAll();
+    }
+
+
+}
+
+void continousReceptionRadioControl::plotAll()
+{
     size_t N = 2048;
     std::vector<std::complex<short>> rxSamples = sourceRadio->getLastReceivedSamples(N);
+    std::vector<std::complex<double>> rxSamples_double(N);
     // Test to plot
     QVector<double> x(N),y(N);
-    double max_val = -400;
-    double min_val = 400;
 
     double y_r;
     double y_i;
@@ -143,26 +184,60 @@ void continousReceptionRadioControl::onTestBtnRelease()
             y_r = static_cast<double>(std::real(rxSamples[i]))/nfactor;
             y_i = static_cast<double>(std::imag(rxSamples[i]))/nfactor;
 
+            rxSamples_double[i] = std::complex<double>(y_r,y_i);
+
             y[i] = 10*std::log10(std::pow(y_r,2)+std::pow(y_i,2));
             x[i] = i;
 
-            if(max_val < y[i]){
-                max_val = y[i];
+            if(timePlot_max_val < y[i]){
+                timePlot_max_val = y[i];
             }
 
-            if(min_val > y[i]){
-                min_val = y[i];
+            if(timePlot_min_val > y[i] && std::isinf(y[i]) == false){
+                timePlot_min_val = y[i];
             }
         }
 
-        min_val = -100;
-        max_val = 10;
         timePlot->addGraph();
         timePlot->graph(0)->setData(x, y);
         timePlot->xAxis->setLabel("Sample");
         timePlot->yAxis->setLabel("Amplitude");
-        timePlot->yAxis->setRange(min_val,max_val);
+        timePlot->yAxis->setRange(timePlot_min_val-5,timePlot_max_val+5);
         timePlot->xAxis->setRange(0,N);
         timePlot->replot();
     }
+
+    double Y_r;
+    double Y_i;
+    QVector<double> X(N),Y(N);
+    std::vector<double> Y_t(N);
+
+    rxSamples_double = cfftw->fft_w_zpadd(rxSamples_double,N,false);
+    for(int i =0;i<N;i++){
+        Y_r = std::real(rxSamples_double[i]);
+        Y_i = std::imag(rxSamples_double[i]);
+
+
+        Y_t[i] = 10*std::log10(std::pow(Y_r,2)+std::pow(Y_i,2));
+        X[i] = i;
+
+        if(frequencyPlot_max_val < Y_t[i]){
+            frequencyPlot_max_val = Y_t[i];
+        }
+
+        if(frequencyPlot_min_val > Y_t[i] && std::isinf(Y_t[i]) == false){
+            frequencyPlot_min_val = Y_t[i];
+        }
+    }
+
+    uhd_clib::fft_shift(Y_t);
+
+    //Y = QVector::from
+    Y = QVector<double>(Y_t.begin(),Y_t.end());
+
+    frequencyPlot->addGraph();
+    frequencyPlot->graph(0)->setData(X,Y);
+    frequencyPlot->yAxis->setRange(frequencyPlot_min_val-5,frequencyPlot_max_val+10);
+    frequencyPlot->xAxis->setRange(0,N);
+    frequencyPlot->replot();
 }
