@@ -29,6 +29,7 @@ public:
 
     void saveCurrentValue();
     bool isSaved();
+    std::string getSavedValue(){return savedValue;}
 
     std::string getFieldText();
 
