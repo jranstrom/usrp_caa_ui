@@ -114,19 +114,15 @@ void continousTransmissionRadioControl::onControlClose()
 
 void continousTransmissionRadioControl::onStartBtnRelease()
 {
-    cRadioResponse response = readMatlabTxFile();
+
+    cRadioResponse response = sourceRadio->startContinousTransmission();
 
     if(response.code == 0){
-        response = sourceRadio->startContinousTransmission();
-
-        if(response.code == 0){
-            emit statusUpdateRequest("Transmission started",0);
-        }else{
-            emit statusUpdateRequest(response.message,-1);
-        }
+        emit statusUpdateRequest("Transmission started",0);
     }else{
         emit statusUpdateRequest(response.message,-1);
     }
+
 }
 
 void continousTransmissionRadioControl::onStopBtnRelease()
