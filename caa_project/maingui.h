@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "custom/radiosysobject.h"
+#include "radiocontrolbasewidget.h"
 #include "radiocontrolwidget.h"
 #include "uiobj.h"
 #include "tcom_ui.h"
@@ -293,6 +294,7 @@ private:
     std::vector<GUITabStruct> tabSizes;
 
     std::vector<RadioControlWidget*> radioControls;
+    std::map<std::string,RadioControlBaseWidget*> activeRadioControls;
 
     GUIConfiguation GUIConf;
 

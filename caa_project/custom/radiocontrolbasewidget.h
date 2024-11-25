@@ -15,6 +15,8 @@ public:
 
     virtual void onControlClose(){};
 
+    virtual std::string getType() {return "base";}
+
 signals:
     void controlClosed();
     void statusUpdateRequest(std::string message,int code);

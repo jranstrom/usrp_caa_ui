@@ -17,6 +17,8 @@ public:
 
     void onControlClose() override;
 
+    std::string getType() override {return "cont-rx";}
+
 
 private slots:
     void onToggleReceptionBtnRelease();

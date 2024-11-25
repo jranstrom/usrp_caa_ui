@@ -536,26 +536,49 @@ void mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased(std::string seri
 void mainGUI::onRadioControlWidgetContinousReceptionBtnReleased(std::string serial_p, bool silent)
 {
     std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
-    continousReceptionRadioControl * crRc = new continousReceptionRadioControl(nullptr,cRad);
-    connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
-    connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
-    crRc->show();
-    crRc->resize(420, 340);
+
+    if(activeRadioControls.find(serial_p + "-cont-rx") == activeRadioControls.end()){
+        // not in map
+        continousReceptionRadioControl * crRc = new continousReceptionRadioControl(nullptr,cRad);
+        connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
+        connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
+        crRc->show();
+        crRc->resize(420, 340);
+
+        // add to map
+        activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
+    }else{
+        activeRadioControls[serial_p + "-cont-rx"]->activateWindow();
+    }
 }
 
 void mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased(std::string serial_p, bool silent)
 {
     std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
-    continousTransmissionRadioControl * crRc = new continousTransmissionRadioControl(nullptr,cRad);
-    connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
-    connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
-    crRc->show();
-    crRc->resize(420, 340);
+
+    if(activeRadioControls.find(serial_p + "-cont-tx") == activeRadioControls.end()){
+        // not in map
+        continousTransmissionRadioControl * crRc = new continousTransmissionRadioControl(nullptr,cRad);
+        connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
+        connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
+        crRc->show();
+        crRc->resize(420, 340);
+
+        // add to map
+        activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
+    }else{
+        activeRadioControls[serial_p + "-cont-tx"]->activateWindow();
+    }
 }
 
 void mainGUI::onRadioControlWidgetClosed()
 {
     RadioControlBaseWidget * crRc = qobject_cast<RadioControlBaseWidget *>(sender());
+
+    std::string key = crRc->getSerial() + "-" + crRc->getType();
+    std::cout << key << std::endl;
+    activeRadioControls.erase(key);
+
     disconnect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
     disconnect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
     delete crRc;

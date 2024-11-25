@@ -18,6 +18,8 @@ public:
 
     void onControlClose() override;
 
+    std::string getType() override {return "cont-tx";}
+
 private slots:
     void onStartBtnRelease();
     void onStopBtnRelease();
