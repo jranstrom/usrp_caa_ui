@@ -16,6 +16,12 @@ cRadioResponse cRadioB200::runRadioConfigurationProcess()
     const std::string addr = "type=b200,serial=" + getSerial();
     usrp = uhd::usrp::multi_usrp::make(addr);
 
+    std::string subdev_rx("A:A");
+    usrp->set_rx_subdev_spec(subdev_rx);
+
+    std::string subdev_tx("A:A");
+    usrp->set_tx_subdev_spec(subdev_tx);
+
     std::string REF_source = appliedConfiguration_t["ref-source"]->getPropertyValueStr();
     usrp->set_clock_source(REF_source);
 
@@ -52,15 +58,16 @@ cRadioResponse cRadioB200::runRadioConfigurationProcess()
     appliedConfiguration_t["rx-gain"]->setProperty(usrp->get_rx_gain(channel),ok);
     appliedConfiguration_t["tx-gain"]->setProperty(usrp->get_tx_gain(channel),ok);
 
+
     std::string rxAntenna = appliedConfiguration_t["rx-antenna"]->getPropertyValueStr();
     std::string txAntenna = appliedConfiguration_t["tx-antenna"]->getPropertyValueStr();
-    usrp->set_rx_antenna(rxAntenna,channel);
-    usrp->set_tx_antenna(txAntenna,channel);
+    usrp->set_rx_antenna(rxAntenna);
+    usrp->set_tx_antenna(txAntenna);
 
     double rxFilterBandwidth = appliedConfiguration_t["rx-filter-bandwidth"]->getPropertyValueDouble();
     double txFilterBandwidth = appliedConfiguration_t["tx-filter-bandwidth"]->getPropertyValueDouble();
-    usrp->set_rx_bandwidth(rxFilterBandwidth,channel);
-    usrp->set_tx_bandwidth(txFilterBandwidth,channel);
+    usrp->set_rx_bandwidth(rxFilterBandwidth);
+    usrp->set_tx_bandwidth(txFilterBandwidth);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
