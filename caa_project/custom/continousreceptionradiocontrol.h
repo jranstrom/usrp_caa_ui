@@ -29,6 +29,12 @@ private:
 
     void plotAll();
 
+    double timePlot_max_val = -400;
+    double timePlot_min_val = 400;
+
+    double frequencyPlot_max_val = -400;
+    double frequencyPlot_min_val = 400;
+
     bool isReceiving = false;
 
     std::shared_ptr<customFFTWObject> cfftw = std::make_shared<customFFTWObject>();

@@ -174,6 +174,9 @@ void continousReceptionRadioControl::plotAll()
     // Test to plot
     QVector<double> x(N),y(N);
 
+    double sample_rate = (sourceRadio->getAppliedConfiguation())["rx-sampling-rate"]->getPropertyValueDouble();
+    sample_rate = sample_rate/1e3;
+
     double y_r;
     double y_i;
 
@@ -219,7 +222,7 @@ void continousReceptionRadioControl::plotAll()
 
 
         Y_t[i] = 10*std::log10(std::pow(Y_r,2)+std::pow(Y_i,2));
-        X[i] = i;
+        X[i] = ((static_cast<double>(i))/N-0.5)*sample_rate;;
 
         if(frequencyPlot_max_val < Y_t[i]){
             frequencyPlot_max_val = Y_t[i];
@@ -238,6 +241,6 @@ void continousReceptionRadioControl::plotAll()
     frequencyPlot->addGraph();
     frequencyPlot->graph(0)->setData(X,Y);
     frequencyPlot->yAxis->setRange(frequencyPlot_min_val-5,frequencyPlot_max_val+10);
-    frequencyPlot->xAxis->setRange(0,N);
+    frequencyPlot->xAxis->setRange(X[0],X[N-1]);
     frequencyPlot->replot();
 }
