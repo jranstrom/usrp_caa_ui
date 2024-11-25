@@ -27,30 +27,31 @@ std::vector<std::complex<double> > customFFTWObject::fft_w_zpadd(std::vector<std
         }
     }
 
-    if(ik != -1){
-        fftw_complex * in = getIn(ik);
-        fftw_complex* out = getOut(ik);
+    if(ik == -1){
+        ik= define_fft_w_size(sig_size,false);
+    }
+    fftw_complex * in = getIn(ik);
+    fftw_complex* out = getOut(ik);
 
-        for (int ii = 0; ii < N; ++ii) {
-            if(ii<sig_size){
-                in[ii][0] = std::real(signal[ii]);
-                in[ii][1] = std::imag(signal[ii]);
-            }else{
-                in[ii][0] = 0.0;
-                in[ii][1] = 0.0;
-            }
-            }
-
-        fftw_execute(p[ik]);
-
-        if(!conjugate){
-            for(int ii=0;ii<N;ii++){
-                result_vec[ii] = std::complex(out[ii][0],out[ii][1]);
-            }
+    for (int ii = 0; ii < N; ++ii) {
+        if(ii<sig_size){
+            in[ii][0] = std::real(signal[ii]);
+            in[ii][1] = std::imag(signal[ii]);
         }else{
-            for(int ii=0;ii<N;ii++){
-                result_vec[ii] = std::complex(out[ii][0],-out[ii][1]);
-            }
+            in[ii][0] = 0.0;
+            in[ii][1] = 0.0;
+        }
+    }
+
+    fftw_execute(p[ik]);
+
+    if(!conjugate){
+        for(int ii=0;ii<N;ii++){
+            result_vec[ii] = std::complex(out[ii][0],out[ii][1]);
+        }
+    }else{
+        for(int ii=0;ii<N;ii++){
+            result_vec[ii] = std::complex(out[ii][0],-out[ii][1]);
         }
     }
 
