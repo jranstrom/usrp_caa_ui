@@ -15,6 +15,8 @@
 #include <qstackedwidget.h>
 #include <vector>
 
+
+
 #include "MatlabEngine.hpp"
 
 #include "uhd_clib.h"
@@ -142,9 +144,10 @@ private slots:
     void onRadioControlWidgetTestBtnRelease(std::string serial_p, bool silent);
     void onRadioControlWidgetApplyConfigurationBtnReleased(std::string serial_p,cRadioConfiguration radConf_p);
     void onRadioControlWidgetContinousReceptionBtnReleased(std::string serial_p,bool silent);
+    void onRadioControlWidgetContinousTransmissionBtnReleased(std::string serial_p, bool silent);
 
-    void onContinousReceptionWidgetClosed();
-    void onContinousReceptionWidgetStatusUpdate(std::string message,int code);
+    void onRadioControlWidgetClosed();
+    void onRadioControlWidgetStatusUpdate(std::string message,int code);
 
     void trackTransmissionProcess();
     void trackReceptionProcess();
