@@ -35,11 +35,11 @@ void IndicatorButtonWidget::setState(int state)
             indicator->setEnabled(true);
         }
         if(state == 1){
-            setWidgetColor(indicator,16146769);
+            setWidgetColor(indicator,16146769); // red?
         }else if(state == 2){
-            setWidgetColor(indicator,9433252);
+            setWidgetColor(indicator,9433252); // green ?
         }else if(state == 3){
-            setWidgetColor(indicator,16380011);
+            setWidgetColor(indicator,16380011); // yellow?
         }
 
         currentState = state;
