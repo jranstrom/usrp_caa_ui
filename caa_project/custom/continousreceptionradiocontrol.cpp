@@ -26,7 +26,7 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     addressInfoField = new LabelandFieldWidget(this,"Address:",sourceRadio->getAddress());
     infoSectionLayout->addWidget(addressInfoField,1,1);
 
-    // Control Section
+    // Control Section & Status Section
     QWidget * controlSectionContainerWidget = new QWidget;
     controlSectionLayout = new QGridLayout(controlSectionContainerWidget);
 
@@ -35,8 +35,19 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
 
     saveCaptureBtn = new QPushButton("Capture",this);
 
-    controlSectionLayout->addWidget(saveCaptureBtn,0,1);
-    controlSectionLayout->addWidget(toggleReceptionBtn,0,0);
+    QWidget * statusSectionContainerWidget = new QWidget;
+    statusSectionLayout = new QHBoxLayout(statusSectionContainerWidget);
+    receptionStatusIndicator = new IndicatorButtonWidget(this);
+    receptionStatusLabel = new QLabel("No ongoing reception",this);
+    statusSectionSpacer = new QSpacerItem(5,5,QSizePolicy::MinimumExpanding,QSizePolicy::Fixed);
+
+    statusSectionLayout->addWidget(receptionStatusIndicator);
+    statusSectionLayout->addWidget(receptionStatusLabel);
+    statusSectionLayout->addItem(statusSectionSpacer);
+
+    controlSectionLayout->addWidget(statusSectionContainerWidget,0,0,1,2);
+    controlSectionLayout->addWidget(saveCaptureBtn,1,1);
+    controlSectionLayout->addWidget(toggleReceptionBtn,1,0);
 
     // Plot Section
     QWidget * plotSectionContainerWidget = new QWidget;
@@ -106,8 +117,6 @@ void continousReceptionRadioControl::onToggleReceptionBtnRelease()
         response = sourceRadio->startContinousReception();
 
         if(response.code == 0){
-            isReceiving = true;
-            toggleReceptionBtn->setText("Stop");
             statusUpdate_m = "Reception started";
             statusUpdateCode = 0;
         }else{
@@ -117,9 +126,7 @@ void continousReceptionRadioControl::onToggleReceptionBtnRelease()
 
     }else{
         response = sourceRadio->stopContinousReception();
-        if(response.code == 0){
-            isReceiving = false;
-            toggleReceptionBtn->setText("Start");
+        if(response.code == 0){            
             statusUpdate_m = "Reception stopped";
             statusUpdateCode = 0;
         }else{
@@ -156,6 +163,16 @@ void continousReceptionRadioControl::onProcessTimerTick()
     bool cStatus = sourceRadio->continous_reception_running;
     if(cStatus != isReceiving){
         isReceiving = cStatus;
+
+        if(isReceiving == true){
+            toggleReceptionBtn->setText("Stop");
+            receptionStatusIndicator->setState(2);
+            receptionStatusLabel->setText("Reception in progress");
+        }else{
+            toggleReceptionBtn->setText("Start");
+            receptionStatusIndicator->setState(1);
+            receptionStatusLabel->setText("No ongoing reception");
+        }
         return;
     }
 

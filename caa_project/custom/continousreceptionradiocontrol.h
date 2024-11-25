@@ -52,6 +52,11 @@ private:
     QPushButton * toggleReceptionBtn;
     QPushButton * saveCaptureBtn;
 
+    QHBoxLayout * statusSectionLayout;
+    IndicatorButtonWidget * receptionStatusIndicator;
+    QLabel * receptionStatusLabel;
+    QSpacerItem * statusSectionSpacer;
+
     QGridLayout * plotSectionLayout;
     QCustomPlot * timePlot;
     QLabel * timePlotTitleLabel;
