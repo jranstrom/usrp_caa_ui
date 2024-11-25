@@ -405,7 +405,7 @@ cRadioResponse cRadioObject::writeConfiurationFile(std::string filepath)
 void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer, uhd::usrp::multi_usrp::sptr m_usrp)
 {
     uhd::stream_args_t stream_args("sc16","sc16");
-    stream_args.channels = {1};
+    stream_args.channels = {0};
     uhd::rx_streamer::sptr rx_stream = m_usrp->get_rx_stream(stream_args);
 
 
