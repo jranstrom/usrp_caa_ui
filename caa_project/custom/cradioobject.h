@@ -91,6 +91,9 @@ public:
     std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> getAppliedConfiguation() {return appliedConfiguration;}
     void setAppliedConfiguration(std::unordered_map<std::string,std::shared_ptr<cRadioProperty>> configuration_p){appliedConfiguration = configuration_p;}
 
+    cRadioResponse setTransmitSignal(std::vector<std::complex<short>> &txSignal);
+
+    std::shared_ptr<CircBuffer<std::complex<short>>> getInternalTxCircBuffer() {return internalTxCircBuffer;}
 
 private:
 

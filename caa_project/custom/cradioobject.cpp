@@ -581,3 +581,27 @@ bool cRadioObject::isConfigurationsEqual(cRadioConfiguration radr, cRadioConfigu
 
     return isEqual;
 }
+
+cRadioResponse cRadioObject::setTransmitSignal(std::vector<std::complex<short> > &txSignal)
+{
+    cRadioResponse response;
+    response.message = "Success";
+    response.code = 0;
+
+    if(txSignalLoaded == false){
+        internalTxCircBuffer = std::make_shared<CircBuffer<std::complex<short>>>(1e4);
+    }
+
+    try{
+    internalTxCircBuffer->from_vector(txSignal);
+    }catch(...){
+        response.message = "Could not set transmit signal";
+        response.code = -1;
+    }
+
+    if(response.code == 0){
+        txSignalLoaded = true;
+    }
+
+    return response;
+}
