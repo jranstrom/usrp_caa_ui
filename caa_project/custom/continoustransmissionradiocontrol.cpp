@@ -208,6 +208,8 @@ cRadioResponse continousTransmissionRadioControl::readTxFile(std::string filepat
         }
     }else if(fileExtension == ".dat"){
         response = readDATtxFile(filepath);
+    }else if(fileExtension == ".csv"){
+        response = readCSVtxFile(filepath);
     }else{
         response.message = "Could not load file; No support for desired file type " + fileExtension;
         response.code = -1;
@@ -315,6 +317,60 @@ cRadioResponse continousTransmissionRadioControl::readDATtxFile(std::string file
 
 
     response = sourceRadio->setTransmitSignal(txSig);
+
+    return response;
+}
+
+cRadioResponse continousTransmissionRadioControl::readCSVtxFile(std::string filepath)
+{
+    cRadioResponse response;
+    response.message = "Success reading CSV-file to Tx";
+    response.code = 0;
+
+    std::ifstream file(filepath);
+
+    // Check if the file is open
+    if (!file.is_open()) {
+        response.message = "Could not open file " + filepath;
+        response.code = -1;
+        return response;
+    }
+
+    std::vector<std::complex<double>> txSmpls_double;
+    std::string line;
+
+    // Read the file line by line
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string realStr, imagStr;
+
+        // Split the line by the comma to get real and imaginary parts
+        if (std::getline(ss, realStr, ',') && std::getline(ss, imagStr, ',')) {
+            try {
+                // Convert strings to double and create the complex number
+                double realPart = std::stod(realStr);
+                double imagPart = std::stod(imagStr);
+
+                // Add the complex number to the vector
+                txSmpls_double.push_back(std::complex<double>(realPart, imagPart));
+            } catch (const std::invalid_argument& e) {
+                response.message = "Invalid data in csv file";
+                response.code = -2;
+                return response;
+            }
+        } else {
+            response.message = "Invalid file formatting";
+            response.code = -3;
+            return response;
+        }
+    }
+
+    file.close();
+
+    std::vector<std::complex<short>> txSig = uhd_clib::cvec_conv_double2short(txSmpls_double);
+
+    response = sourceRadio->setTransmitSignal(txSig);
+
 
     return response;
 }
