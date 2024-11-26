@@ -36,6 +36,7 @@ private slots:
 private:
     cRadioResponse readTxFile(std::string filepath);
     cRadioResponse readMatlabTxFile(std::string filepath="usrp_default_signals/random_bpsk_osr16.mat", std::string vpath="txSignal");
+    cRadioResponse readDATtxFile(std::string filepath="");
 
     int transmissionStatus = 0;
 

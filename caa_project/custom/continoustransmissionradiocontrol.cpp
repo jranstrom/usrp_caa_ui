@@ -206,6 +206,8 @@ cRadioResponse continousTransmissionRadioControl::readTxFile(std::string filepat
         if(response.code == 0){
             response.message = "Success loading file " + filepath;
         }
+    }else if(fileExtension == ".dat"){
+        response = readDATtxFile(filepath);
     }else{
         response.message = "Could not load file; No support for desired file type " + fileExtension;
         response.code = -1;
@@ -237,6 +239,82 @@ cRadioResponse continousTransmissionRadioControl::readMatlabTxFile(std::string f
 
     std::vector<std::complex<short>> txSig_short = uhd_clib::cvec_conv_double2short(txSig);
     response = sourceRadio->setTransmitSignal(txSig_short);
+
+    return response;
+}
+
+cRadioResponse continousTransmissionRadioControl::readDATtxFile(std::string filepath)
+{
+    cRadioResponse response;
+    response.message = "Success";
+    response.code = 0;
+
+    std::vector<std::complex<short>> txSig;
+
+    std::ifstream infile(filepath, std::ios::binary);
+    if (!infile.is_open()) {
+        response.message = "Could not open file " + filepath;
+        response.code = -1;
+        return response;
+    }
+
+    try {
+        // Get the file size to determine how much data to read
+        infile.seekg(0, std::ios::end);
+        size_t fileSize = infile.tellg();
+        infile.seekg(0, std::ios::beg);
+
+        // Ensure the file size is a multiple of sizeof(std::complex<short>)
+        if (fileSize % sizeof(std::complex<short>) != 0) {
+            response.message = "File size is not a multiple of the expected element size.";
+            response.code = -1;
+            return response;
+        }
+
+        // Calculate number of complex elements in the file
+        size_t numElements = fileSize / sizeof(std::complex<short>);
+
+        // Resize the vector to fit the data
+        txSig.resize(numElements);
+
+        // Read the file data into the vector
+        infile.read(reinterpret_cast<char*>(txSig.data()), fileSize);
+
+        if (!infile) {
+            response.message = "Error occurred while reading from file " + filepath;
+            response.code = -1;
+            return response;
+        }
+
+        response.message = "File read successfully.";
+        response.code = 0;
+
+    } catch (const std::exception& exc) {
+        response.message = "Exception: " + std::string(exc.what());
+        response.code = -1;
+    }
+
+    short max_i = -100;
+    short max_r = -100;
+    for(auto smpl : txSig){
+        if(max_r < std::abs(std::real(smpl))){
+            max_r = std::abs(std::real(smpl));
+        }
+
+        if(max_i < std::abs(std::imag(smpl))){
+            max_i = std::abs(std::imag(smpl));
+        }
+    }
+
+    short max_s = max_i > max_r ? max_i : max_r;
+    short rfac = 32768/max_s;
+
+    for(int i=0;i<txSig.size();i++){
+        txSig[i] = txSig[i]*rfac;
+    }
+
+
+    response = sourceRadio->setTransmitSignal(txSig);
 
     return response;
 }
