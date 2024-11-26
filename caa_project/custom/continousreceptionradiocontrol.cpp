@@ -302,6 +302,7 @@ void continousReceptionRadioControl::plotAll()
             }
         }
 
+        timePlot->clearGraphs();
         timePlot->addGraph();
         timePlot->graph(0)->setData(x, y);
         timePlot->xAxis->setLabel("Sample");
@@ -339,6 +340,7 @@ void continousReceptionRadioControl::plotAll()
     //Y = QVector::from
     Y = QVector<double>(Y_t.begin(),Y_t.end());
 
+    frequencyPlot->clearGraphs();
     frequencyPlot->addGraph();
     frequencyPlot->graph(0)->setData(X,Y);
     frequencyPlot->yAxis->setRange(frequencyPlot_min_val-5,frequencyPlot_max_val+10);
