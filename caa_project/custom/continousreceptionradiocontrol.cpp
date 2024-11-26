@@ -30,7 +30,7 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     QWidget * controlandCaptureContainer = new QWidget;
     controlandCaptureLayout = new QHBoxLayout(controlandCaptureContainer);
 
-    // Control Section
+    // Control Section IN Control & Capture Section
     QWidget * controlSectionContainer = new QWidget;
     controlSectionContainer->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
     controlSectionLayout = new QVBoxLayout(controlSectionContainer);
@@ -50,8 +50,23 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     statusSectionLayout->addWidget(receptionStatusLabel);
     statusSectionLayout->addWidget(toggleReceptionBtn);
 
+    // Plot Control Section IN Control Section
+    QWidget * plotControlSectionContainer = new QWidget;
+    QGridLayout * plotControlSectionLayout = new QGridLayout(plotControlSectionContainer);
+
+    fftLengthSpinBox = new LabelandSpinBoxWidget(this,"FFT length:",32768,32,1024);
+    fftLengthSpinBox->requestSetValue(1024,false);
+
+    processTimerSpinBox = new LabelandSpinBoxWidget(this,"Plot Update (ms):",5000,100,1000);
+    processTimerSpinBox->requestSetValue(1000,false);
+    connect(processTimerSpinBox,&LabelandSpinBoxWidget::componentValueChanged,this,&continousReceptionRadioControl::onProcessTimerIntervalChange);
+
+    plotControlSectionLayout->addWidget(fftLengthSpinBox,0,0);
+    plotControlSectionLayout->addWidget(processTimerSpinBox,0,1);
+
     controlSectionLayout->addWidget(statusSectionContainer);
-    controlSectionLayout->addWidget(saveCaptureBtn);
+    controlSectionLayout->addWidget(plotControlSectionContainer);
+
 
     // Capture Section
     QWidget * captureSectionContainer = new QWidget;
@@ -85,23 +100,13 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
 
     captureSectionLayout->addWidget(captureFileSectionContainer);
     captureSectionLayout->addWidget(captureLengthSpinBox);
+    captureSectionLayout->addWidget(saveCaptureBtn);
 
     QFrame * CandCDivider = new QFrame();CandCDivider->setFrameShape(QFrame::VLine);CandCDivider->setFrameShadow(QFrame::Sunken);
     controlandCaptureLayout->addWidget(controlSectionContainer);
     controlandCaptureLayout->addWidget(CandCDivider);
     controlandCaptureLayout->addWidget(captureSectionContainer);
 
-
-    // statusSectionSpacer = new QSpacerItem(5,5,QSizePolicy::MinimumExpanding,QSizePolicy::Fixed);
-
-    // statusSectionLayout->addWidget(receptionStatusIndicator);
-    // statusSectionLayout->addWidget(receptionStatusLabel);
-    // statusSectionLayout->addWidget(toggleReceptionBtn);
-    // statusSectionLayout->addItem(statusSectionSpacer);
-
-    // controlSectionLayout->addWidget(statusSectionContainerWidget,0,0);
-    // controlSectionLayout->addWidget(capturePathField,0,1);
-    // controlSectionLayout->addWidget(saveCaptureBtn,1,1);
 
     // Plot Section
     QWidget * plotSectionContainerWidget = new QWidget;
@@ -234,9 +239,16 @@ void continousReceptionRadioControl::onProcessTimerTick()
 
 }
 
+void continousReceptionRadioControl::onProcessTimerIntervalChange(int value, bool silent)
+{
+    receptionProcessTimer.stop();
+    receptionProcessTimer.setInterval(value);
+    receptionProcessTimer.start();
+}
+
 void continousReceptionRadioControl::plotAll()
 {
-    size_t N = 2048;
+    size_t N = static_cast<size_t>(fftLengthSpinBox->getValue());
 
     cRadioResponse response;
     response.message = "Success";

@@ -27,6 +27,7 @@ private slots:
     void onTestBtnRelease();
 
     void onProcessTimerTick();
+    void onProcessTimerIntervalChange(int value, bool silent);
 
 private:
 
@@ -58,6 +59,8 @@ private:
     QVBoxLayout * controlSectionLayout;
     QPushButton * toggleReceptionBtn;
     QPushButton * saveCaptureBtn;
+    LabelandSpinBoxWidget * fftLengthSpinBox;
+    LabelandSpinBoxWidget * processTimerSpinBox;
 
     QVBoxLayout * captureSectionLayout;
 
