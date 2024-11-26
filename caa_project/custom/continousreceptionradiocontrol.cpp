@@ -1,7 +1,6 @@
 #include "continousreceptionradiocontrol.h"
 #include "cradioobject.h"
 #include "labelandfieldwidget.h"
-#include "matHF.h"
 #include "uhd_clib.h"
 
 continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, std::shared_ptr<cRadioObject> rad_p )
@@ -68,10 +67,11 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     controlSectionLayout->addWidget(plotControlSectionContainer);
 
 
-    // Capture Section
+    // Capture Section IN Control & Capture Section
     QWidget * captureSectionContainer = new QWidget;
     captureSectionLayout = new QVBoxLayout(captureSectionContainer);
 
+    // Captrue File Section IN Capture Section
     QWidget * captureFileSectionContainer = new QWidget;
     QHBoxLayout * captureFileLayout = new QHBoxLayout(captureFileSectionContainer);
     capturePathField = new LabelandFieldWidget(this,"Filepath:","data/cont_capture/capture_",true);
@@ -93,19 +93,35 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     captureFileLayout->addWidget(captureDotLabel);
     captureFileLayout->addWidget(captureExtentionField);
     captureFileLayout->addWidget(browsePathBtn);
+    //
+
+    QWidget * captureSettingsContainer = new QWidget;
+    QHBoxLayout * captureSettingLayout = new QHBoxLayout(captureSettingsContainer);
+
 
     captureLengthSpinBox = new LabelandSpinBoxWidget(this,"Length",5e5,1,1000);
     captureLengthSpinBox->requestSetValue(1000,false);
     captureLengthSpinBox->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
+    captureAutoIncrement = new LabelandCheckboxWidget(this,"Auto Increment",false);
+
+    captureSettingLayout->addWidget(captureLengthSpinBox);
+    captureSettingLayout->addWidget(captureAutoIncrement);
+
+    //
+
     captureSectionLayout->addWidget(captureFileSectionContainer);
-    captureSectionLayout->addWidget(captureLengthSpinBox);
+    captureSectionLayout->addWidget(captureSettingsContainer);
     captureSectionLayout->addWidget(saveCaptureBtn);
+
+    //
 
     QFrame * CandCDivider = new QFrame();CandCDivider->setFrameShape(QFrame::VLine);CandCDivider->setFrameShadow(QFrame::Sunken);
     controlandCaptureLayout->addWidget(controlSectionContainer);
     controlandCaptureLayout->addWidget(CandCDivider);
     controlandCaptureLayout->addWidget(captureSectionContainer);
+
+    //
 
 
     // Plot Section
@@ -366,6 +382,24 @@ void continousReceptionRadioControl::saveCapture()
 
     if(response.code == 0){
         response.message = "Success saving capture to file " + combinedPath;
+
+        // try to increment
+        if(captureAutoIncrement->getValue() == true){
+
+            int value = -1;
+            bool succ = true;
+            try{
+                value = std::stoi(captureModifierField->text().toStdString());
+            }catch(...){
+                emit statusUpdateRequest("Could not increment capture index",-1);
+                succ = false;
+            }
+
+            if(succ == true){
+                captureModifierField->setText(QString::number(value+1));
+            }
+
+        }
     }
 
     emit statusUpdateRequest(response.message,response.code);

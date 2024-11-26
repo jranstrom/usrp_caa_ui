@@ -4,6 +4,7 @@
 #include "cradioobject.h"
 #include <QWidget>
 #include "indicatorbuttonwidget.h"
+#include "labelandcheckboxwidget.h"
 #include "labelandfieldwidget.h"
 #include "labelandspinboxwidget.h"
 #include "qcustomplot.h"
@@ -70,7 +71,7 @@ private:
     QLineEdit * captureExtentionField;
     QLabel * captureDotLabel;
     LabelandSpinBoxWidget * captureLengthSpinBox;
-
+    LabelandCheckboxWidget * captureAutoIncrement;
 
 
 
