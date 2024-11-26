@@ -32,7 +32,9 @@ private:
 
     void plotAll();
     void saveCapture();
+
     cRadioResponse saveDATfile(std::string filepath,int dataLength);
+    cRadioResponse saveCSVfile(std::string filepath, int dataLength);
 
     double timePlot_max_val = -400;
     double timePlot_min_val = 400;

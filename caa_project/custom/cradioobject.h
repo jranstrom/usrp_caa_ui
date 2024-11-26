@@ -81,7 +81,7 @@ public:
     std::atomic<bool> continous_transmission_running = false;
     virtual void runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
 
-    std::vector<std::complex<short>> getLastReceivedSamples(size_t N);
+    std::vector<std::complex<short>> getLastReceivedSamples(size_t N, cRadioResponse &response);
 
     uhd::usrp::multi_usrp::sptr usrp;
 

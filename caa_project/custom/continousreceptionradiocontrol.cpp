@@ -237,7 +237,12 @@ void continousReceptionRadioControl::onProcessTimerTick()
 void continousReceptionRadioControl::plotAll()
 {
     size_t N = 2048;
-    std::vector<std::complex<short>> rxSamples = sourceRadio->getLastReceivedSamples(N);
+
+    cRadioResponse response;
+    response.message = "Success";
+    response.code = 0;
+
+    std::vector<std::complex<short>> rxSamples = sourceRadio->getLastReceivedSamples(N,response);
     std::vector<std::complex<double>> rxSamples_double(N);
     // Test to plot
     QVector<double> x(N),y(N);
@@ -329,7 +334,7 @@ void continousReceptionRadioControl::saveCapture()
 
     bool isValid = false;
 
-    if(fileExtension == "dat"){
+    if(fileExtension == "dat" || fileExtension == "csv"){
         isValid = true;
     }else{
         response.code =-1;
@@ -343,6 +348,12 @@ void continousReceptionRadioControl::saveCapture()
 
     if(fileExtension == "dat"){
         response = saveDATfile(combinedPath,captureLengthSpinBox->getValue());
+    }else if(fileExtension == "csv"){
+        response = saveCSVfile(combinedPath,captureLengthSpinBox->getValue());
+    }
+
+    if(response.code == 0){
+        response.message = "Success saving capture to file " + combinedPath;
     }
 
     emit statusUpdateRequest(response.message,response.code);
@@ -355,7 +366,18 @@ cRadioResponse continousReceptionRadioControl::saveDATfile(std::string filepath,
     response.message = "Success";
     response.code = 0;
 
-    std::vector<std::complex<short>> rxSamples = sourceRadio->getLastReceivedSamples(dataLength);
+    std::vector<std::complex<short>> rxSamples;
+
+    do{
+        rxSamples = sourceRadio->getLastReceivedSamples(dataLength,response);
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+    }while(response.code == -3);
+
+    if(response.code < 0){
+        response.code = -1;
+        return response;
+    }
+
     std::ofstream outfile;
 
     outfile.open(filepath.c_str(),std::ofstream::binary);
@@ -381,4 +403,38 @@ cRadioResponse continousReceptionRadioControl::saveDATfile(std::string filepath,
     delete[] buffer;
 
     return response;
+}
+
+cRadioResponse continousReceptionRadioControl::saveCSVfile(std::string filepath, int dataLength)
+{
+    cRadioResponse response;
+    response.message = "Success";
+    response.code = 0;
+
+    std::vector<std::complex<short>> rxSamples_short;
+
+    do{
+        rxSamples_short = sourceRadio->getLastReceivedSamples(dataLength,response);
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+    }while(response.code == -3);
+
+    if(response.code < 0){
+        response.code = -1;
+        return response;
+    }
+
+    std::vector<std::complex<double>> rxSamples_double = uhd_clib::cvec_conv_short2double(rxSamples_short);
+
+    std::ofstream outfile;
+    outfile.open(filepath);
+    if(outfile.is_open()){
+        for(int i =0;i<dataLength;i++){
+            outfile << std::real(rxSamples_double[i]) << "," << std::imag(rxSamples_double[i]) << "\n";
+        }
+
+        outfile.close();
+    }else{
+        response.message = "Could not open file " + filepath;
+        response.code = -1;
+    }
 }

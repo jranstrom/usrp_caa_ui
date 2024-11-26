@@ -122,7 +122,7 @@ cRadioResponse cRadioObject::configureRadio()
         stagedConfiguration["tx-filter-bandwidth"]->setProperty(appliedConfiguration["tx-filter-bandwidth"]->getPropertyValueDouble(),ok);
 
         isRadioConfigured = true;
-        internalRxCircBuffer = std::make_shared<CircBuffer<std::complex<short>>>(rConf.internalRxBufferSize);
+        internalRxCircBuffer = std::make_shared<CircBuffer<std::complex<short>>>(1e5);
     }
     return response;
 }
@@ -547,15 +547,30 @@ void cRadioObject::runContinousTransmissionProcess(std::shared_ptr<CircBuffer<st
     continous_transmission_running = false;
 }
 
-std::vector<std::complex<short> > cRadioObject::getLastReceivedSamples(size_t N)
+std::vector<std::complex<short>> cRadioObject::getLastReceivedSamples(size_t N, cRadioResponse &response)
 {
     std::vector<std::complex<short>> result_v;
 
     size_t pushCount = internalRxCircBuffer->get_push_count();
 
-    if(pushCount > N){
-        result_v = internalRxCircBuffer->extract_range(pushCount-N,N);
+    if(internalRxCircBuffer->get_capacity() <= N){
+        response.message = "Internal Rx buffer capacity must exceed " + std::to_string(N);
+        response.code = -2;
+        return result_v;
     }
+
+    if(pushCount < N){
+        response.message = "Not enough samples in buffer";
+        response.code = -1;
+        return result_v;
+    }
+
+    if(internalRxCircBuffer->check_overwritten(pushCount-N)){
+        response.message = "Desired sample overwritten";
+        response.code = -3;
+    }
+
+     result_v = internalRxCircBuffer->extract_range(pushCount-N,N);
 
     return result_v;
 }
