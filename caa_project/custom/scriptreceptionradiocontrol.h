@@ -6,6 +6,7 @@
 #include <qpushbutton.h>
 #include <qtimer.h>
 #include "indicatorbuttonwidget.h"
+#include "labelandcheckboxwidget.h"
 #include "labelandfieldwidget.h"
 #include "labelandspinboxwidget.h"
 #include "radiocontrolbasewidget.h"
@@ -23,6 +24,7 @@ public:
 
 private slots:
     void onToggleReceptionBtnRelease();
+    void onRunScriptBtnRelease();
     void onConnectEngineBtnRelease();
     void onReceptionProcessTimerTick();
 private:
@@ -45,6 +47,7 @@ private:
     QLineEdit * captureModifierField;
     QLineEdit * captureExtentionField;
     QLabel * captureDotLabel;
+    LabelandSpinBoxWidget * captureDelaySpinBox;
 
     QHBoxLayout * statusSectionLayout;
     QHBoxLayout * controlandCaptureLayout;
@@ -56,6 +59,9 @@ private:
     LabelandFieldWidget * scriptNameField;
     IndicatorButtonWidget * engineConnectedIndidicator;
     QPushButton * engineConnectBtn;
+    LabelandCheckboxWidget * passToEngineCheckBox;
+    LabelandSpinBoxWidget * paramToEngineSpinBox;
+    QPushButton * runScriptBtn;
 
     QVBoxLayout * controlSectionLayout;
     QPushButton * toggleReceptionBtn;

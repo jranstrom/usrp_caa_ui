@@ -45,9 +45,28 @@ ScriptReceptionRadioControl::ScriptReceptionRadioControl(QWidget *parent, std::s
     engineStatusLayout->addWidget(engineConnectBtn);
     engineStatusLayout->addItem(engineStatusRightSpacer);
 
+    QWidget * scriptParamsContainer = new QWidget;
+    QHBoxLayout * scriptParamLayout = new QHBoxLayout(scriptParamsContainer);
+
+    QSpacerItem * engineParamLeftSpacer = new QSpacerItem(5,5,QSizePolicy::Expanding,QSizePolicy::Fixed);
+    passToEngineCheckBox = new LabelandCheckboxWidget(this,"Pass param:",false);
+    paramToEngineSpinBox = new LabelandSpinBoxWidget(this,"Value",100,0,1);
+    paramToEngineSpinBox->requestSetValue(1);
+    QSpacerItem * engineParamRightSpacer = new QSpacerItem(5,5,QSizePolicy::Expanding,QSizePolicy::Fixed);
+
+    runScriptBtn = new QPushButton("Run Script",this);
+    connect(runScriptBtn,&QPushButton::released,this,&ScriptReceptionRadioControl::onRunScriptBtnRelease);
+
+    scriptParamLayout->addItem(engineParamLeftSpacer);
+    scriptParamLayout->addWidget(passToEngineCheckBox);
+    scriptParamLayout->addWidget(paramToEngineSpinBox);
+    scriptParamLayout->addItem(engineParamRightSpacer);
+
     scriptEngineLayout->addWidget(scriptEngineField,0,0);
     scriptEngineLayout->addWidget(engineStatusContainer,1,0);
     scriptEngineLayout->addWidget(scriptNameField,0,1);
+    scriptEngineLayout->addWidget(scriptParamsContainer,1,1);
+    scriptEngineLayout->addWidget(runScriptBtn,2,1);
 
 
     // Control Section
@@ -71,7 +90,6 @@ ScriptReceptionRadioControl::ScriptReceptionRadioControl(QWidget *parent, std::s
     statusSectionLayout->addWidget(receptionStatusLabel);
     statusSectionLayout->addWidget(toggleReceptionBtn);
     statusSectionLayout->addItem(statusRightSpacer);
-    //connect(toggleReceptionBtn,&QPushButton::released,this,&continousReceptionRadioControl::onToggleReceptionBtnRelease);
 
     QFrame * IandCDivider = new QFrame();IandCDivider->setFrameShape(QFrame::HLine);IandCDivider->setFrameShadow(QFrame::Sunken);
     QFrame * divider2 = new QFrame();divider2->setFrameShape(QFrame::HLine);divider2->setFrameShadow(QFrame::Sunken);
@@ -140,6 +158,25 @@ void ScriptReceptionRadioControl::onToggleReceptionBtnRelease()
 
     if(statusUpdate_m != ""){
         emit statusUpdateRequest(statusUpdate_m,statusUpdateCode);
+    }
+}
+
+void ScriptReceptionRadioControl::onRunScriptBtnRelease()
+{
+    if(engineConnected == true){
+        if(passToEngineCheckBox->getValue() == true){
+            std::string command = "";
+            command = "param_class = " + std::to_string(paramToEngineSpinBox->getValue()) + ";";
+            matlabPtr->eval(stringToU16String(command));
+        }
+
+        std::string script_name = scriptNameField->getFieldText();
+        matlabPtr->eval(stringToU16String(script_name));
+
+        emit statusUpdateRequest("Finished running " + script_name,1);
+
+    }else{
+        emit statusUpdateRequest("Must be connected to engine to run script",-1);
     }
 }
 
