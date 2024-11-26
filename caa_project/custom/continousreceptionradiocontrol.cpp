@@ -26,28 +26,82 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     addressInfoField = new LabelandFieldWidget(this,"Address:",sourceRadio->getAddress());
     infoSectionLayout->addWidget(addressInfoField,1,1);
 
-    // Control Section & Status Section
-    QWidget * controlSectionContainerWidget = new QWidget;
-    controlSectionLayout = new QGridLayout(controlSectionContainerWidget);
+    // Control & Capture Section
+    QWidget * controlandCaptureContainer = new QWidget;
+    controlandCaptureLayout = new QHBoxLayout(controlandCaptureContainer);
 
+    // Control Section
+    QWidget * controlSectionContainer = new QWidget;
+    controlSectionContainer->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    controlSectionLayout = new QVBoxLayout(controlSectionContainer);
+
+    QWidget * statusSectionContainer = new QWidget;
+    statusSectionContainer->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    statusSectionLayout = new QHBoxLayout(statusSectionContainer);
+    receptionStatusIndicator = new IndicatorButtonWidget(this);
+    receptionStatusLabel = new QLabel("No ongoing reception",this);
     toggleReceptionBtn = new QPushButton("Start",this);
     connect(toggleReceptionBtn,&QPushButton::released,this,&continousReceptionRadioControl::onToggleReceptionBtnRelease);
 
     saveCaptureBtn = new QPushButton("Capture",this);
-
-    QWidget * statusSectionContainerWidget = new QWidget;
-    statusSectionLayout = new QHBoxLayout(statusSectionContainerWidget);
-    receptionStatusIndicator = new IndicatorButtonWidget(this);
-    receptionStatusLabel = new QLabel("No ongoing reception",this);
-    statusSectionSpacer = new QSpacerItem(5,5,QSizePolicy::MinimumExpanding,QSizePolicy::Fixed);
+    connect(saveCaptureBtn,&QPushButton::released,this,&continousReceptionRadioControl::onCaptureBtnRelease);
 
     statusSectionLayout->addWidget(receptionStatusIndicator);
     statusSectionLayout->addWidget(receptionStatusLabel);
-    statusSectionLayout->addItem(statusSectionSpacer);
+    statusSectionLayout->addWidget(toggleReceptionBtn);
 
-    controlSectionLayout->addWidget(statusSectionContainerWidget,0,0,1,2);
-    controlSectionLayout->addWidget(saveCaptureBtn,1,1);
-    controlSectionLayout->addWidget(toggleReceptionBtn,1,0);
+    controlSectionLayout->addWidget(statusSectionContainer);
+    controlSectionLayout->addWidget(saveCaptureBtn);
+
+    // Capture Section
+    QWidget * captureSectionContainer = new QWidget;
+    captureSectionLayout = new QVBoxLayout(captureSectionContainer);
+
+    QWidget * captureFileSectionContainer = new QWidget;
+    QHBoxLayout * captureFileLayout = new QHBoxLayout(captureFileSectionContainer);
+    capturePathField = new LabelandFieldWidget(this,"Filepath:","data/cont_capture/capture_",true);
+    capturePathField->setFieldAlignment(Qt::AlignRight);
+    captureModifierField = new QLineEdit("0",this);
+    captureModifierField->setAlignment(Qt::AlignCenter);
+    captureModifierField->setMaximumWidth(30);
+    captureModifierField->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    captureDotLabel = new QLabel(".");
+    captureDotLabel->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    captureExtentionField = new QLineEdit("dat",this);
+    captureExtentionField->setMaximumWidth(40);
+    captureExtentionField->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    browsePathBtn = new QPushButton("browser",this);
+    browsePathBtn->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+
+    captureFileLayout->addWidget(capturePathField);
+    captureFileLayout->addWidget(captureModifierField);
+    captureFileLayout->addWidget(captureDotLabel);
+    captureFileLayout->addWidget(captureExtentionField);
+    captureFileLayout->addWidget(browsePathBtn);
+
+    captureLengthSpinBox = new LabelandSpinBoxWidget(this,"Length",5e5,1,1000);
+    captureLengthSpinBox->requestSetValue(1000,false);
+    captureLengthSpinBox->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+
+    captureSectionLayout->addWidget(captureFileSectionContainer);
+    captureSectionLayout->addWidget(captureLengthSpinBox);
+
+    QFrame * CandCDivider = new QFrame();CandCDivider->setFrameShape(QFrame::VLine);CandCDivider->setFrameShadow(QFrame::Sunken);
+    controlandCaptureLayout->addWidget(controlSectionContainer);
+    controlandCaptureLayout->addWidget(CandCDivider);
+    controlandCaptureLayout->addWidget(captureSectionContainer);
+
+
+    // statusSectionSpacer = new QSpacerItem(5,5,QSizePolicy::MinimumExpanding,QSizePolicy::Fixed);
+
+    // statusSectionLayout->addWidget(receptionStatusIndicator);
+    // statusSectionLayout->addWidget(receptionStatusLabel);
+    // statusSectionLayout->addWidget(toggleReceptionBtn);
+    // statusSectionLayout->addItem(statusSectionSpacer);
+
+    // controlSectionLayout->addWidget(statusSectionContainerWidget,0,0);
+    // controlSectionLayout->addWidget(capturePathField,0,1);
+    // controlSectionLayout->addWidget(saveCaptureBtn,1,1);
 
     // Plot Section
     QWidget * plotSectionContainerWidget = new QWidget;
@@ -75,7 +129,7 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     mainSpacer = new QSpacerItem(5,5,QSizePolicy::Expanding,QSizePolicy::Expanding);
 
     mainLayout->addWidget(infoSectionContainerWidget);
-    mainLayout->addWidget(controlSectionContainerWidget);
+    mainLayout->addWidget(controlandCaptureContainer);
     mainLayout->addWidget(plotSectionContainerWidget);
     mainLayout->addWidget(testBtn);
     //mainLayout->addItem(mainSpacer);
@@ -144,12 +198,9 @@ void continousReceptionRadioControl::onCaptureBtnRelease()
 {
     // Terminate reception...
     if(isReceiving){
-        cRadioResponse response = sourceRadio->stopContinousReception();
-        if(response.code == 0){
-            emit statusUpdateRequest("Transmission stopped",-1);
-        }else{
-            emit statusUpdateRequest(response.message,-1);
-        }
+        saveCapture();
+    }else{
+        emit statusUpdateRequest("Reception must be running",-1);
     }
 }
 
@@ -260,4 +311,74 @@ void continousReceptionRadioControl::plotAll()
     frequencyPlot->yAxis->setRange(frequencyPlot_min_val-5,frequencyPlot_max_val+10);
     frequencyPlot->xAxis->setRange(X[0],X[N-1]);
     frequencyPlot->replot();
+}
+
+void continousReceptionRadioControl::saveCapture()
+{
+    std::string fileExtension = captureExtentionField->text().toStdString();
+    std::string modifier = captureModifierField->text().toStdString();
+    std::string currentFilepath = capturePathField->getFieldText();
+    std::string combinedPath = currentFilepath + modifier + "." + fileExtension;
+
+    std::filesystem::path fullPath(combinedPath);
+    std::filesystem::path directoryPath = fullPath.parent_path();
+
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "Success";
+
+    bool isValid = false;
+
+    if(fileExtension == "dat"){
+        isValid = true;
+    }else{
+        response.code =-1;
+        response.message = "Missing support for file extension " + fileExtension;
+    }
+
+    // Create directory if it does not exist
+    if(isValid == true && std::filesystem::exists(directoryPath) == false){
+        std::filesystem::create_directory(directoryPath);
+    }
+
+    if(fileExtension == "dat"){
+        response = saveDATfile(combinedPath,captureLengthSpinBox->getValue());
+    }
+
+    emit statusUpdateRequest(response.message,response.code);
+
+}
+
+cRadioResponse continousReceptionRadioControl::saveDATfile(std::string filepath, int dataLength)
+{
+    cRadioResponse response;
+    response.message = "Success";
+    response.code = 0;
+
+    std::vector<std::complex<short>> rxSamples = sourceRadio->getLastReceivedSamples(dataLength);
+    std::ofstream outfile;
+
+    outfile.open(filepath.c_str(),std::ofstream::binary);
+    std::complex<short> * buffer;
+
+    try{
+        buffer = new std::complex<short>[dataLength];
+    }catch(std::bad_alloc& exc){
+        response.message = "Could not allocate for buffer";
+        response.code = -1;
+    }
+
+    for(int i=0; i< dataLength;++i){
+        buffer[i] = rxSamples[i];
+    }
+
+    if(outfile.is_open()){
+        outfile.write((const char *) buffer,dataLength*sizeof(std::complex<short>));
+    }else{
+        response.message = "Could not open file " + filepath;
+        response.code = -1;
+    }
+    delete[] buffer;
+
+    return response;
 }

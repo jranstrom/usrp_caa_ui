@@ -5,6 +5,7 @@
 #include <QWidget>
 #include "indicatorbuttonwidget.h"
 #include "labelandfieldwidget.h"
+#include "labelandspinboxwidget.h"
 #include "qcustomplot.h"
 #include "radiocontrolbasewidget.h"
 #include <customfftwobject.h>
@@ -30,6 +31,8 @@ private slots:
 private:
 
     void plotAll();
+    void saveCapture();
+    cRadioResponse saveDATfile(std::string filepath,int dataLength);
 
     double timePlot_max_val = -400;
     double timePlot_min_val = 400;
@@ -48,9 +51,23 @@ private:
     LabelandFieldWidget * typeInfoField;
     LabelandFieldWidget * addressInfoField;
 
-    QGridLayout * controlSectionLayout;
+    QHBoxLayout * controlandCaptureLayout;
+
+    QVBoxLayout * controlSectionLayout;
     QPushButton * toggleReceptionBtn;
     QPushButton * saveCaptureBtn;
+
+    QVBoxLayout * captureSectionLayout;
+
+    LabelandFieldWidget * capturePathField;
+    QPushButton * browsePathBtn;
+    QLineEdit * captureModifierField;
+    QLineEdit * captureExtentionField;
+    QLabel * captureDotLabel;
+    LabelandSpinBoxWidget * captureLengthSpinBox;
+
+
+
 
     QHBoxLayout * statusSectionLayout;
     IndicatorButtonWidget * receptionStatusIndicator;
