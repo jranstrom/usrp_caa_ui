@@ -141,10 +141,13 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     continousTransmissionBtn = new QPushButton("Continous Tx",this);
     connect(continousTransmissionBtn,&QPushButton::released,this,&RadioControlWidget::onContinousTransmissionBtnRelease);
 
+    scriptReceptionBtn = new QPushButton("Script Rx",this);
+    connect(scriptReceptionBtn,&QPushButton::released,this,&RadioControlWidget::onScriptReceptionBtnRelase);
 
     radioControlLayout->addWidget(radioControlDividerLine,0,0,1,2);
-    radioControlLayout->addWidget(continousReceptionBtn,1,0);
-    radioControlLayout->addWidget(continousTransmissionBtn,1,1);
+    radioControlLayout->addWidget(continousReceptionBtn,1,1);
+    radioControlLayout->addWidget(continousTransmissionBtn,1,0);
+    radioControlLayout->addWidget(scriptReceptionBtn,2,0);
 
     mainGroupBoxLayout->addWidget(basicInfoWidget);
 
@@ -261,6 +264,11 @@ void RadioControlWidget::onContinousReceptionBtnRelease()
 void RadioControlWidget::onContinousTransmissionBtnRelease()
 {
     emit continousTransmissionControlRequest(serial,false);
+}
+
+void RadioControlWidget::onScriptReceptionBtnRelase()
+{
+    emit scriptReceptionControlRequest(serial,false);
 }
 
 void RadioControlWidget::onTestBtnRelease()

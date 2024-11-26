@@ -9,6 +9,7 @@
 #include "radiocontrolwidget.h"
 #include "custom/continousreceptionradiocontrol.h"
 #include "custom/continoustransmissionradiocontrol.h"
+#include "custom/scriptreceptionradiocontrol.h"
 
 mainGUI::mainGUI(QWidget *parent)
     : QMainWindow(parent)
@@ -568,6 +569,24 @@ void mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased(std::string s
         activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
     }else{
         activeRadioControls[serial_p + "-cont-tx"]->activateWindow();
+    }
+}
+
+void mainGUI::onRadioControlWidgetScriptReceptionBtnReleased(std::string serial_p, bool silent)
+{
+    std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
+    if(activeRadioControls.find(serial_p + "-script-rx") == activeRadioControls.end()){
+        // not in map
+        ScriptReceptionRadioControl * crRc = new ScriptReceptionRadioControl(nullptr,cRad);
+        connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
+        connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
+        crRc->show();
+        crRc->resize(420, 340);
+
+        // add to map
+        activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
+    }else{
+        activeRadioControls[serial_p + "-script-rx"]->activateWindow();
     }
 }
 
@@ -2588,6 +2607,8 @@ void mainGUI::on_btn_connect_radio_released()
             connect(rcWidget,&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
             connect(rcWidget,&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
             connect(rcWidget,&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
+            connect(rcWidget,&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
+
 
             radioControls.push_back(rcWidget);
 
@@ -2617,7 +2638,7 @@ void mainGUI::on_btn_connect_radio_released()
             disconnect(radioControls[foundIndex],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
             disconnect(radioControls[foundIndex],&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
             disconnect(radioControls[foundIndex],&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
-
+            disconnect(radioControls[foundIndex],&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
             delete radioControls[foundIndex];
             radioControls.erase(radioControls.begin()+foundIndex);
             response = radObj->disconnectRadio(serials_v[index],false);

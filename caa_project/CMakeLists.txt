@@ -91,6 +91,7 @@ add_executable(caa_project
     custom/radiocontrolwidget.h custom/radiocontrolwidget.cpp
     custom/radiocontrolbasewidget.h custom/radiocontrolbasewidget.cpp
     custom/continoustransmissionradiocontrol.h custom/continoustransmissionradiocontrol.cpp
+    custom/scriptreceptionradiocontrol.h custom/scriptreceptionradiocontrol.cpp
 
 
 

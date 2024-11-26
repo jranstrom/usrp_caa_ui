@@ -146,6 +146,7 @@ private slots:
     void onRadioControlWidgetApplyConfigurationBtnReleased(std::string serial_p,cRadioConfiguration radConf_p);
     void onRadioControlWidgetContinousReceptionBtnReleased(std::string serial_p,bool silent);
     void onRadioControlWidgetContinousTransmissionBtnReleased(std::string serial_p, bool silent);
+    void onRadioControlWidgetScriptReceptionBtnReleased(std::string serial_p,bool silent);
 
     void onRadioControlWidgetClosed();
     void onRadioControlWidgetStatusUpdate(std::string message,int code);
