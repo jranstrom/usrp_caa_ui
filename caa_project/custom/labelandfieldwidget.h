@@ -25,6 +25,8 @@ public:
     void setFieldText(size_t value);
     void setEditable(bool is_editable);
 
+    void setFieldAlignment(Qt::Alignment alignment) {lineEdit->setAlignment(alignment);};
+
     void setDataSource(std::string * ss);
 
     void saveCurrentValue();
