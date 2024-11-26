@@ -305,7 +305,7 @@ void continousReceptionRadioControl::plotAll()
         timePlot->addGraph();
         timePlot->graph(0)->setData(x, y);
         timePlot->xAxis->setLabel("Sample");
-        timePlot->yAxis->setLabel("Amplitude");
+        timePlot->yAxis->setLabel("Power (dB)");
         timePlot->yAxis->setRange(timePlot_min_val-5,timePlot_max_val+5);
         timePlot->xAxis->setRange(0,N);
         timePlot->replot();
@@ -343,6 +343,8 @@ void continousReceptionRadioControl::plotAll()
     frequencyPlot->graph(0)->setData(X,Y);
     frequencyPlot->yAxis->setRange(frequencyPlot_min_val-5,frequencyPlot_max_val+10);
     frequencyPlot->xAxis->setRange(X[0],X[N-1]);
+    frequencyPlot->xAxis->setLabel("Frequency (kHz)");
+    frequencyPlot->yAxis->setLabel("Power (dB)");
     frequencyPlot->replot();
 }
 
@@ -398,7 +400,6 @@ void continousReceptionRadioControl::saveCapture()
             if(succ == true){
                 captureModifierField->setText(QString::number(value+1));
             }
-
         }
     }
 
