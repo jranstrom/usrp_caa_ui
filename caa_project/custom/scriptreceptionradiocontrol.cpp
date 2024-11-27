@@ -1,4 +1,6 @@
 #include "scriptreceptionradiocontrol.h"
+#include <filesystem>
+#include "uhd_clib.h"
 
 
 ScriptReceptionRadioControl::ScriptReceptionRadioControl(QWidget *parent, std::shared_ptr<cRadioObject> rad_p)
@@ -49,7 +51,7 @@ ScriptReceptionRadioControl::ScriptReceptionRadioControl(QWidget *parent, std::s
     QHBoxLayout * scriptParamLayout = new QHBoxLayout(scriptParamsContainer);
 
     QSpacerItem * engineParamLeftSpacer = new QSpacerItem(5,5,QSizePolicy::Expanding,QSizePolicy::Fixed);
-    passToEngineCheckBox = new LabelandCheckboxWidget(this,"Pass param:",false);
+    passToEngineCheckBox = new LabelandCheckboxWidget(this,"Pass param",false);
     paramToEngineSpinBox = new LabelandSpinBoxWidget(this,"Value",100,0,1);
     paramToEngineSpinBox->requestSetValue(1);
     QSpacerItem * engineParamRightSpacer = new QSpacerItem(5,5,QSizePolicy::Expanding,QSizePolicy::Fixed);
@@ -68,6 +70,76 @@ ScriptReceptionRadioControl::ScriptReceptionRadioControl(QWidget *parent, std::s
     scriptEngineLayout->addWidget(scriptParamsContainer,1,1);
     scriptEngineLayout->addWidget(runScriptBtn,2,1);
 
+
+    // Capture Section
+    QWidget * captureFileSectionContainer = new QWidget;
+    QHBoxLayout * captureFileLayout = new QHBoxLayout(captureFileSectionContainer);
+    capturePathField = new LabelandFieldWidget(this,"Filepath:","data/script_capture/capture_",true);
+    capturePathField->setFieldAlignment(Qt::AlignRight);
+    captureModifierField = new QLineEdit("1",this);
+    captureModifierField->setEnabled(false);
+    captureModifierField->setAlignment(Qt::AlignCenter);
+    captureModifierField->setMaximumWidth(30);
+    captureModifierField->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    captureDotLabel = new QLabel(".");
+    captureDotLabel->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    captureExtentionField = new QLineEdit("csv",this);
+    captureExtentionField->setMaximumWidth(40);
+    captureExtentionField->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+    browsePathBtn = new QPushButton("browse",this);
+    browsePathBtn->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+
+    captureFileLayout->addWidget(capturePathField);
+    captureFileLayout->addWidget(captureModifierField);
+    captureFileLayout->addWidget(captureDotLabel);
+    captureFileLayout->addWidget(captureExtentionField);
+    captureFileLayout->addWidget(browsePathBtn);
+
+    QWidget * captureParamContainer = new QWidget;
+    //QHBoxLayout * captureParamLayout = new QHBoxLayout(captureParamContainer);
+    QGridLayout * captureParamLayout = new QGridLayout(captureParamContainer);
+    captureDelaySpinBox = new LabelandSpinBoxWidget(this,"Capture delay (ms):",5000,0);
+    captureDelaySpinBox->requestSetValue(500);
+    captureDataLengthSpinBox = new LabelandSpinBoxWidget(this,"Samples/Capture:",10000,0);
+    captureDataLengthSpinBox->requestSetValue(1000);
+    captureNumberSpinBox = new LabelandSpinBoxWidget(this,"Captures total:",5000,0);
+    captureNumberSpinBox->requestSetValue(20);
+    connect(captureNumberSpinBox,&LabelandSpinBoxWidget::componentValueChanged,this,&ScriptReceptionRadioControl::onNumberOfCapturesChanged);
+    runScriptEachCatpureCheckBox = new LabelandCheckboxWidget(this,"Run Script each capture",false);
+
+    addRandomCFOCheckBox = new LabelandCheckboxWidget(this,"Use random carrier offset",false);
+    addRandomPhaseCheckBox = new LabelandCheckboxWidget(this,"Use random phase",false);
+
+    captureParamLayout->addWidget(captureDelaySpinBox,0,0);
+    captureParamLayout->addWidget(captureDataLengthSpinBox,0,1);
+    captureParamLayout->addWidget(captureNumberSpinBox,1,0);
+    captureParamLayout->addWidget(runScriptEachCatpureCheckBox,1,1);
+    captureParamLayout->addWidget(addRandomCFOCheckBox,2,0);
+    captureParamLayout->addWidget(addRandomPhaseCheckBox,2,1);
+
+
+
+    QWidget * captureControlContainer = new QWidget;
+    QHBoxLayout * captureControlLayout = new QHBoxLayout(captureControlContainer);
+
+    QSpacerItem * captureControlLeftSpacer = new QSpacerItem(5,5,QSizePolicy::Expanding,QSizePolicy::Fixed);
+    autoCaptureCurrentSpinBox = new LabelandSpinBoxWidget(this,"Current Capture:",captureNumberSpinBox->getValue(),1);
+    autoCaptureCurrentSpinBox->requestSetValue(1);
+    connect(autoCaptureCurrentSpinBox,&LabelandSpinBoxWidget::componentValueChanged,this,&ScriptReceptionRadioControl::onCurrentCaptureChanged);
+
+    autoCaptureStatusIndicator = new IndicatorButtonWidget(1,0,this);
+    autoCaptureBtn = new QPushButton("Auto Capture",this);
+    connect(autoCaptureBtn,&QPushButton::released,this,&ScriptReceptionRadioControl::onAutoCaptureBtnRelease);
+    QSpacerItem * captureControlRightSpacer = new QSpacerItem(5,5,QSizePolicy::Expanding,QSizePolicy::Fixed);
+
+
+    captureControlLayout->addSpacerItem(captureControlLeftSpacer);
+    captureControlLayout->addWidget(autoCaptureCurrentSpinBox);
+    captureControlLayout->addWidget(autoCaptureStatusIndicator);
+    captureControlLayout->addWidget(autoCaptureBtn);
+    captureControlLayout->addSpacerItem(captureControlRightSpacer);
+
+    //
 
     // Control Section
     QWidget * controlSectionContainer = new QWidget;
@@ -93,12 +165,17 @@ ScriptReceptionRadioControl::ScriptReceptionRadioControl(QWidget *parent, std::s
 
     QFrame * IandCDivider = new QFrame();IandCDivider->setFrameShape(QFrame::HLine);IandCDivider->setFrameShadow(QFrame::Sunken);
     QFrame * divider2 = new QFrame();divider2->setFrameShape(QFrame::HLine);divider2->setFrameShadow(QFrame::Sunken);
+    QFrame * divider3 = new QFrame();divider3->setFrameShape(QFrame::HLine);divider3->setFrameShadow(QFrame::Sunken);
 
 
     mainLayout->addWidget(infoSectionContainerWidget);
     mainLayout->addWidget(IandCDivider);
     mainLayout->addWidget(scriptEngineContainer);
     mainLayout->addWidget(divider2);
+    mainLayout->addWidget(captureFileSectionContainer);
+    mainLayout->addWidget(captureParamContainer);
+    mainLayout->addWidget(captureControlContainer);
+    mainLayout->addWidget(divider3);
     mainLayout->addWidget(statusSectionContainer);
     mainLayout->addItem(mainSpacer);
 
@@ -107,13 +184,16 @@ ScriptReceptionRadioControl::ScriptReceptionRadioControl(QWidget *parent, std::s
     receptionProcessTimer.start();
     connect(&receptionProcessTimer,&QTimer::timeout,this,&ScriptReceptionRadioControl::onReceptionProcessTimerTick);
 
+    autoCaptureTimer.setInterval(100);
+    autoCaptureTimer.setSingleShot(false);
+    connect(&autoCaptureTimer,&QTimer::timeout,this,&ScriptReceptionRadioControl::onAutoCaptureTimeTick);
 }
 
 void ScriptReceptionRadioControl::onControlClose()
 {
     receptionProcessTimer.stop();
     disconnect(&receptionProcessTimer,&QTimer::timeout,this,&ScriptReceptionRadioControl::onReceptionProcessTimerTick);
-
+    disconnect(&autoCaptureTimer,&QTimer::timeout,this,&ScriptReceptionRadioControl::onAutoCaptureTimeTick);
     if(isReceiving == false){
         return;
     }
@@ -220,6 +300,156 @@ void ScriptReceptionRadioControl::onReceptionProcessTimerTick()
             receptionStatusLabel->setText("No ongoing reception");
         }
         return;
+    }
+}
+
+void ScriptReceptionRadioControl::onAutoCaptureBtnRelease()
+{
+    if(autoCaptureRunning == false){
+        nextCaptureTime = std::chrono::system_clock::now()+std::chrono::milliseconds(captureDelaySpinBox->getValue());
+        autoCaptureTimer.start();
+        autoCaptureRunning = true;
+    }else{
+        autoCaptureRunning = false;
+    }
+}
+
+void ScriptReceptionRadioControl::onNumberOfCapturesChanged(int value, bool silent)
+{
+    autoCaptureCurrentSpinBox->setMaximum(value);
+}
+
+void ScriptReceptionRadioControl::onCurrentCaptureChanged(int value, bool silent)
+{
+    captureModifierField->setText(QString::number(value));
+}
+
+void ScriptReceptionRadioControl::onAutoCaptureTimeTick()
+{
+    if(autoCaptureRunningPrev != autoCaptureRunning){
+        // status changed
+
+        if(autoCaptureRunning == true){
+            autoCaptureStatusIndicator->setState(2);
+            autoCaptureBtn->setText("Stop Capture");
+        }else{
+            autoCaptureStatusIndicator->setState(1);
+            autoCaptureBtn->setText("Auto Capture");
+        }
+
+        autoCaptureRunningPrev = autoCaptureRunning;
+    }
+
+    if(autoCaptureRunning == false){
+
+        return;
+    }
+
+    if(std::chrono::system_clock::now() > nextCaptureTime){
+
+        saveCapture(); // save
+        int currentCaptureVal = autoCaptureCurrentSpinBox->getValue();
+
+        if(currentCaptureVal == captureNumberSpinBox->getValue()){
+            autoCaptureRunning = false;
+        }else{
+            autoCaptureCurrentSpinBox->requestSetValue(currentCaptureVal+1); //
+
+            if(runScriptEachCatpureCheckBox->getValue() == true){
+                onRunScriptBtnRelease(); // run script
+            }
+            nextCaptureTime = std::chrono::system_clock::now()+std::chrono::milliseconds(captureDelaySpinBox->getValue());
+        }
+
+
+    }
+}
+
+void ScriptReceptionRadioControl::saveCapture()
+{
+    std::string fileExtension = captureExtentionField->text().toStdString();
+    std::string modifier = captureModifierField->text().toStdString();
+    std::string currentFilepath = capturePathField->getFieldText();
+    std::string combinedPath = currentFilepath + modifier + "." + fileExtension;
+
+    std::filesystem::path fullPath(combinedPath);
+    std::filesystem::path directoryPath = fullPath.parent_path();
+
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "Success";
+
+    bool isValid = false;
+
+    if(fileExtension == "dat" || fileExtension == "csv"){
+        isValid = true;
+    }else{
+        response.code =-1;
+        response.message = "Missing support for file extension " + fileExtension;
+    }
+
+    // Create directory if it does not exist
+    if(isValid == true && std::filesystem::exists(directoryPath) == false){
+        std::filesystem::create_directory(directoryPath);
+    }
+
+    if(fileExtension == "csv"){
+        response = saveCSVfile(combinedPath,captureDataLengthSpinBox->getValue());
+    }
+
+    emit statusUpdateRequest(response.message,response.code);
+}
+
+cRadioResponse ScriptReceptionRadioControl::saveCSVfile(std::string filepath, int dataLength)
+{
+    cRadioResponse response;
+    response.message = "Success";
+    response.code = 0;
+
+    std::vector<std::complex<short>> rxSamples_short;
+
+    do{
+        rxSamples_short = sourceRadio->getLastReceivedSamples(dataLength,response);
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+    }while(response.code == -3);
+
+    if(response.code < 0){
+        response.code = -1;
+        return response;
+    }
+
+    std::vector<std::complex<double>> rxSamples_double = uhd_clib::cvec_conv_short2double(rxSamples_short);
+    const double pi = 3.14159265359;
+    double fs = sourceRadio->getStagedConfiguation()["rx-sampling-rate"]->getPropertyValueDouble();
+    const std::complex<double> j = std::complex<double>(0.0,1.0);
+
+    if(addRandomCFOCheckBox->getValue() == true){
+        double rand_cfo_hz = ((rand() / double(RAND_MAX))-0.5)*2*fs/4;
+        for(int i=0;i<dataLength;i++){
+            double n = static_cast<double>(i);
+            rxSamples_double[i] = rxSamples_double[i]*std::exp(2*pi*j*rand_cfo_hz*n/fs);
+        }
+    }
+
+    if(addRandomPhaseCheckBox->getValue() == true){
+        double rand_phase = (rand() / double(RAND_MAX))*2*pi;
+        for(int i=0;i<dataLength;i++){
+            double n = static_cast<double>(i);
+            rxSamples_double[i] = rxSamples_double[i]*std::exp(j*rand_phase);
+        }
+    }
+
+    std::ofstream outfile;
+    outfile.open(filepath);
+    if(outfile.is_open()){
+        for(int i =0;i<dataLength;i++){
+            outfile << std::real(rxSamples_double[i]) << "," << std::imag(rxSamples_double[i]) << "\n";
+        }
+
+        outfile.close();
+    }else{
+        response.message = "Could not open file " + filepath;
+        response.code = -1;
     }
 }
 

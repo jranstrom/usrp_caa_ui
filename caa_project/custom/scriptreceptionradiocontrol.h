@@ -27,9 +27,18 @@ private slots:
     void onRunScriptBtnRelease();
     void onConnectEngineBtnRelease();
     void onReceptionProcessTimerTick();
+    void onAutoCaptureBtnRelease();
+
+    void onNumberOfCapturesChanged(int value,bool silent);
+    void onCurrentCaptureChanged(int value,bool silent);
+
+    void onAutoCaptureTimeTick();
 private:
 
     bool isReceiving = false;
+
+    void saveCapture();
+    cRadioResponse saveCSVfile(std::string filepath, int dataLength);
 
     std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;
     bool engineConnected = false;
@@ -42,12 +51,25 @@ private:
     LabelandFieldWidget * typeInfoField;
     LabelandFieldWidget * addressInfoField;
 
+    QGridLayout captureSectionLayout;
     LabelandFieldWidget * capturePathField;
     QPushButton * browsePathBtn;
     QLineEdit * captureModifierField;
     QLineEdit * captureExtentionField;
     QLabel * captureDotLabel;
+
+
     LabelandSpinBoxWidget * captureDelaySpinBox;
+    LabelandSpinBoxWidget * captureDataLengthSpinBox;
+    LabelandSpinBoxWidget * captureNumberSpinBox;
+    LabelandCheckboxWidget * runScriptEachCatpureCheckBox;
+    LabelandCheckboxWidget * addRandomCFOCheckBox;
+    LabelandCheckboxWidget * addRandomPhaseCheckBox;
+
+    IndicatorButtonWidget * autoCaptureStatusIndicator;
+    QPushButton * autoCaptureBtn;
+    LabelandSpinBoxWidget * autoCaptureCurrentSpinBox;
+
 
     QHBoxLayout * statusSectionLayout;
     QHBoxLayout * controlandCaptureLayout;
@@ -65,11 +87,14 @@ private:
 
     QVBoxLayout * controlSectionLayout;
     QPushButton * toggleReceptionBtn;
-    QPushButton * saveCaptureBtn;
-    LabelandSpinBoxWidget * fftLengthSpinBox;
-    LabelandSpinBoxWidget * processTimerSpinBox;
 
     QTimer receptionProcessTimer;
+
+    QTimer autoCaptureTimer;
+    bool autoCaptureRunning = false;
+    bool autoCaptureRunningPrev = false;
+    std::chrono::system_clock::time_point nextCaptureTime;
+
 
     QSpacerItem * mainSpacer;
 };
