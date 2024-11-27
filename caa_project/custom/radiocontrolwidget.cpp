@@ -135,19 +135,20 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     radioControlDividerLine->setFrameShape(QFrame::HLine);
     radioControlDividerLine->setFrameShadow(QFrame::Sunken);
 
-    continousReceptionBtn = new QPushButton("Continous Rx",this);
-    connect(continousReceptionBtn,&QPushButton::released,this,&RadioControlWidget::onContinousReceptionBtnRelease);
+    continousReceptionIndBtn = new ButtonWithIndicator(this,"center","Continous Rx");
+    connect(continousReceptionIndBtn,&ButtonWithIndicator::buttonReleased,this,&RadioControlWidget::onContinousReceptionBtnRelease);
 
-    continousTransmissionBtn = new QPushButton("Continous Tx",this);
-    connect(continousTransmissionBtn,&QPushButton::released,this,&RadioControlWidget::onContinousTransmissionBtnRelease);
+    continousTransmissionIndBtn = new ButtonWithIndicator(this,"center","Continous Tx");
+    connect(continousTransmissionIndBtn,&ButtonWithIndicator::buttonReleased,this,&RadioControlWidget::onContinousTransmissionBtnRelease);
 
-    scriptReceptionBtn = new QPushButton("Script Rx",this);
-    connect(scriptReceptionBtn,&QPushButton::released,this,&RadioControlWidget::onScriptReceptionBtnRelase);
+    scriptReceptionIndBtn = new ButtonWithIndicator(this,"center","Script Rx");
+    connect(scriptReceptionIndBtn,&ButtonWithIndicator::buttonReleased,this,&RadioControlWidget::onScriptReceptionBtnRelase);
+
 
     radioControlLayout->addWidget(radioControlDividerLine,0,0,1,2);
-    radioControlLayout->addWidget(continousReceptionBtn,1,1);
-    radioControlLayout->addWidget(continousTransmissionBtn,1,0);
-    radioControlLayout->addWidget(scriptReceptionBtn,2,0);
+    radioControlLayout->addWidget(continousReceptionIndBtn,1,1);
+    radioControlLayout->addWidget(continousTransmissionIndBtn,1,0);
+    radioControlLayout->addWidget(scriptReceptionIndBtn,2,0);
 
     mainGroupBoxLayout->addWidget(basicInfoWidget);
 
@@ -241,6 +242,17 @@ void RadioControlWidget::pushRadioConfigurationApplyStatus(int statusCode,cRadio
 
 }
 
+void RadioControlWidget::changeIndicatorButtonState(int state, std::string type)
+{
+    if(type == "cont-rx"){
+        continousReceptionIndBtn->setCurrentState(state);
+    }else if(type == "cont-tx"){
+         continousTransmissionIndBtn->setCurrentState(state);
+    }else if(type == "script-rx"){
+       scriptReceptionIndBtn->setCurrentState(state);
+    }
+}
+
 void RadioControlWidget::onLoadDefaultConfigurationBtnRelease()
 {
     emit loadDefaultConfigurationRequest(serial,false);
@@ -267,6 +279,11 @@ void RadioControlWidget::onContinousTransmissionBtnRelease()
 }
 
 void RadioControlWidget::onScriptReceptionBtnRelase()
+{
+    emit scriptReceptionControlRequest(serial,false);
+}
+
+void RadioControlWidget::onScriptReceptionIndBtnRelease()
 {
     emit scriptReceptionControlRequest(serial,false);
 }

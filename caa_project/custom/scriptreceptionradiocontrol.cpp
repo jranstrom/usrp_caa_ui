@@ -352,6 +352,7 @@ void ScriptReceptionRadioControl::onAutoCaptureTimeTick()
 
         if(currentCaptureVal == captureNumberSpinBox->getValue()){
             autoCaptureRunning = false;
+            autoCaptureCurrentSpinBox->requestSetValue(autoCaptureCurrentSpinBox->getMinimum());
         }else{
             autoCaptureCurrentSpinBox->requestSetValue(currentCaptureVal+1); //
 

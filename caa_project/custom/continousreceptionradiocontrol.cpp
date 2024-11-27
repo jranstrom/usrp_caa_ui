@@ -56,8 +56,8 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     fftLengthSpinBox = new LabelandSpinBoxWidget(this,"FFT length:",32768,32,1024);
     fftLengthSpinBox->requestSetValue(1024,false);
 
-    processTimerSpinBox = new LabelandSpinBoxWidget(this,"Plot Update (ms):",5000,100,1000);
-    processTimerSpinBox->requestSetValue(1000,false);
+    processTimerSpinBox = new LabelandSpinBoxWidget(this,"Plot Update (ms):",5000,100,100);
+    processTimerSpinBox->requestSetValue(100,false);
     connect(processTimerSpinBox,&LabelandSpinBoxWidget::componentValueChanged,this,&continousReceptionRadioControl::onProcessTimerIntervalChange);
 
     plotControlSectionLayout->addWidget(fftLengthSpinBox,0,0);
@@ -155,7 +155,7 @@ continousReceptionRadioControl::continousReceptionRadioControl(QWidget *parent, 
     mainLayout->addWidget(testBtn);
     //mainLayout->addItem(mainSpacer);
 
-    receptionProcessTimer.setInterval(1000);
+    receptionProcessTimer.setInterval(100);
     receptionProcessTimer.setSingleShot(false);
     receptionProcessTimer.start();
     connect(&receptionProcessTimer,&QTimer::timeout,this,&continousReceptionRadioControl::onProcessTimerTick);

@@ -2,6 +2,7 @@
 #define RADIOCONTROLWIDGET_H
 
 #include <QWidget>
+#include "buttonwithindicator.h"
 #include "custom/cradioobject.h"
 #include "custom/radiosysobject.h"
 #include "custom/labelandcheckboxwidget.h"
@@ -23,6 +24,9 @@ public:
     void pushRadioConfiguration(std::shared_ptr<cRadioObject> rad);
     void pushRadioConfigurationApplyStatus(int statusCode,cRadioConfiguration radConf_p);
 
+    void changeIndicatorButtonState(int state, std::string type);
+
+
 signals:
     void loadDefaultConfigurationRequest(std::string serial_p,bool silent);
     void loadFileConfigurationRequest(std::string serial_p,std::string filepath,bool silent);
@@ -39,6 +43,7 @@ private slots:
     void onContinousReceptionBtnRelease();
     void onContinousTransmissionBtnRelease();
     void onScriptReceptionBtnRelase();
+    void onScriptReceptionIndBtnRelease();
     void onTestBtnRelease();
     void onConfigurationTableInsertItem(const QModelIndex &parent, int first, int last);
     void onConfigurationTableItemChanged(QTableWidgetItem * item);
@@ -87,9 +92,10 @@ private:
 
     QGridLayout * radioControlLayout;
     QFrame *radioControlDividerLine;
-    QPushButton * continousReceptionBtn;
-    QPushButton * continousTransmissionBtn;
-    QPushButton * scriptReceptionBtn;
+
+    ButtonWithIndicator * continousTransmissionIndBtn;
+    ButtonWithIndicator * continousReceptionIndBtn;
+    ButtonWithIndicator * scriptReceptionIndBtn;
 
     LabelandFieldWidget * serialField;
     LabelandFieldWidget * typeField;

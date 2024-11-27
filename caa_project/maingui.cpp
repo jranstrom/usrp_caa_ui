@@ -464,19 +464,7 @@ void mainGUI::onRadioControlWidgetLoadDefaultConfiguration(std::string serial_p,
     int loadResponseCode = radObj->loadRadioConfigurationFile(serial_p,true);
 
     if(loadResponseCode == 0){
-        RadioControlWidget * cRCW= qobject_cast<RadioControlWidget *>(sender());
-        if(cRCW){
-        }else{
-            for(int i=0;radioControls.size();i++){
-                if(radioControls[i]->getSerial() == serial_p){
-                    cRCW = radioControls[i];
-                    break;
-                }
-            }
-        }
-
-        cRCW->pushRadioConfiguration(radObj->getRadio(serial_p));
-        //cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),0);
+        connectedRadioControlWidgets[serial_p]->pushRadioConfiguration(radObj->getRadio(serial_p));
     }else if(loadResponseCode == -2){
         addStatusUpdate("Error; configuration file does not exist",ui->tableWidget_status,-1);
     }else{
@@ -546,6 +534,8 @@ void mainGUI::onRadioControlWidgetContinousReceptionBtnReleased(std::string seri
         crRc->show();
         crRc->resize(420, 340);
 
+        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,crRc->getType());
+
         // add to map
         activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
     }else{
@@ -556,7 +546,6 @@ void mainGUI::onRadioControlWidgetContinousReceptionBtnReleased(std::string seri
 void mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased(std::string serial_p, bool silent)
 {
     std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
-
     if(activeRadioControls.find(serial_p + "-cont-tx") == activeRadioControls.end()){
         // not in map
         continousTransmissionRadioControl * crRc = new continousTransmissionRadioControl(nullptr,cRad);
@@ -564,6 +553,8 @@ void mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased(std::string s
         connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
         crRc->show();
         crRc->resize(420, 340);
+
+        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,crRc->getType());
 
         // add to map
         activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
@@ -574,14 +565,19 @@ void mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased(std::string s
 
 void mainGUI::onRadioControlWidgetScriptReceptionBtnReleased(std::string serial_p, bool silent)
 {
+    //setScriptReceptionIndicatorButtonState
     std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
+
     if(activeRadioControls.find(serial_p + "-script-rx") == activeRadioControls.end()){
         // not in map
         ScriptReceptionRadioControl * crRc = new ScriptReceptionRadioControl(nullptr,cRad);
+
         connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
         connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
         crRc->show();
         crRc->resize(420, 340);
+
+        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,crRc->getType());
 
         // add to map
         activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
@@ -594,9 +590,13 @@ void mainGUI::onRadioControlWidgetClosed()
 {
     RadioControlBaseWidget * crRc = qobject_cast<RadioControlBaseWidget *>(sender());
 
-    std::string key = crRc->getSerial() + "-" + crRc->getType();
+    std::string serial_p = crRc->getSerial();
+
+    std::string key = serial_p + "-" + crRc->getType();
     std::cout << key << std::endl;
     activeRadioControls.erase(key);
+
+    connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(0,crRc->getType());
 
     disconnect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
     disconnect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
@@ -2505,11 +2505,11 @@ void mainGUI::on_btn_connect_matlab_engine_released()
 void mainGUI::on_btn_test_released()
 {
 
-    for(auto rCW : radioControls ){
-        std::string serial = rCW->getSerial();
-        int count = radObj->getRadio(serial).use_count();
-        std::cout << serial << ": " << count << std::endl;
-    }
+    // for(auto rCW : radioControls ){
+    //     std::string serial = rCW->getSerial();
+    //     int count = radObj->getRadio(serial).use_count();
+    //     std::cout << serial << ": " << count << std::endl;
+    // }
     // int response_find_radios = radObj->findRadios();
     // int response_connect_radio = radObj->connectRadio("F270FD");
     // switch(response_connect_radio){
@@ -2594,53 +2594,53 @@ void mainGUI::on_btn_connect_radio_released()
         return; // no index selected
     }
 
+    std::string c_serial = serials_v[index];
+
     bool isConnectMode = (ui->btn_connect_radio->text() == "Connect");
 
     if(isConnectMode){
-        int response = radObj->connectRadio(serials_v[index],false);
+        int response = radObj->connectRadio(c_serial,false);
         if(response == 0){
-            addStatusUpdate("Success connecting to " + QString::fromStdString(serials_v[index]) + "",ui->tableWidget_status,1);
-            RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(serials_v[index]));            
-            connect(rcWidget,&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
-            connect(rcWidget,&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
-            connect(rcWidget,&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
-            connect(rcWidget,&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
-            connect(rcWidget,&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
-            connect(rcWidget,&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
-            connect(rcWidget,&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
+            addStatusUpdate("Success connecting to " + QString::fromStdString(c_serial) + "",ui->tableWidget_status,1);
+            RadioControlWidget * rcWidget = new RadioControlWidget(this,radObj->getRadio(c_serial));
+
+            connectedRadioControlWidgets[c_serial] = rcWidget;
+
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
 
 
-            radioControls.push_back(rcWidget);
+            //radioControls.push_back(rcWidget);
 
-            ui->vl_radio_controls->addWidget(rcWidget);
+            ui->vl_radio_controls->addWidget(connectedRadioControlWidgets[c_serial]);
 
-            onRadioControlWidgetLoadDefaultConfiguration(serials_v[index],false); // automatically load default
+            onRadioControlWidgetLoadDefaultConfiguration(c_serial,false); // automatically load default
 
             //ui->vl_radio_controls->insertWidget(ui->vl_radio_controls->indexOf(ui->vspacer_vl_radio_controls),rcWidget);
             ui->btn_connect_radio->setText("Disconnect");
         }else{
-            addStatusUpdate("Error; Radio " + QString::fromStdString(serials_v[index]) + " could not connect",ui->tableWidget_status,-1);
+            addStatusUpdate("Error; Radio " + QString::fromStdString(c_serial) + " could not connect",ui->tableWidget_status,-1);
         }
     }else{
 
-        int foundIndex = -1;
-        for(int i=0;i<radioControls.size();i++){
-            if(radioControls[i]->getSerial() == serials_v[index]){
-                foundIndex = i;
-            }
-        }
         int response = 0;
-        if(foundIndex != -1){
-            ui->vl_radio_controls->removeWidget(radioControls[foundIndex]);
-            disconnect(radioControls[foundIndex],&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
-            disconnect(radioControls[foundIndex],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
-            disconnect(radioControls[foundIndex],&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
-            disconnect(radioControls[foundIndex],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
-            disconnect(radioControls[foundIndex],&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
-            disconnect(radioControls[foundIndex],&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
-            disconnect(radioControls[foundIndex],&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
-            delete radioControls[foundIndex];
-            radioControls.erase(radioControls.begin()+foundIndex);
+        if(connectedRadioControlWidgets.find(c_serial) != connectedRadioControlWidgets.end()){
+
+            ui->vl_radio_controls->removeWidget(connectedRadioControlWidgets[c_serial]);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::loadDefaultConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadDefaultConfiguration);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
+            delete connectedRadioControlWidgets[c_serial];
+            connectedRadioControlWidgets.erase(c_serial);
             response = radObj->disconnectRadio(serials_v[index],false);
         }
 
@@ -2712,15 +2712,18 @@ void mainGUI::on_listWidget_available_radios_itemSelectionChanged()
     QListWidgetItem *currentItem = ui->listWidget_available_radios->currentItem();
     int index = ui->listWidget_available_radios->row(currentItem);
 
+    std::string c_serial = serials_v[index];
+
     bool isConnected = false;
-    for(int i=0;i<radioControls.size();i++){
-        std::string rc_serial = radioControls[i]->getSerial();
-        if(serials_v[index] == rc_serial){
-            radioControls[i]->show();
-            isConnected = true;
-        }else{
-            radioControls[i]->hide();
-        }
+
+    for (auto keyPair = connectedRadioControlWidgets.begin(); keyPair != connectedRadioControlWidgets.end(); ++keyPair) {
+        keyPair->second->hide();
+    }
+
+    if(connectedRadioControlWidgets.find(c_serial) != connectedRadioControlWidgets.end()){
+        // in connected list
+        connectedRadioControlWidgets[c_serial]->show();
+        isConnected = true;
     }
 
     if(isConnected == true){

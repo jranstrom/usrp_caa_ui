@@ -294,7 +294,8 @@ private:
     bool tabResize = false;
     std::vector<GUITabStruct> tabSizes;
 
-    std::vector<RadioControlWidget*> radioControls;
+    std::unordered_map<std::string,RadioControlWidget*> connectedRadioControlWidgets;
+    //std::vector<RadioControlWidget*> radioControls;
     std::map<std::string,RadioControlBaseWidget*> activeRadioControls;
 
     GUIConfiguation GUIConf;
