@@ -20,7 +20,6 @@ public:
 
     std::string getSerial(){return serial;}
 
-    void pushRadioConfiguration(cRadioConfiguration radConfig_p,int configType=2);
     void pushRadioConfiguration(std::shared_ptr<cRadioObject> rad);
     void pushRadioConfigurationApplyStatus(int statusCode,cRadioConfiguration radConf_p);
 

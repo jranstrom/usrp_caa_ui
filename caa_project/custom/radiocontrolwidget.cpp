@@ -76,11 +76,15 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     //configurationFileLayout->setSizeConstraint(QHBoxLayout::SizeConstraint::SetMinimumSize);
 
 
-    fileConfigurationField = new LabelandFieldWidget(this,"Filepath:","",true);
+    fileConfigurationField = new LabelandFieldWidget(this,"Filepath:","usrp_custom_configs/",true);
+    fileConfigurationField->setFieldAlignment(Qt::AlignRight);
+    QLabel * fileConfigDotLabel = new QLabel(".cfg",this);
+    fileConfigDotLabel->setMaximumWidth(35);
     loadFileConfigurationBtn = new QPushButton("Load",this);
     connect(loadFileConfigurationBtn,&QPushButton::released,this,&RadioControlWidget::onLoadFileConfigurationBtnRelease);
 
     configurationFileLayout->addWidget(fileConfigurationField);
+    configurationFileLayout->addWidget(fileConfigDotLabel);
     configurationFileLayout->addWidget(loadFileConfigurationBtn);
 
     QWidget * testWidget = new QWidget;
@@ -148,7 +152,7 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     radioControlLayout->addWidget(radioControlDividerLine,0,0,1,2);
     radioControlLayout->addWidget(continousReceptionIndBtn,1,1);
     radioControlLayout->addWidget(continousTransmissionIndBtn,1,0);
-    radioControlLayout->addWidget(scriptReceptionIndBtn,2,0);
+    radioControlLayout->addWidget(scriptReceptionIndBtn,1,2);
 
     mainGroupBoxLayout->addWidget(basicInfoWidget);
 
@@ -163,45 +167,6 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     mainGroupBoxLayout->addWidget(radioControlSectionWidget);
 
     outerContainerLayout->addWidget(mainGroupBox);
-}
-
-void RadioControlWidget::pushRadioConfiguration(cRadioConfiguration radConfig_p, int configType)
-{
-    // configType 0 - default; 1 - from file; 2 - not specified;
-   //  radConfig = radConfig_p;
-   //  std::string configurationStatusString_t = "Unknown configuration loaded...";
-   //  int indicatorState = 3;
-   //  switch(configType){
-   //  case 0:
-   //      configurationStatusString_t = "Default configuration loaded";
-   //      indicatorState = 3;
-   //      break;
-   //  case 1:
-   //      configurationStatusString_t = "File configuration loaded";
-   //      indicatorState = 3;
-   //   break;
-   //  }
-
-   //  configurationStatusLabel->setText(QString::fromStdString(configurationStatusString_t));
-   //  configurationStatusIndicator->setState(indicatorState);
-
-   //  configurationTableWidget->setRowCount(0);
-
-   //  addItemToConfigurationTable("Rx Antenna","n/a",radConfig_p.rxAntenna);
-   //  addItemToConfigurationTable("Rx Gain","dB",QString::number(radConfig_p.rxGain, 'f', 3));
-   //  addItemToConfigurationTable("Rx Carrier Frequency","GHz",QString::number(radConfig_p.rxCarrierFrequency/1e9, 'f', 3));
-   //  //addItemToConfigurationTable("Rx Gain","GHz",std::to_string(radConfig_p.);
-   //  addItemToConfigurationTable("Rx Sampling rate","MHz",QString::number(radConfig_p.rxSamplingRate/1e6, 'f', 3));
-   // // addItemToConfigurationTable("Rx Sampling rate","MHz",QString::number(radConfig_p. 'f', 3));
-
-   //  addItemToConfigurationTable("Tx Antenna","n/a",radConfig_p.txAntenna);
-   //  addItemToConfigurationTable("Tx Gain","dB",QString::number(radConfig_p.txGain, 'f', 3));
-   //  addItemToConfigurationTable("Tx Carrier Frequency","GHz",QString::number(radConfig_p.txCarrierFrequency/1e9, 'f', 3));
-   //  addItemToConfigurationTable("Tx Sampling rate","MHz",QString::number(radConfig_p.txSamplingRate/1e6, 'f', 3));
-
-   //  addItemToConfigurationTable("PPS Source","n/a",radConfig_p.ppsSource);
-   //  addItemToConfigurationTable("Ref Source","n/a",radConfig_p.refSource);
-
 }
 
 void RadioControlWidget::pushRadioConfiguration(std::shared_ptr<cRadioObject> rad)
@@ -265,7 +230,7 @@ void RadioControlWidget::onApplyConfigurationBtnRelease()
 
 void RadioControlWidget::onLoadFileConfigurationBtnRelease()
 {
-    emit loadFileConfigurationRequest(serial,fileConfigurationField->getFieldText(),false);
+    emit loadFileConfigurationRequest(serial,fileConfigurationField->getFieldText()+".cfg",false);
 }
 
 void RadioControlWidget::onContinousReceptionBtnRelease()

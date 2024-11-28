@@ -209,13 +209,12 @@ cRadioResponse cRadioObject::loadRadioConfigurationFile(bool def, std::string fi
     response.code = 0;
     response.message = "success";
 
-    std::string filepath_p = "";
     if(def == true){
         // get default configuration file
-        filepath_p = "usrp_default_configs/" + type + ".cfg";
+        filepath = "usrp_default_configs/" + type + ".cfg";
     }
 
-    response = readConfigurationFile(filepath_p);
+    response = readConfigurationFile(filepath);
 
     if(response.code == 0){
         isLoadedConfiguration = true;

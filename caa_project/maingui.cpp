@@ -479,7 +479,7 @@ void mainGUI::onRadioControlWidgetLoadFileConfiguration(std::string serial_p, st
         int response = radObj->loadRadioConfigurationFile(serial_p,false,filepath);
         if(response == 0){
             RadioControlWidget *cRCW = qobject_cast<RadioControlWidget *>(sender());
-            cRCW->pushRadioConfiguration(radObj->getRadioConfiguration(serial_p),1);
+            cRCW->pushRadioConfiguration(radObj->getRadio(serial_p));
         }
     }else{
         addStatusUpdate(QString::fromStdString("Error; File: " + filepath + " does not exist"),ui->tableWidget_status,-1);
