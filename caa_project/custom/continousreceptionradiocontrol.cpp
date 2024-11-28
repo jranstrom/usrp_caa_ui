@@ -232,6 +232,11 @@ void continousReceptionRadioControl::onTestBtnRelease()
 
 void continousReceptionRadioControl::onProcessTimerTick()
 {
+    if(isProcessing == true){
+        return; // already processing this event
+    }
+
+    isProcessing = true;
     bool cStatus = sourceRadio->continous_reception_running;
     if(cStatus != isReceiving){
         isReceiving = cStatus;
@@ -245,13 +250,15 @@ void continousReceptionRadioControl::onProcessTimerTick()
             receptionStatusIndicator->setState(1);
             receptionStatusLabel->setText("No ongoing reception");
         }
+        isProcessing = false;
         return;
     }
 
-    if(isReceiving == true){
+    if(cStatus == true){
         plotAll();
     }
 
+    isProcessing = false;
 
 }
 

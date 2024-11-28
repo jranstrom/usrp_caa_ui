@@ -237,7 +237,7 @@ cRadioResponse cRadioObject::stopContinousReception()
 
     stop_continous_reception = true;
 
-    int m_wait = 10;
+    int m_wait = 100;
     int i = 0;
     do{
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
@@ -449,6 +449,11 @@ void cRadioObject::runContinousReceptionProcess(std::shared_ptr<CircBuffer<std::
             rxCircBuffer->push(rxBuffer[smpl_i]);
         }
     }
+
+    uhd::stream_cmd_t stop_cmd(uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS);
+
+    usrp->issue_stream_cmd(stop_cmd);
+
     continous_reception_running = false;
 }
 

@@ -35,6 +35,8 @@ private:
     void plotAll();
     void saveCapture();
 
+    std::atomic<bool> isProcessing = false;
+
     cRadioResponse saveDATfile(std::string filepath,int dataLength);
     cRadioResponse saveCSVfile(std::string filepath, int dataLength);
 
