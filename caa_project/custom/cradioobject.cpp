@@ -505,6 +505,11 @@ cRadioResponse cRadioObject::stopContinousTransmission()
 
 void cRadioObject::runContinousTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp)
 {
+
+    if(timed_transmission_running == true){
+        return; // cannot run if timed transmission is ongoing
+    }
+
     int txTimeoutCount = 0;
     const int txTimeoutMax = 1e3;
     continous_transmission_running = true;
@@ -549,6 +554,71 @@ void cRadioObject::runContinousTransmissionProcess(std::shared_ptr<CircBuffer<st
         throw std::runtime_error("Multiple Tx channels not yet supported");
     }
     continous_transmission_running = false;
+}
+
+cRadioResponse cRadioObject::startTimedTransmission()
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "success";
+
+    std::thread timedTransmissionThread(&cRadioObject::runTimedTransmissionProcess,this,internalTxCircBuffer,usrp);
+    timedTransmissionThread.detach();
+
+    return response;
+}
+
+void cRadioObject::runTimedTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer, uhd::usrp::multi_usrp::sptr m_usrp)
+{
+    if(continous_transmission_running == true){
+        return; // cannot run timed transmission if contrinous transmission is already ongoing
+    }
+
+    const std::vector<size_t> channel_nums = {0};
+
+    timed_transmission_running = true;
+
+    uhd::stream_args_t stream_args("sc16","sc16");
+
+    stream_args.channels = channel_nums;
+
+    uhd::time_spec_t zero_time_spec(0.0);
+    //m_usrp->set_time_next_pps(zero_time_spec);
+    m_usrp->set_time_now(zero_time_spec);
+
+    uhd::tx_metadata_t tx_meta;
+    tx_meta.has_time_spec = true;
+
+    uhd::time_spec_t tx_time_spec(0,0.2);
+
+    //std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    tx_meta.time_spec = tx_time_spec;
+
+    uhd::tx_streamer::sptr tx_stream = m_usrp->get_tx_stream(stream_args);
+
+    size_t N = 131072;//4096;
+
+    std::complex<short> c_smpl;
+
+    std::vector<std::complex<short>> buffer(N);
+    for(int ik=0;ik<N;ik++){
+        txCircBuffer->circ_pop(&c_smpl);
+        buffer[ik] = c_smpl;
+    }
+
+    const size_t smpls_sent = tx_stream->send(&buffer.front(),N,tx_meta,0.3);
+
+    std::cout << m_usrp->get_time_now().get_full_secs() << std::endl;
+
+    if(smpls_sent == N){
+        std::cout << "All samples sent" << std::endl;
+    }else{
+        std::cout << "Not all samples sent: " << N-smpls_sent << std::endl;
+    }
+
+    timed_transmission_running = false;
+
 }
 
 std::vector<std::complex<short>> cRadioObject::getLastReceivedSamples(size_t N, cRadioResponse &response)
