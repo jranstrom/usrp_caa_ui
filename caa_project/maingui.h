@@ -279,6 +279,8 @@ private slots:
 
     void on_listWidget_available_radios_itemSelectionChanged();
 
+    void on_btn_pps_reset_released();
+
 private:
 
     //std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr;

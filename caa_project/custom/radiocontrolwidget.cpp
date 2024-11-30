@@ -218,6 +218,14 @@ void RadioControlWidget::changeIndicatorButtonState(int state, std::string type)
     }
 }
 
+void RadioControlWidget::resetTimeNextPPS()
+{
+    if(sourceRadio->isConfigured() == false){
+        return;
+    }
+
+}
+
 void RadioControlWidget::onLoadDefaultConfigurationBtnRelease()
 {
     emit loadDefaultConfigurationRequest(serial,false);

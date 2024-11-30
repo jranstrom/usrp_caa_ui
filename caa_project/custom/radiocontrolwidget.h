@@ -25,6 +25,9 @@ public:
 
     void changeIndicatorButtonState(int state, std::string type);
 
+    void resetTimeNextPPS();
+
+    std::shared_ptr<cRadioObject> getSourceRadio(){return sourceRadio;}
 
 signals:
     void loadDefaultConfigurationRequest(std::string serial_p,bool silent);

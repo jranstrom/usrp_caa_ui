@@ -2737,3 +2737,31 @@ void mainGUI::on_listWidget_available_radios_itemSelectionChanged()
 
 }
 
+
+void mainGUI::on_btn_pps_reset_released()
+{
+
+    std::vector<std::shared_ptr<cRadioObject>> ppsConnectedradios;
+    std::vector<std::shared_ptr<cRadioObject>> nonePPSRadios;
+    for(auto pairs : connectedRadioControlWidgets){
+        // Only connected radios
+        if(pairs.second->getSourceRadio()->isConfigured() == true){
+            bool usePSS = (pairs.second->getSourceRadio()->getAppliedConfiguation()["pps-source"]->getPropertyValueStr() == "external");
+
+            if(usePSS == true){
+                ppsConnectedradios.push_back(pairs.second->getSourceRadio());
+            }else{
+                nonePPSRadios.push_back(pairs.second->getSourceRadio());
+            }
+        }
+    }
+
+    for(int i=0;i<ppsConnectedradios.size();i++){
+        ppsConnectedradios[i]->resetTimeNextPPS();
+    }
+
+    for(int i=0;i<nonePPSRadios.size();i++){
+        nonePPSRadios[i]->resetTimeNow();
+    }
+}
+
