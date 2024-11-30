@@ -86,6 +86,13 @@ public:
     cRadioResponse stopTimedTransmission(){cRadioResponse response; return response;}
     virtual void runTimedTransmissionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> txCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
 
+
+    std::atomic<bool> timed_reception_running = false;
+    cRadioResponse startTimedReception();
+    cRadioResponse stopTimedReception(){cRadioResponse response; return response;}
+    virtual void runTimedReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short>>> rxCircBuffer,uhd::usrp::multi_usrp::sptr m_usrp);
+
+
     std::vector<std::complex<short>> getLastReceivedSamples(size_t N, cRadioResponse &response);
 
     uhd::usrp::multi_usrp::sptr usrp;
@@ -99,6 +106,10 @@ public:
     cRadioResponse setTransmitSignal(std::vector<std::complex<short>> &txSignal);
 
     std::shared_ptr<CircBuffer<std::complex<short>>> getInternalTxCircBuffer() {return internalTxCircBuffer;}
+
+    void resetTimeNextPPS();
+    void resetTimeNow();
+    void printCurrentTime();
 
 private:
 

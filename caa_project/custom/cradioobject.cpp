@@ -469,6 +469,9 @@ cRadioResponse cRadioObject::startContinousTransmission()
     }else if(txSignalLoaded == false){
         response.code = -3;
         response.message = "Error; No Tx signal specified";
+    }else if(timed_transmission_running == true){
+        response.code = -4;
+        response.message = "Error; Timed transmission running";
     }else if(isConfigured()){
         stop_continous_transmission = false;
         std::thread continousTransmissionThread(&cRadioObject::runContinousTransmissionProcess,this,internalTxCircBuffer,usrp);
@@ -562,8 +565,20 @@ cRadioResponse cRadioObject::startTimedTransmission()
     response.code = 0;
     response.message = "success";
 
-    std::thread timedTransmissionThread(&cRadioObject::runTimedTransmissionProcess,this,internalTxCircBuffer,usrp);
-    timedTransmissionThread.detach();
+    if(continous_transmission_running == true){
+        response.code = -1;
+        response.message = "Error; Continous Transmission running";
+    }else if(txSignalLoaded == false){
+        response.code = -3;
+        response.message = "Error; No Tx signal specified";
+    }else if(isConfigured()){
+        stop_continous_transmission = false;
+        std::thread timedTransmissionThread(&cRadioObject::runTimedTransmissionProcess,this,internalTxCircBuffer,usrp);
+        timedTransmissionThread.detach();
+    }else{
+        response.code = -2;
+        response.message = "Error; Radio not yet configured";
+    }
 
     return response;
 }
@@ -619,6 +634,81 @@ void cRadioObject::runTimedTransmissionProcess(std::shared_ptr<CircBuffer<std::c
 
     timed_transmission_running = false;
 
+}
+
+cRadioResponse cRadioObject::startTimedReception()
+{
+    cRadioResponse response;
+    response.code = 0;
+    response.message = "Success";
+    ;
+    if(continous_reception_running == true){
+        response.code = -1;
+        response.message = "Error; Continous reception running";
+    }else if(timed_reception_running == true){
+        response.code = -3;
+        response.message = "Error; Timed reception running";
+    }else if(isConfigured()){
+        stop_continous_reception = false;
+        std::thread timedReceptionThread(&cRadioObject::runTimedReceptionProcess,this,internalRxCircBuffer,usrp);
+        timedReceptionThread.detach();
+    }else{
+        response.code = -2;
+        response.message = "Error; Radio not yet configured";
+    }
+
+    return response;
+}
+
+void cRadioObject::runTimedReceptionProcess(std::shared_ptr<CircBuffer<std::complex<short> > > rxCircBuffer, uhd::usrp::multi_usrp::sptr m_usrp)
+{
+    if(continous_reception_running == true){
+        return;
+    }
+
+    rxCircBuffer->reset_buffer();
+
+    timed_reception_running = true;
+
+    uhd::stream_args_t stream_args("sc16", "sc16"); // complex floats
+    stream_args.channels             = {0};
+    uhd::rx_streamer::sptr rx_stream = m_usrp->get_rx_stream(stream_args);
+
+    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
+
+    size_t N = 4096;
+    size_t max_smpls_per_buffer = rx_stream->get_max_num_samps();
+
+    uhd::time_spec_t current_time_spec = m_usrp->get_time_now();
+
+    stream_cmd.num_samps  = N;
+    stream_cmd.stream_now = false;
+    stream_cmd.time_spec  = uhd::time_spec_t(current_time_spec+3);
+
+    rx_stream->issue_stream_cmd(stream_cmd);
+
+    // meta-data will be filled in by recv()
+    uhd::rx_metadata_t rx_metadata;
+
+    std::vector<std::complex<short>> buffer(max_smpls_per_buffer);
+
+    size_t accum_smpls = 0;
+    while(accum_smpls < N){
+        size_t num_rx_samps = rx_stream->recv(buffer, buffer.size(), rx_metadata, 3.1);
+
+        accum_smpls += num_rx_samps;
+
+        if(rx_metadata.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT){
+            break;
+        }
+
+        for(int i=0;i<num_rx_samps;++i){
+            rxCircBuffer->push(buffer[i]);
+        }
+    }
+
+
+    timed_reception_running = false;
 }
 
 std::vector<std::complex<short>> cRadioObject::getLastReceivedSamples(size_t N, cRadioResponse &response)
@@ -693,4 +783,23 @@ cRadioResponse cRadioObject::setTransmitSignal(std::vector<std::complex<short> >
     }
 
     return response;
+}
+
+void cRadioObject::resetTimeNextPPS()
+{
+    uhd::time_spec_t zero_time_spec_t(0.0);
+    usrp->set_time_next_pps(zero_time_spec_t);
+}
+
+void cRadioObject::resetTimeNow()
+{
+    uhd::time_spec_t zero_time_spec_t(0.0);
+    usrp->set_time_now(zero_time_spec_t);
+}
+
+void cRadioObject::printCurrentTime()
+{
+    uhd::time_spec_t current_time = usrp->get_time_now();
+
+    std::cout << current_time.get_full_secs() << " :: " << current_time.get_frac_secs() << std::endl;
 }
