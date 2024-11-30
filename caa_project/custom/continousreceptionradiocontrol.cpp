@@ -227,7 +227,7 @@ void continousReceptionRadioControl::onCaptureBtnRelease()
 
 void continousReceptionRadioControl::onTestBtnRelease()
 {
-
+    sourceRadio->startTimedReception();
 }
 
 void continousReceptionRadioControl::onProcessTimerTick()
