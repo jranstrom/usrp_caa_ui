@@ -111,14 +111,14 @@ class cRadioREFSourceProperty : public cRadioStringProperty {
 public:
     cRadioREFSourceProperty(std::string name_p,std::string unit_p, std::string value_p) : cRadioStringProperty(name_p,unit_p,value_p) {}
 
-    bool validateInputString(std::string input) {return(input == "external" || input == "internal");}
+    bool validateInputString(std::string input) {return(input == "external" || input == "none");}
 };
 
 class cRadioPPSSourceProperty : public cRadioStringProperty {
 public:
     cRadioPPSSourceProperty(std::string name_p,std::string unit_p, std::string value_p) : cRadioStringProperty(name_p,unit_p,value_p) {}
 
-    bool validateInputString(std::string input) {return(input == "external" || input == "internal");}
+    bool validateInputString(std::string input) {return(input == "external" || input == "none");}
 };
 
 class cRadioPPSandREFSourceProperty : public cRadioProperty
