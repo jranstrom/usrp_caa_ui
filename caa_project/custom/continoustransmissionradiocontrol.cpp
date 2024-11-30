@@ -165,8 +165,7 @@ void continousTransmissionRadioControl::onFilepathFieldChanged(std::string value
 
 void continousTransmissionRadioControl::onTestBtnRelease()
 {
-
-
+    sourceRadio->startTimedTransmission();
 }
 
 void continousTransmissionRadioControl::onProcessTimerTick()
