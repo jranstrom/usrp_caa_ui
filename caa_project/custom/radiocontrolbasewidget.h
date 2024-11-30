@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include "cradioobject.h"
+#include "radiocontrolwidget.h"
 
 class RadioControlBaseWidget : public QWidget
 {
@@ -16,6 +17,7 @@ public:
     virtual void onControlClose(){};
 
     virtual std::string getType() {return "base";}
+    virtual RadioControlWidget::RadioControlType getEnumType() {return RadioControlWidget::RadioControlType::UNKNOWN;}
 
 signals:
     void controlClosed();

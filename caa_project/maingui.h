@@ -144,9 +144,8 @@ private slots:
     void onRadioControlWidgetLoadFileConfiguration(std::string serial_p, std::string filepath, bool silent);
     void onRadioControlWidgetTestBtnRelease(std::string serial_p, bool silent);
     void onRadioControlWidgetApplyConfigurationBtnReleased(std::string serial_p,cRadioConfiguration radConf_p);
-    void onRadioControlWidgetContinousReceptionBtnReleased(std::string serial_p,bool silent);
-    void onRadioControlWidgetContinousTransmissionBtnReleased(std::string serial_p, bool silent);
-    void onRadioControlWidgetScriptReceptionBtnReleased(std::string serial_p,bool silent);
+
+    void onRadioControlWidgetLaunchControlRequest(std::string serial_p, RadioControlWidget::RadioControlType RCType,bool silent);
 
     void onRadioControlWidgetClosed();
     void onRadioControlWidgetStatusUpdate(std::string message,int code);
@@ -336,6 +335,8 @@ private:
     SliderAndLineEdit * rxGainSlider;
 
     SliderAndLineEdit * rxLOOffsetSlider;
+
+    void handleRadioControlWidgetBtnRequest(std::string serial_p,std::string identifier, bool silent);
 
     void addToGridLayout(QWidget * widget, QGridLayout * gridLayout,int rows);
     void addVerticalSpacersToGridLayout(QGridLayout * gridLayout);

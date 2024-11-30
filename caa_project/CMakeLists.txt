@@ -93,6 +93,8 @@ add_executable(caa_project
     custom/continoustransmissionradiocontrol.h custom/continoustransmissionradiocontrol.cpp
     custom/scriptreceptionradiocontrol.h custom/scriptreceptionradiocontrol.cpp
     custom/buttonwithindicator.h custom/buttonwithindicator.cpp
+    custom/timedreceptionradiocontrol.h custom/timedreceptionradiocontrol.cpp
+    custom/timedtransmissionradiocontrol.h custom/timedtransmissionradiocontrol.cpp
 
 )
 

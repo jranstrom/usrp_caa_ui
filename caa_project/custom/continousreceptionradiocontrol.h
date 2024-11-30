@@ -20,6 +20,7 @@ public:
     void onControlClose() override;
 
     std::string getType() override {return "cont-rx";}
+    RadioControlWidget::RadioControlType getEnumType() override {return RadioControlWidget::RadioControlType::RxCONT;}
 
 
 private slots:

@@ -148,11 +148,19 @@ RadioControlWidget::RadioControlWidget(QWidget *parent, std::shared_ptr<cRadioOb
     scriptReceptionIndBtn = new ButtonWithIndicator(this,"center","Script Rx");
     connect(scriptReceptionIndBtn,&ButtonWithIndicator::buttonReleased,this,&RadioControlWidget::onScriptReceptionBtnRelase);
 
+    timedTransmissionIndBtn = new ButtonWithIndicator(this,"center","Timed Tx");
+    connect(timedTransmissionIndBtn,&ButtonWithIndicator::buttonReleased,this,&RadioControlWidget::onTimedTransmissionIndBtnRelease);
+
+    timedReceptionIndBtn = new ButtonWithIndicator(this,"center","Timed Rx");
+    connect(timedReceptionIndBtn,&ButtonWithIndicator::buttonReleased,this,&RadioControlWidget::onTimedReceptionIndBtnRelease);
+
 
     radioControlLayout->addWidget(radioControlDividerLine,0,0,1,2);
     radioControlLayout->addWidget(continousReceptionIndBtn,1,1);
     radioControlLayout->addWidget(continousTransmissionIndBtn,1,0);
     radioControlLayout->addWidget(scriptReceptionIndBtn,1,2);
+    radioControlLayout->addWidget(timedTransmissionIndBtn,2,0);
+    radioControlLayout->addWidget(timedReceptionIndBtn,2,1);
 
     mainGroupBoxLayout->addWidget(basicInfoWidget);
 
@@ -207,15 +215,28 @@ void RadioControlWidget::pushRadioConfigurationApplyStatus(int statusCode,cRadio
 
 }
 
-void RadioControlWidget::changeIndicatorButtonState(int state, std::string type)
+void RadioControlWidget::changeIndicatorButtonState(int state, RadioControlType type)
 {
-    if(type == "cont-rx"){
+    switch(type){
+    case RxCONT:
         continousReceptionIndBtn->setCurrentState(state);
-    }else if(type == "cont-tx"){
-         continousTransmissionIndBtn->setCurrentState(state);
-    }else if(type == "script-rx"){
-       scriptReceptionIndBtn->setCurrentState(state);
+        break;
+    case TxCONT:
+        continousTransmissionIndBtn->setCurrentState(state);
+        break;
+    case RxSCRIPT:
+        scriptReceptionIndBtn->setCurrentState(state);
+        break;
+    case RxTIMED:
+        timedReceptionIndBtn->setCurrentState(state);
+        break;
+    case TxTIMED:
+        timedTransmissionIndBtn->setCurrentState(state);
+        break;
+    case UNKNOWN:
+        break;
     }
+
 }
 
 void RadioControlWidget::resetTimeNextPPS()
@@ -243,22 +264,38 @@ void RadioControlWidget::onLoadFileConfigurationBtnRelease()
 
 void RadioControlWidget::onContinousReceptionBtnRelease()
 {
-    emit continousReceptionControlRequest(serial,false);
+    //emit continousReceptionControlRequest(serial,"",false);
+    emit launchControlRequest(serial,RxCONT,false);
 }
 
 void RadioControlWidget::onContinousTransmissionBtnRelease()
 {
-    emit continousTransmissionControlRequest(serial,false);
+    //emit continousTransmissionControlRequest(serial,false);
+    emit launchControlRequest(serial,TxCONT,false);
 }
 
 void RadioControlWidget::onScriptReceptionBtnRelase()
 {
-    emit scriptReceptionControlRequest(serial,false);
+    //emit scriptReceptionControlRequest(serial,false);
+    emit launchControlRequest(serial,RxSCRIPT,false);
 }
 
 void RadioControlWidget::onScriptReceptionIndBtnRelease()
 {
-    emit scriptReceptionControlRequest(serial,false);
+    //emit scriptReceptionControlRequest(serial,false);
+    emit launchControlRequest(serial,RxSCRIPT,false);
+}
+
+void RadioControlWidget::onTimedReceptionIndBtnRelease()
+{
+    //emit timedReceptionControlRequest(serial,false);
+    emit launchControlRequest(serial,RxTIMED,false);
+}
+
+void RadioControlWidget::onTimedTransmissionIndBtnRelease()
+{
+    //emit timedTransmissionControlRequest(serial,false);
+    emit launchControlRequest(serial,TxTIMED,false);
 }
 
 void RadioControlWidget::onTestBtnRelease()

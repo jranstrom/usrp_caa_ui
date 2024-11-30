@@ -21,6 +21,7 @@ public:
     void onControlClose() override;
 
     std::string getType() override {return "script-rx";}
+    RadioControlWidget::RadioControlType getEnumType() override {return RadioControlWidget::RadioControlType::RxSCRIPT;}
 
 private slots:
     void onToggleReceptionBtnRelease();

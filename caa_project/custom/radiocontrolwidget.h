@@ -16,6 +16,27 @@ class RadioControlWidget : public QWidget
 {
     Q_OBJECT
 public:
+
+    enum RadioControlType {
+        RxCONT,
+        TxCONT,
+        RxSCRIPT,
+        RxTIMED,
+        TxTIMED,
+        UNKNOWN
+    };
+
+    static std::string to_string(RadioControlType value) {
+        switch (value) {
+        case RxCONT: return "cont-rx";
+        case TxCONT: return "cont-tx";
+        case RxSCRIPT: return "script-rx";
+        case RxTIMED: return "timed-rx";
+        case TxTIMED: return "timed-tx";
+        default: return "Unknown";
+        }
+    }
+
     explicit RadioControlWidget(QWidget *parent = nullptr, std::shared_ptr<cRadioObject> cRad_p=nullptr);
 
     std::string getSerial(){return serial;}
@@ -23,7 +44,7 @@ public:
     void pushRadioConfiguration(std::shared_ptr<cRadioObject> rad);
     void pushRadioConfigurationApplyStatus(int statusCode,cRadioConfiguration radConf_p);
 
-    void changeIndicatorButtonState(int state, std::string type);
+    void changeIndicatorButtonState(int state, RadioControlType type);
 
     void resetTimeNextPPS();
 
@@ -36,7 +57,11 @@ signals:
     void continousReceptionControlRequest(std::string serial_p,bool silent);
     void continousTransmissionControlRequest(std::string serial_p,bool silent);
     void scriptReceptionControlRequest(std::string serial_p,bool silent);
+    void timedTransmissionControlRequest(std::string serial_p,bool silent);
+    void timedReceptionControlRequest(std::string serial_p,bool silent);
     void testRequest(std::string serial_p,bool silent);
+
+    void launchControlRequest(std::string serial_p,RadioControlType RCType,bool silent);
 
 private slots:
     void onLoadDefaultConfigurationBtnRelease();
@@ -46,6 +71,9 @@ private slots:
     void onContinousTransmissionBtnRelease();
     void onScriptReceptionBtnRelase();
     void onScriptReceptionIndBtnRelease();
+    void onTimedReceptionIndBtnRelease();
+    void onTimedTransmissionIndBtnRelease();
+
     void onTestBtnRelease();
     void onConfigurationTableInsertItem(const QModelIndex &parent, int first, int last);
     void onConfigurationTableItemChanged(QTableWidgetItem * item);
@@ -98,6 +126,8 @@ private:
     ButtonWithIndicator * continousTransmissionIndBtn;
     ButtonWithIndicator * continousReceptionIndBtn;
     ButtonWithIndicator * scriptReceptionIndBtn;
+    ButtonWithIndicator * timedTransmissionIndBtn;
+    ButtonWithIndicator * timedReceptionIndBtn;
 
     LabelandFieldWidget * serialField;
     LabelandFieldWidget * typeField;

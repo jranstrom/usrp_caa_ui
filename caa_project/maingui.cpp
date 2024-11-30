@@ -10,6 +10,8 @@
 #include "custom/continousreceptionradiocontrol.h"
 #include "custom/continoustransmissionradiocontrol.h"
 #include "custom/scriptreceptionradiocontrol.h"
+#include "custom/timedreceptionradiocontrol.h"
+#include "custom/timedtransmissionradiocontrol.h"
 
 mainGUI::mainGUI(QWidget *parent)
     : QMainWindow(parent)
@@ -522,67 +524,43 @@ void mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased(std::string seri
     }
 }
 
-void mainGUI::onRadioControlWidgetContinousReceptionBtnReleased(std::string serial_p, bool silent)
+
+void mainGUI::onRadioControlWidgetLaunchControlRequest(std::string serial_p, RadioControlWidget::RadioControlType RCType, bool silent)
 {
     std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
 
-    if(activeRadioControls.find(serial_p + "-cont-rx") == activeRadioControls.end()){
-        // not in map
-        continousReceptionRadioControl * crRc = new continousReceptionRadioControl(nullptr,cRad);
-        connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
-        connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
-        crRc->show();
-        crRc->resize(420, 340);
+    std::string identifier = RadioControlWidget::to_string(RCType);
 
-        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,crRc->getType());
+    if(activeRadioControls.find(serial_p + "-" + identifier) == activeRadioControls.end()){
 
-        // add to map
-        activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
-    }else{
-        activeRadioControls[serial_p + "-cont-rx"]->activateWindow();
-    }
-}
+        RadioControlBaseWidget * crRC;
+        switch(RCType){
+        case RadioControlWidget::RadioControlType::RxCONT: crRC = new continousReceptionRadioControl(nullptr,cRad);
+            break;
+        case RadioControlWidget::RadioControlType::TxCONT: crRC = new continousTransmissionRadioControl(nullptr,cRad);
+            break;
+        case RadioControlWidget::RadioControlType::RxSCRIPT: crRC = new ScriptReceptionRadioControl(nullptr,cRad);
+            break;
+        case RadioControlWidget::RadioControlType::RxTIMED: crRC = new TimedReceptionRadioControl(nullptr,cRad);
+            break;
+        case RadioControlWidget::RadioControlType::TxTIMED: crRC = new TimedTransmissionRadioControl(nullptr,cRad);
+            break;
+        }
 
-void mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased(std::string serial_p, bool silent)
-{
-    std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
-    if(activeRadioControls.find(serial_p + "-cont-tx") == activeRadioControls.end()){
-        // not in map
-        continousTransmissionRadioControl * crRc = new continousTransmissionRadioControl(nullptr,cRad);
-        connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
-        connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
-        crRc->show();
-        crRc->resize(420, 340);
+        connect(crRC,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
+        connect(crRC,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
+        crRC->show();
+        crRC->resize(420, 340);
 
-        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,crRc->getType());
+        std::string tId = crRC->getType();
+
+        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,RCType);
 
         // add to map
-        activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
+        activeRadioControls[serial_p+"-"+tId] =  crRC;
+
     }else{
-        activeRadioControls[serial_p + "-cont-tx"]->activateWindow();
-    }
-}
-
-void mainGUI::onRadioControlWidgetScriptReceptionBtnReleased(std::string serial_p, bool silent)
-{
-    //setScriptReceptionIndicatorButtonState
-    std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
-
-    if(activeRadioControls.find(serial_p + "-script-rx") == activeRadioControls.end()){
-        // not in map
-        ScriptReceptionRadioControl * crRc = new ScriptReceptionRadioControl(nullptr,cRad);
-
-        connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
-        connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
-        crRc->show();
-        crRc->resize(420, 340);
-
-        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,crRc->getType());
-
-        // add to map
-        activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
-    }else{
-        activeRadioControls[serial_p + "-script-rx"]->activateWindow();
+        activeRadioControls[serial_p + "-" + identifier]->activateWindow();
     }
 }
 
@@ -596,7 +574,7 @@ void mainGUI::onRadioControlWidgetClosed()
     std::cout << key << std::endl;
     activeRadioControls.erase(key);
 
-    connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(0,crRc->getType());
+    connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(0,crRc->getEnumType());
 
     disconnect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
     disconnect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
@@ -2319,6 +2297,42 @@ int mainGUI::validateAutomaticCapture()
     return response;
 }
 
+void mainGUI::handleRadioControlWidgetBtnRequest(std::string serial_p, std::string identifier, bool silent)
+{
+    //setScriptReceptionIndicatorButtonState
+    std::shared_ptr<cRadioObject> cRad = radObj->getRadio(serial_p);
+
+    if(activeRadioControls.find(serial_p + "-" + identifier) == activeRadioControls.end()){
+        // not in map
+
+        RadioControlBaseWidget * crRc;
+
+        if(identifier == "script-rx"){
+            crRc = new ScriptReceptionRadioControl(nullptr,cRad);
+        }else if(identifier == "cont-tx"){
+            crRc = new continousTransmissionRadioControl(nullptr,cRad);
+        }else if(identifier == "cont-rx"){
+            crRc = new continousReceptionRadioControl(nullptr,cRad);
+        }else if(identifier == "timed-rx"){
+            crRc = new TimedReceptionRadioControl(nullptr,cRad);
+        }else if(identifier == "timed-tx"){
+            crRc = new TimedTransmissionRadioControl(nullptr,cRad);
+        }
+
+        connect(crRc,&RadioControlBaseWidget::controlClosed,this,&mainGUI::onRadioControlWidgetClosed);
+        connect(crRc,&RadioControlBaseWidget::statusUpdateRequest,this,&mainGUI::onRadioControlWidgetStatusUpdate);
+        crRc->show();
+        crRc->resize(420, 340);
+
+        connectedRadioControlWidgets[serial_p]->changeIndicatorButtonState(2,crRc->getEnumType());
+
+        // add to map
+        activeRadioControls[serial_p+"-"+crRc->getType()] =  crRc;
+    }else{
+        activeRadioControls[serial_p + "-script-rx"]->activateWindow();
+    }
+}
+
 void mainGUI::addToGridLayout(QWidget *widget, QGridLayout *gridLayout, int rows)
 {
     int io = gridLayout->count();
@@ -2610,9 +2624,7 @@ void mainGUI::on_btn_connect_radio_released()
             connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
             connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
             connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
-            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
-            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
-            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
+            connect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::launchControlRequest,this,&mainGUI::onRadioControlWidgetLaunchControlRequest);
 
 
             //radioControls.push_back(rcWidget);
@@ -2636,9 +2648,7 @@ void mainGUI::on_btn_connect_radio_released()
             disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::loadFileConfigurationRequest,this,&mainGUI::onRadioControlWidgetLoadFileConfiguration);
             disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::testRequest,this,&mainGUI::onRadioControlWidgetTestBtnRelease);
             disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::applyConfigurationRequest,this,&mainGUI::onRadioControlWidgetApplyConfigurationBtnReleased);
-            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousReceptionControlRequest,this,&mainGUI::onRadioControlWidgetContinousReceptionBtnReleased);
-            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::continousTransmissionControlRequest,this,&mainGUI::onRadioControlWidgetContinousTransmissionBtnReleased);
-            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::scriptReceptionControlRequest,this,&mainGUI::onRadioControlWidgetScriptReceptionBtnReleased);
+            disconnect(connectedRadioControlWidgets[c_serial],&RadioControlWidget::launchControlRequest,this,&mainGUI::onRadioControlWidgetLaunchControlRequest);
             delete connectedRadioControlWidgets[c_serial];
             connectedRadioControlWidgets.erase(c_serial);
             response = radObj->disconnectRadio(serials_v[index],false);
